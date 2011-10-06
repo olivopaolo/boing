@@ -22,12 +22,17 @@ class Observable(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.__observers = set()
+        
+    def __del__(self):
+        for reactiveobject in self.observers:
+            # Notify of the subscribed ReactiveObjects that they have a None 
+            # reference
+            reactiveobject._checkref()
+            self.trigger.disconnect(reactiveobject._react)
 
     @property
     def observers(self):
         """Return the frozenset of the current observing ReactiveObject."""
-        # Keep only alive references
-        self.__observers = set(ref for ref in self.__observers if ref() is not None)
         # Return referents not references
         return frozenset(ref() for ref in self.__observers)
 
@@ -50,6 +55,11 @@ class Observable(QtCore.QObject):
     def notify_observers(self):
         """Invoke the method "_react" of all the registered ReactiveObjects."""
         self.trigger.emit(self)
+
+    def _checkref(self):
+        # Keep only alive references
+        self.__observers = set(ref for ref in self.__observers \
+                                   if ref() is not None)
         
 
 class ReactiveObject(QtCore.QObject):
@@ -58,12 +68,16 @@ class ReactiveObject(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.__observed = set()
+        
+    def __del__(self):
+        for observable in self.observed:
+            # Notify of the subscribed Observables that they have a None 
+            # reference
+            observable._checkref()
 
     @property
     def observed(self):
         """Return the frozenset of the current subscribed Observables."""
-        # Keep only alive references
-        self.__observed = set(ref for ref in self.__observed if ref() is not None)
         # Return referents not references
         return frozenset(ref() for ref in self.__observed)
 
@@ -90,6 +104,11 @@ class ReactiveObject(QtCore.QObject):
         directly."""
         pass
 
+    def _checkref(self):
+        # Keep only alive references
+        self.__observed = set(ref for ref in self.__observed \
+                                  if ref() is not None)
+
 
 class DelayedReactive(ReactiveObject):
     """A ReactiveObject that postpones the reaction to an Observable
@@ -108,6 +127,10 @@ class DelayedReactive(ReactiveObject):
                                                   weakref.ref(self))
         self.__queue = set()
 
+    def __del__(self):
+        super().__del__()
+        if self.__tid is not None: EventLoop.cancel_timer(self.__tid)
+        
     @property
     def frequency(self):
         return self.__hz
@@ -115,8 +138,6 @@ class DelayedReactive(ReactiveObject):
     @property
     def queue(self):
         """List of Observables that has notified since last refresh."""
-        # Keep only alive references
-        self.__queue = set(ref for ref in self.__queue if ref() is not None)
         # Return referents not references
         return frozenset(ref() for ref in self.__queue)
 
@@ -138,6 +159,11 @@ class DelayedReactive(ReactiveObject):
         """It can be overridden to define business logic, but do not invoke it
         directly."""
         pass
+
+    def _checkref(self):
+        super()._checkref()
+        # Keep only alive references
+        self.__queue = set(ref for ref in self.__queue if ref() is not None)
 
     @staticmethod
     def _timeout(tid, ref):
