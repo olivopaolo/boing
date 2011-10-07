@@ -1,0 +1,58 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <title>Boing: DNS-SD tools</title>
+</style>
+</head>
+
+<body>
+
+<div class="title">Boing: DNS-SD tools</div>
+
+<h1>Documentation</h1>
+
+<p>General documentation on DNS-SD can be found at <code><a href="http://www.dns-sd.org/">http://www.dns-sd.org/</a></code>.</p>
+
+<p>The following tools are intended to support testing and evaluation of dns-sd service-based functionalities:</p>
+<ul>
+<li>Announce a service using DNS-SD:
+<pre>
+&gt; python3 test/dns_sd/announce.py [options] &lt;name&gt; &lt;type&gt; &lt;port&gt;
+   
+Options:
+  -o, --host= <u>host</u>           
+     Set service host name
+
+  -d, --domain= <u>domain</u>         
+     Set service domain name
+
+  -t, --txtrec= <u>record</u>         
+     Set txt record value 
+     (e.g. "{'value':'1', 'name':'example'}")
+
+  -h, --help   Display help and exit
+</pre>
+<br>
+<li>Browse available DNS-SD services:
+<pre>
+&gt; python3 test/dns_sd/browse_and_resolve.py [options] &lt;type&gt;
+
+Options:
+  -d, --domain= <u>domain</u>         
+     Set service domain name
+
+  -h, --help
+     Display help and exit
+</pre>
+</ul>
+
+<!--
+<h1>Problems (and potential solutions)</h1>
+
+<ul>
+</ul>
+-->
+</ul>
+<p><a href="index.html">&lt;&lt; home</a></p>
+</body></html>

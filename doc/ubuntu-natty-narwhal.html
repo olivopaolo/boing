@@ -55,6 +55,33 @@ from <a href="http://www.riverbankcomputing.co.uk/software/pyqt/download">Riverb
  $ sudo make install
 </pre>
 
+<!-- -------------------------------------------------------------- -->
+<h1>DNS-SD services</h1>
+
+<p>Eclectic's <code>dns_sd</code> code uses the <code>libdns_sd</code>
+library, which in Ubuntu is provided by the Avahi Apple Bonjour
+compatibility library. To get it, type the following in a
+terminal:</p>
+
+<pre>
+sudo apt-get install libavahi-compat-libdnssd-dev
+</pre>
+
+<p>In order to use the <code>dns_sd</code> functionalities provided by
+such library, the <code>Avahi daemon</code> must be running.</p>
+
+<pre>
+sudo apt-get install avahi-daemon sudo avahi-daemon
+</pre>
+
+<p>WARNING! Avahi services cannot be found on
+the <code>loopback</code> interface; for this reason when working
+offline, it is necessary to set the IP address of the Ethernet or the
+Wireless interface to a dummy address. To achive this, for example
+type in a terminal:
+<pre>
+  sudo ifconfig eth0 192.168.0.1</pre>
+
 <p><a href="index.html">&lt;&lt; home</a></p>
 </body></html>
 
