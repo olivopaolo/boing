@@ -1,0 +1,62 @@
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="style.css">
+<title>Boing on Ubuntu 11.04</title>
+</style>
+</head>
+
+<body>
+<div class="title">Boing on Ubuntu 11.04</div>
+
+<!-- -------------------------------------------------------------- -->
+<h1>Python</h1>
+
+<p>Boing needs Python version 3.2 or newer. To install, type:
+
+<pre>$ sudo apt-get install python3</pre>
+
+<!-- -------------------------------------------------------------- -->
+<h1>Qt 4</h1>
+
+<p>In order to
+install <a href="http://qt.nokia.com/products/library">Qt
+libraries</a>, type:</p>
+
+<pre>$ sudo apt-get install libqt4-dev</pre>
+
+<!-- -------------------------------------------------------------- -->
+<h1>PyQt</h1>
+
+<p>Prior to compile PyQt, you will first need to compile and install 
+<a href="http://www.riverbankcomputing.co.uk/software/sip/download">SIP</a>. Boing
+has been tested with SIP 4.12.2 and PyQt 4.8.4, which it is also available
+from <a href="http://www.riverbankcomputing.co.uk/software/pyqt/download">Riverbank</a>.
+</p>
+
+<p>In order to compile SIP, type:</p>
+<pre>
+ $ sudo mv sip-4.12.4.tar.gz /opt/
+ $ cd /opt/
+ $ sudo tar -zxvf sip-4.12.4.tar.gz
+ $ cd sip-4.12.4/
+ $ sudo python3 configure.py
+ $ sudo make 
+ $ sudo make install
+</pre>
+
+<p>The same procedure is applied for compiling PyQt:</p>
+<pre>
+ $ sudo mv PyQt-x11-gpl-4.8.5.tar.gz /opt/
+ $ cd /opt/
+ $ sudo tar -zxvf PyQt-x11-gpl-4.8.5.tar.gz
+ $ cd PyQt-x11-gpl-4.8.5/
+ $ sudo python3 configure.py
+ $ sudo make 
+ $ sudo make install
+</pre>
+
+<p><a href="index.html">&lt;&lt; home</a></p>
+</body></html>
+
+
+
