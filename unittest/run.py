@@ -29,7 +29,7 @@ If no module is specified, all modules are tested; otherwise only the
 specified modules will be executed. 
  
 Available modules: 
- dns_sd, eventloop
+ dns_sd, display, eventloop
 """)
         sys.exit(0)
 
@@ -37,6 +37,9 @@ list = []
 if len(sys.argv)==1 or 'eventloop' in sys.argv:
     from eventloop import test_ReactiveObject
     list += test_ReactiveObject.suite()
+if len(sys.argv)==1 or 'display' in sys.argv:
+    from display import test_DisplayDevice
+    list += test_DisplayDevice.suite()
 if len(sys.argv)==1 or 'dns_sd' in sys.argv:
     from dns_sd import test_dns_sd
     list += test_dns_sd.suite()
