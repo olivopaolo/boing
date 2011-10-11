@@ -14,7 +14,7 @@ import unittest
 from boing.display.DisplayDevice import DisplayDevice, Size, Point, Bounds
 from boing.url import URL
 
-class CreateCase(unittest.TestCase): 
+class TestDisplayDevice(unittest.TestCase): 
    
     def test_empty(self):
         d = DisplayDevice.create()
@@ -140,9 +140,9 @@ class CreateCase(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    tests = list(t for t in dir(CreateCase) \
+    tests = list(t for t in TestDisplayDevice.__dict__ \
                      if t.startswith("test_"))
-    return unittest.TestSuite(map(CreateCase, tests))    
+    return unittest.TestSuite(map(TestDisplayDevice, tests))    
 
 # -------------------------------------------------------------------
 

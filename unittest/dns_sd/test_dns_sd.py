@@ -14,7 +14,7 @@ from boing.dns_sd.DNSServiceAnnouncer import DNSServiceAnnouncer
 from boing.dns_sd.DNSServiceBrowser import DNSServiceBrowser
 from boing.eventloop.EventLoop import EventLoop
 
-class test_dns_sd(unittest.TestCase):
+class Testdns_sd(unittest.TestCase):
 
     def setUp(self):
         self.regtype = "_boing_unittest._tcp."
@@ -151,8 +151,8 @@ class test_dns_sd(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    tests = list(t for t in dir(test_dns_sd) if t.startswith("test_"))
-    return unittest.TestSuite(list(map(test_dns_sd, tests)))
+    tests = list(t for t in Testdns_sd.__dict__ if t.startswith("test_"))
+    return unittest.TestSuite(list(map(Testdns_sd, tests)))
 
 # -------------------------------------------------------------------
 

@@ -29,7 +29,7 @@ If no module is specified, all modules are tested; otherwise only the
 specified modules will be executed. 
  
 Available modules: 
- dns_sd, display, eventloop
+ dns_sd, display, eventloop, udp
 """)
         sys.exit(0)
 
@@ -43,6 +43,9 @@ if len(sys.argv)==1 or 'display' in sys.argv:
 if len(sys.argv)==1 or 'dns_sd' in sys.argv:
     from dns_sd import test_dns_sd
     list += test_dns_sd.suite()
+if len(sys.argv)==1 or 'udp' in sys.argv:
+    from udp import test_UdpSocket
+    list += test_UdpSocket.suite()
 alltests = unittest.TestSuite(list)
 runner = unittest.TextTestRunner()
 runner.run(alltests)

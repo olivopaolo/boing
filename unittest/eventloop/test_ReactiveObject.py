@@ -36,7 +36,7 @@ class TestDelayedReactive(DelayedReactive):
 
 # -------------------------------------------------------------------
 
-class test_ReactiveObject(unittest.TestCase):
+class testReactiveObject(unittest.TestCase):
 
     def test_observer_creation(self):
         o = Observable()
@@ -297,11 +297,11 @@ class test_DelayedReactive(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():    
-    reactiveobject_tests = list(t for t in dir(test_ReactiveObject) \
+    reactiveobject_tests = list(t for t in testReactiveObject.__dict__ \
                                     if t.startswith("test_"))
-    delayedreactive_tests = list(t for t in dir(test_DelayedReactive) \
+    delayedreactive_tests = list(t for t in test_DelayedReactive.__dict__ \
                                      if t.startswith("test_"))
-    return unittest.TestSuite(list(map(test_ReactiveObject, 
+    return unittest.TestSuite(list(map(testReactiveObject, 
                                        reactiveobject_tests)) + \
                               list(map(test_DelayedReactive, 
                                        delayedreactive_tests)))
