@@ -51,7 +51,7 @@ class TestUdpSocket(unittest.TestCase):
 
     def test_udpsocket(self):
         l = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
-        l.bind(("",0))
+        l.bind(("127.0.0.1",0))
         addr = l.getsockname()[:2]
         s = UdpSocket()
         s.sendTo(self.data, addr)
@@ -69,7 +69,7 @@ class TestUdpSocket(unittest.TestCase):
 
     def test_udpsender(self):
         l = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
-        l.bind(("",0))
+        l.bind(("127.0.0.1",0))
         addr = l.getsockname()[:2]
         s = UdpSender("udp://%s:%d"%addr)
         url = s.getURL()

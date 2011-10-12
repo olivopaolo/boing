@@ -84,8 +84,8 @@ class UdpSocket(object):
             h = socket.inet_aton(addr[0])
         else: h = None
         if h is not None \
-                and (self.__sock.family==ip.PF_INET and ip.IN_MULTICAST(h)) \
-                or (self.__sock.family==ip.PF_INET6 and ip.IN6_IS_ADDR_MULTICAST(h)):
+                and ((self.__sock.family==ip.PF_INET and ip.IN_MULTICAST(h)) \
+                     or (self.__sock.family==ip.PF_INET6 and ip.IN6_IS_ADDR_MULTICAST(h))):
             if self.__sock.family==ip.PF_INET6:
                 level, optname = socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP
             else:
@@ -104,7 +104,7 @@ class UdpSocket(object):
         return ip.resolve(addr, self.__sock.family, socket.SOCK_DGRAM)
 
     def isMulticast(self):
-        if sys.platform == 'win32':
+        if sys.platform=='win32':
             h = socket.inet_aton(self.__sock.getsockname()[0])
         else:
             h = socket.inet_pton(self.__sock.family, self.__sock.getsockname()[0])
