@@ -127,10 +127,6 @@ class DelayedReactive(ReactiveObject):
                                                   weakref.ref(self))
         self.__queue = set()
 
-    def __del__(self):
-        super().__del__()
-        if self.__tid is not None: EventLoop.cancel_timer(self.__tid)
-        
     @property
     def frequency(self):
         return self.__hz
@@ -213,7 +209,3 @@ if __name__ == '__main__':
     t_o1 = EventLoop.repeat_every(0.4, notify, o1)
     t_o2 = EventLoop.repeat_every(0.7, notify, o2)
     EventLoop.run_for(int(sys.argv[1]))
-    EventLoop.cancel_timer(t_o1)
-    EventLoop.cancel_timer(t_o2)
-    print("Closing...")
-    del o1, o2, r1, r2, r3
