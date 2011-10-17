@@ -22,7 +22,8 @@ class TestUdpSocket(unittest.TestCase):
     def test_udplistener_empty(self):
         s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
         l = UdpListener()
-        url = l.getURL()
+        url = l.url()
+        self.assertEqual((url.site.host, url.site.port), l.name()[:2])
         s.connect((url.site.host, url.site.port))
         s.send(self.data)
         r = l.receive()
@@ -32,7 +33,8 @@ class TestUdpSocket(unittest.TestCase):
     def test_udplistener(self):
         s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
         l = UdpListener("udp://:7777")
-        url = l.getURL()
+        url = l.url()
+        self.assertEqual((url.site.host, url.site.port), l.name()[:2])
         s.connect((url.site.host, url.site.port))
         s.send(self.data)
         r = l.receive()
@@ -42,7 +44,8 @@ class TestUdpSocket(unittest.TestCase):
     def test_udplistener_ip6(self):
         s = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
         l = UdpListener("udp://[::1]:7777")
-        url = l.getURL()
+        url = l.url()
+        self.assertEqual((url.site.host, url.site.port), l.name()[:2])
         s.connect((url.site.host, url.site.port))
         s.send(self.data)
         r = l.receive()
@@ -54,7 +57,7 @@ class TestUdpSocket(unittest.TestCase):
         l.bind(("127.0.0.1",0))
         addr = l.getsockname()[:2]
         s = UdpSocket()
-        s.sendTo(self.data, addr)
+        s.sendto(self.data, addr)
         r = l.recvfrom(1024)
         self.assertEqual(r[0], self.data)
 
@@ -63,7 +66,7 @@ class TestUdpSocket(unittest.TestCase):
         l.bind(("::1",0))
         addr = l.getsockname()[:2]
         s = UdpSocket(ip.PF_INET6)
-        s.sendTo(self.data, addr)
+        s.sendto(self.data, addr)
         r = l.recvfrom(1024)
         self.assertEqual(r[0], self.data)
 
@@ -72,7 +75,12 @@ class TestUdpSocket(unittest.TestCase):
         l.bind(("127.0.0.1",0))
         addr = l.getsockname()[:2]
         s = UdpSender("udp://%s:%d"%addr)
-        url = s.getURL()
+        url = s.url()
+        self.assertEqual((url.site.host, url.site.port), s.name()[:2])
+        self.assertEqual(l.getsockname(), s.peername())
+        peerurl = s.peerurl()
+        self.assertEqual((peerurl.site.host, peerurl.site.port), 
+                         l.getsockname()[:2])        
         s.send(self.data)
         r = l.recvfrom(1024)
         self.assertEqual(r[0], self.data)
@@ -83,7 +91,12 @@ class TestUdpSocket(unittest.TestCase):
         l.bind(("::1",0))
         addr = l.getsockname()[:2]
         s = UdpSender("udp://[%s]:%d"%addr)
-        url = s.getURL()
+        url = s.url()
+        self.assertEqual((url.site.host, url.site.port), s.name()[:2])
+        self.assertEqual(l.getsockname(), s.peername())
+        peerurl = s.peerurl()
+        self.assertEqual((peerurl.site.host, peerurl.site.port), 
+                         l.getsockname()[:2])        
         s.send(self.data)
         r = l.recvfrom(1024)
         self.assertEqual(r[0], self.data)

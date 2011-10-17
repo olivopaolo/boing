@@ -33,15 +33,16 @@ class UdpSocket(object):
         self.__recvspace = self.getReceiveBufferSize()
         #self.setBufferSizes(-1,-1)
 
+    def __del__(self):
+        try: self.__sock.shutdown(socket.SHUT_RDWR)
+        except: pass
+        self.__sock.close()
+
     def fileno(self):
         return self.__sock.fileno()
 
-    def getSocket(self):
+    def socket(self):
         return self.__sock
-
-    def __del__(self):
-        #self.__sock.shutdown(SHUT_RDWR) FIXME?
-        self.__sock.close()
 
     # ---------------------------------------------------------------------
     # Send/receive buffer size
@@ -97,7 +98,7 @@ class UdpSocket(object):
         self.__sock.bind(addr)
         return self
 
-    def getName(self):
+    def name(self):
         return self.__sock.getsockname()
 
     def resolve(self, addr):
@@ -110,20 +111,18 @@ class UdpSocket(object):
             h = socket.inet_pton(self.__sock.family, self.__sock.getsockname()[0])
         return (self.__sock.family==ip.PF_INET and ip.IN_MULTICAST(h)) or (self.__sock.family==ip.PF_INET6 and ip.IN6_IS_ADDR_MULTICAST(h))
 
-    def __getURL(self, info):
+    def url(self):
+        info = self.__sock.getsockname()
         url = URL()
         url.scheme = "udp"
         url.site.host = info[0]
         url.site.port = info[1]
         return url
-
-    def getURL(self):
-        return self.__getURL(self.__sock.getsockname()[:2])
     
     # ---------------------------------------------------------------------
     # Disconnected mode
     
-    def sendTo(self, data, addr, resolve=True):
+    def sendto(self, data, addr, resolve=True):
         if resolve: addr = ip.resolve(addr, 
                                       self.__sock.family, 
                                       socket.SOCK_DGRAM)
@@ -140,22 +139,19 @@ class UdpSocket(object):
         self.__sock.connect(addr)
         return self
 
-    def getPeerName(self):
+    def peername(self):
         return self.__sock.getpeername()
 
-    def getPeerURL(self):
-        return self.__getURL(self.__sock.getpeername())
+    def peerurl(self):
+        info = self.__sock.getpeername()
+        url = URL()
+        url.scheme = "udp"
+        url.site.host = info[0]
+        url.site.port = info[1]
+        return url
 
     def send(self, data):
         return self.__sock.send(data)
-
-    def disconnect(self):
-        try:
-            # Connecting to an invalid address disconnects the socket...
-            addr = ip.resolve(("",0), self.__sock.family, socket.SOCK_DGRAM)
-            self.__sock.connect(addr)
-        except socket.error:
-            pass
 
     # ---------------------------------------------------------------------
     # Multicast mode
@@ -204,5 +200,5 @@ if __name__=="__main__":
     print(u.receive())
     # FIXME: below...
     #u = UdpListener()
-    #u.sendTo(b"hello echo", ("",7)) # echo ?
+    #u.sendtox(b"hello echo", ("",7)) # echo ?
     #print(u.receive())
