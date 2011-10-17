@@ -78,7 +78,8 @@ class TcpSocket(object):
     def name(self):
         """Return the socket’s own address:
         - (host, port) for the AF_INET address family;
-        - (host, port, flowinfo, scopeid) for the AF_INET6 address family."""
+        - (host, port, flowinfo, scopeid) for the AF_INET6 address family.
+        Do not call until socket is connected."""
         return self.__sock.getsockname()
 
     def peername(self):
@@ -97,7 +98,8 @@ class TcpSocket(object):
         return self.__sock
 
     def url(self):
-        """Return the socket's URL, i.e. tcp://<host>:<port>."""
+        """Return the socket's URL, i.e. tcp://<host>:<port>.
+        Do not call until socket is connected."""
         url = URL()
         url.scheme = "tcp"
         url.site.host, url.site.port = self.__sock.getsockname()[:2]

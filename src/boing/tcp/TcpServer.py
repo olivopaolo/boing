@@ -43,7 +43,8 @@ class TcpServer(object):
                                            weakref.ref(self))
 
     def __del__(self):
-        self.__sock.shutdown(_socket.SHUT_RDWR)
+        try: self.__sock.shutdown(_socket.SHUT_RDWR)
+        except Exception: pass
         self.__sock.close()
 
     def __setoptions(self, options):

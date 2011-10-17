@@ -10,6 +10,7 @@
 
 import unittest
 import socket as _socket
+import weakref
 
 from boing import ip
 from boing.eventloop.EventLoop import EventLoop
@@ -38,43 +39,52 @@ class TestTcpSocket(unittest.TestCase):
     
     def test_tcpsocket_ip4(self):
         s = TcpSocket(ip.PF_INET)
+        ref = weakref.ref(s)
         self.assertRaises(Exception, s.send, self.data)
-        url = s.url()
-        self.assertIsInstance(url, URL)
-        self.assertEqual(s.name(), (url.site.host, url.site.port))
         self.assertIsInstance(s.socket(), _socket.socket)
         self.assertIsNotNone(s.fileno())
         s.close()
+        del s
+        self.assertIsNone(ref())
 
     def test_tcpsocket_ip6(self):
         s = TcpSocket(ip.PF_INET6)
+        ref = weakref.ref(s)
         self.assertRaises(Exception, s.send, self.data)
-        url = s.url()        
-        self.assertIsInstance(url, URL)
-        self.assertEqual(s.name()[:2], (url.site.host, url.site.port))
         self.assertIsInstance(s.socket(), _socket.socket)
         self.assertIsNotNone(s.fileno())
         s.close()
+        del s
+        self.assertIsNone(ref())
 
     def test_tcpserver_ip4(self):
         s = TcpServer(family=ip.PF_INET)
+        ref = weakref.ref(s)
         url = s.url()
         self.assertIsInstance(url, URL)
         self.assertEqual(s.name(), (url.site.host, url.site.port))
         self.assertIsNotNone(s.fileno())
         self.assertIsInstance(s.socket(), _socket.socket)
+        del s
+        self.assertIsNone(ref())
 
     def test_tcpserver_ip6(self):
         s = TcpServer(host="::1", family=ip.PF_INET6)
+        ref = weakref.ref(s)
         url = s.url()        
         self.assertIsInstance(url, URL)
         self.assertEqual(s.name()[:2], (url.site.host, url.site.port))
         self.assertIsNotNone(s.fileno())
         self.assertIsInstance(s.socket(), _socket.socket)
+        del s
+        self.assertIsNone(ref())
 
     def test_tcpconnection_ip4(self):
         serv = EchoServer(port=0, host="", family=ip.PF_INET)
         s = TcpConnection("tcp://%s:%d"%serv.name(), ("autoclose",))
+        url = s.url()
+        self.assertIsInstance(url, URL)
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
         self.assertEqual(serv.name(), s.peername())
         did_client = EventLoop.if_readable(s, self.__socket_listener, s)
         tid_send = EventLoop.after(.01, self.__send_data, s)
@@ -89,6 +99,9 @@ class TestTcpSocket(unittest.TestCase):
     def test_tcpconnection_ip6(self):
         serv = EchoServer(port=0, host="::1", family=ip.PF_INET6)
         s = TcpConnection("tcp://[%s]:%d"%serv.name()[:2], ("autoclose",))
+        url = s.url()
+        self.assertIsInstance(url, URL)
+        self.assertEqual(s.name()[:2], (url.site.host, url.site.port))
         self.assertEqual(serv.name(), s.peername())
         did_client = EventLoop.if_readable(s, self.__socket_listener, s)
         tid_send = EventLoop.after(.01, self.__send_data, s)
