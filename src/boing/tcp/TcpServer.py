@@ -8,114 +8,65 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-import logging
 import socket as _socket
-import weakref
+
+from PyQt4.QtNetwork import QAbstractSocket, QHostAddress, QTcpServer
 
 from boing import ip
-from boing.eventloop.EventLoop import EventLoop
 from boing.tcp.TcpSocket import TcpSocket
 from boing.url import URL
 
-class TcpServer(object):
+class TcpServer(QTcpServer):
 
-    def __init__(self, port=0, host=None, backlog=10, 
-                 family=None, options=[],
-                 delegate=None, factory=TcpSocket):
-        if family is None:
-            if host is None or ":" not in host: family = ip.PF_INET
-            else: family = ip.PF_INET6
-        elif family not in (ip.PF_INET, ip.PF_INET6):
-            raise ValueError("Unsupported protocol family (use PF_INET or PF_INET6)")
-        self.__sock = _socket.socket(family, _socket.SOCK_STREAM, 0)
-        self.__setoptions(options)
-        if host is not None: addr = ip.resolve((host, port), 
-                                               family, _socket.SOCK_STREAM)
-        else: addr = ip.resolve((_socket.getfqdn(), port), 
-                                family, _socket.SOCK_STREAM)
-        self.__sock.bind(addr)
-        self.__sock.listen(backlog)
+    def __init__(self, addr=QHostAddress.Any, port=0, 
+                 maxconnections=30, factory=TcpSocket, options=tuple()):
+        super().__init__(parent=None)
         self.__factory = factory
-        self.__delegate = delegate if delegate is not None \
-            else lambda client: client.close()
-        self.__did = EventLoop.if_readable(self.__sock, 
-                                           TcpServer.__newclient,
-                                           weakref.ref(self))
+        self.__options = options if options is not None else tuple()
+        self.setMaxPendingConnections(maxconnections)
+        if not addr: addr = QHostAddress.Any
+        if not QHostAddress(addr) in (QHostAddress.Any, 
+                                      QHostAddress.AnyIPv6):
+            addr, port = ip.resolve(addr, port, type=_socket.SOCK_STREAM)[:2]
+        if not self.listen(QHostAddress(addr), int(port)):
+            raise Exception(self.errorString())
 
-    def __del__(self):
-        try: self.__sock.shutdown(_socket.SHUT_RDWR)
-        except Exception: pass
-        self.__sock.close()
+    def incomingConnection(self, descriptor):
+        connection = self.__factory(self)
+        for option in self.__options: connection.setOption(option)
+        connection.setSocketDescriptor(descriptor)
+        self.addPendingConnection(connection)        
 
-    def __setoptions(self, options):
-        if "nodelay" in options:
-            self.__sock.setsockopt(_socket.IPPROTO_TCP, _socket.TCP_NODELAY, 1)
-        if "fastack" in options and hasattr(_socket, "TCP_FASTACK"):
-            self.__sock.setsockopt(_socket.IPPROTO_TCP, _socket.TCP_FASTACK, 1)
-        if "reuse" in options:
-            # so we can restart the server later without having to
-            # wait for the system to release the port
-            if hasattr(_socket, "SO_REUSEPORT"):
-                self.__sock.setsockopt(_socket.SOL_SOCKET, 
-                                       _socket.SO_REUSEPORT, 1)
-            self.__sock.setsockopt(_socket.SOL_SOCKET, 
-                                   _socket.SO_REUSEADDR, 1)
-        if "nosigpipe" in options:
-            if hasattr(_socket, "SO_NOSIGPIPE"):
-                self.__sock.setsockopt(_socket.SOL_SOCKET, 
-                                       _socket.SO_NOSIGPIPE, 1)
-            else:
-                import signal as _signal
-                if hasattr(_signal, "SIGPIPE"):
-                    _signal.signal(_signal.SIGPIPE, _signal.SIG_IGN)
-            
-    @property
-    def factory(self):
-        return self.__factory
-
-    @property
-    def delegate(self):
-        return self.__delegate
-
-    def fileno(self):
-        """Return the socket's file descriptor."""
-        return self.__sock.fileno()
+    def family(self):
+        addr = self.serverAddress()        
+        if addr.protocol()==QAbstractSocket.IPv4Protocol:
+            family = ip.PF_INET
+        elif addr.protocol()==QAbstractSocket.IPv6Protocol:
+            family = ip.PF_INET6
+        else: family = None
+        return family
 
     def name(self):
-        """Return the socket’s own address:
-        - (host, port) for the AF_INET address family;
-        - (host, port, flowinfo, scopeid) for the AF_INET6 address family."""
-        return self.__sock.getsockname()
-
-    def socket(self):
-        """Return low level python socket."""
-        return self.__sock
+        """Return the server socket’s address (host, port)."""
+        return ip.addrToString(self.serverAddress()), self.serverPort()
 
     def url(self):
         """Return the socket's URL, i.e. tcp://<host>:<port>."""
         url = URL()
         url.scheme = "tcp"
-        url.site.host, url.site.port = self.__sock.getsockname()[:2]
+        url.site.host, url.site.port = self.name()
         return url
-
-    @staticmethod
-    def __newclient(did, ref):
-        server = ref()
-        if server is None: EventLoop.cancel_fdhandler(did)
-        else:
-            conn, addr = server.socket().accept()
-            socket = server.factory(socket=conn)
-            server.delegate(socket)
 
 # -------------------------------------------------------------------
 
 if __name__=="__main__":
     import datetime
     import traceback
-    def newClient(connection):
+    from boing.eventloop.EventLoop import EventLoop
+    def newClient():
+        connection = server.nextPendingConnection()
         client = connection.name()
-        peer = connection.peername()
-        #print client, peer, (peer[1], client[1])
+        peer = connection.peerName()
         try:
             identd = TcpSocket().connect((peer[0],113))
             identd.send("%d, %d\n"%(peer[1], client[1]))
@@ -130,10 +81,9 @@ if __name__=="__main__":
         connection.send(("Identity: %s\n"%identity).encode())
         connection.send(b"</pre></body></html>")
         connection.close()
-    server = TcpServer(5555, 
-                       #options=("nodelay","fastack","reuse","nosigpipe"), 
-                       delegate=newClient)
-    print(ip.getProtocolFamilyName(server.socket().family), 
-          server.name(), server.url())
+    server = TcpServer() 
+    server.newConnection.connect(newClient)
+    #options=("nodelay","fastack","reuse","nosigpipe"), 
+    print("EchoServer listening at", server.url())
     EventLoop.run()
     del server

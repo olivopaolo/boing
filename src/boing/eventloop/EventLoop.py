@@ -278,3 +278,6 @@ class EventLoop_PyQt(EventLoop):
         @param iid: ID of the idle handler to cancel
         """
         self.cancel_timer(iid)
+
+#FIXME: auto initializer
+EventLoop.mainloop

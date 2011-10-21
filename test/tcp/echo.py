@@ -38,7 +38,7 @@ Options:
  """)
         sys.exit(0)
     elif o=="-l": logginglevel = a
-    elif o in ("-o", "--host"): args["host"] = a
+    elif o in ("-o", "--host"): args["addr"] = a
     elif o in ("-p", "--port"): args["port"] = a
 
 logging.basicConfig(level=logging.getLevelName(logginglevel))

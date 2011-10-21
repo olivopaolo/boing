@@ -54,7 +54,7 @@ class URL_site(object):
                 self.host = hostport[1:p]
                 tmp = hostport[p+1:]
                 if len(tmp)>1 and tmp[0]==':':
-                    self.port = tmp[1:]
+                    self.port = int(tmp[1:])
                 else: self.port = 0
             else:
                 tmp = hostport.split(':')

@@ -12,106 +12,78 @@ import unittest
 import socket as _socket
 import weakref
 
+from PyQt4 import QtCore
+
 from boing import ip
 from boing.eventloop.EventLoop import EventLoop
 from boing.tcp.EchoServer import EchoServer
 from boing.tcp.TcpSocket import TcpSocket, TcpConnection
-from boing.tcp.TcpServer import TcpServer
 from boing.url import URL
 
-class TestTcpSocket(unittest.TestCase):
+class TestTcpSocket(QtCore.QObject, unittest.TestCase):
 
-    def __socket_listener(self, did, client):
-        self.result = client.receive()
-        EventLoop.stop()
+    def __init__(self, *argv, **kwargs):
+        QtCore.QObject.__init__(self)
+        unittest.TestCase.__init__(self, *argv, **kwargs)
 
+    def setUp(self):
+        self.data = b"boing-unittest"
+        self.result = ""
+        self.timeout = False
+    
     def __send_data(self, tid, sock):
         sock.send(self.data)
+
+    def __readdata(self):
+        conn = self.sender() 
+        self.result += conn.receive()
+        EventLoop.stop()
 
     def __timeout(self, tid):
         self.timeout = True
         EventLoop.stop()
 
-    def setUp(self):
-        self.data = b"boing-unittest"
-        self.result = None
-        self.timeout = False
-    
-    def test_tcpsocket_ip4(self):
-        s = TcpSocket(ip.PF_INET)
-        ref = weakref.ref(s)
-        self.assertRaises(Exception, s.send, self.data)
-        self.assertIsInstance(s.socket(), _socket.socket)
-        self.assertIsNotNone(s.fileno())
-        s.close()
-        del s
-        self.assertIsNone(ref())
-
-    def test_tcpsocket_ip6(self):
-        s = TcpSocket(ip.PF_INET6)
-        ref = weakref.ref(s)
-        self.assertRaises(Exception, s.send, self.data)
-        self.assertIsInstance(s.socket(), _socket.socket)
-        self.assertIsNotNone(s.fileno())
-        s.close()
-        del s
-        self.assertIsNone(ref())
-
-    def test_tcpserver_ip4(self):
-        s = TcpServer(family=ip.PF_INET)
-        ref = weakref.ref(s)
-        url = s.url()
-        self.assertIsInstance(url, URL)
-        self.assertEqual(s.name(), (url.site.host, url.site.port))
-        self.assertIsNotNone(s.fileno())
-        self.assertIsInstance(s.socket(), _socket.socket)
-        del s
-        self.assertIsNone(ref())
-
-    def test_tcpserver_ip6(self):
-        s = TcpServer(host="::1", family=ip.PF_INET6)
-        ref = weakref.ref(s)
-        url = s.url()        
-        self.assertIsInstance(url, URL)
-        self.assertEqual(s.name()[:2], (url.site.host, url.site.port))
-        self.assertIsNotNone(s.fileno())
-        self.assertIsInstance(s.socket(), _socket.socket)
-        del s
-        self.assertIsNone(ref())
-
     def test_tcpconnection_ip4(self):
-        serv = EchoServer(port=0, host="", family=ip.PF_INET)
-        s = TcpConnection("tcp://%s:%d"%serv.name(), ("autoclose",))
-        url = s.url()
-        self.assertIsInstance(url, URL)
-        self.assertEqual(s.name(), (url.site.host, url.site.port))
-        self.assertEqual(serv.name(), s.peername())
-        did_client = EventLoop.if_readable(s, self.__socket_listener, s)
-        tid_send = EventLoop.after(.01, self.__send_data, s)
+        serv = EchoServer(addr="0.0.0.0")
+        conn = TcpConnection("tcp://127.0.0.1:%d"%serv.name()[1])
+        conn.readyRead.connect(self.__readdata)
+        tid_send = EventLoop.after(.1, self.__send_data, conn)
         tid_timeout = EventLoop.after(1, self.__timeout)
         EventLoop.run()
         EventLoop.cancel_timer(tid_send)
         EventLoop.cancel_timer(tid_timeout)
-        EventLoop.cancel_fdhandler(did_client)
+        url = conn.url()
+        peerurl = conn.peerUrl()
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(conn.name(), (url.site.host, url.site.port))
+        self.assertEqual(conn.peerName(), (peerurl.site.host, peerurl.site.port))
+        self.assertEqual(peerurl.site.host, "127.0.0.1")
+        self.assertEqual(peerurl.site.port, serv.name()[1])
         self.assertFalse(self.timeout)
         self.assertEqual(self.data, self.result)
+        conn.close()
 
     def test_tcpconnection_ip6(self):
-        serv = EchoServer(port=0, host="::1", family=ip.PF_INET6)
-        s = TcpConnection("tcp://[%s]:%d"%serv.name()[:2], ("autoclose",))
-        url = s.url()
-        self.assertIsInstance(url, URL)
-        self.assertEqual(s.name()[:2], (url.site.host, url.site.port))
-        self.assertEqual(serv.name(), s.peername())
-        did_client = EventLoop.if_readable(s, self.__socket_listener, s)
-        tid_send = EventLoop.after(.01, self.__send_data, s)
+        serv = EchoServer(addr="::")
+        conn = TcpConnection("tcp://[::1]:%d"%serv.name()[1])
+        conn.readyRead.connect(self.__readdata)
+        tid_send = EventLoop.after(.1, self.__send_data, conn)
         tid_timeout = EventLoop.after(1, self.__timeout)
         EventLoop.run()
         EventLoop.cancel_timer(tid_send)
         EventLoop.cancel_timer(tid_timeout)
-        EventLoop.cancel_fdhandler(did_client)
+        url = conn.url()
+        peerurl = conn.peerUrl()
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(conn.name(), (url.site.host, url.site.port))
+        self.assertEqual(conn.peerName(), (peerurl.site.host, peerurl.site.port))
+        self.assertEqual(peerurl.site.host, "::1")
+        self.assertEqual(peerurl.site.port, serv.name()[1])
         self.assertFalse(self.timeout)
         self.assertEqual(self.data, self.result)
+        conn.close()
 
 # -------------------------------------------------------------------
 
