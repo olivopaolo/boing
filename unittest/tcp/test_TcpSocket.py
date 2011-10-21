@@ -44,7 +44,7 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
         EventLoop.stop()
 
     def test_tcpconnection_ip4(self):
-        serv = EchoServer(addr="0.0.0.0")
+        serv = EchoServer(host="0.0.0.0")
         conn = TcpConnection("tcp://127.0.0.1:%d"%serv.name()[1])
         conn.readyRead.connect(self.__readdata)
         tid_send = EventLoop.after(.1, self.__send_data, conn)
@@ -65,7 +65,7 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
         conn.close()
 
     def test_tcpconnection_ip6(self):
-        serv = EchoServer(addr="::")
+        serv = EchoServer(host="::")
         conn = TcpConnection("tcp://[::1]:%d"%serv.name()[1])
         conn.readyRead.connect(self.__readdata)
         tid_send = EventLoop.after(.1, self.__send_data, conn)

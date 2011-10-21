@@ -22,9 +22,11 @@ class TcpSocket(QTcpSocket):
         super().__init__(parent)
         self.logger = logging.getLogger("TcpSocket.%d"%id(self))
 
-    def connect(self, addr, port):
-        addr, port = ip.resolve(addr, port, type=_socket.SOCK_STREAM)[:2]
-        self.connectToHost(addr, port)
+    def connect(self, host, port, family=None):
+        host, port = ip.resolve(host, port,
+                                family if family is not None else 0,
+                                _socket.SOCK_STREAM)[:2]
+        self.connectToHost(host, port)
         return self
 
     def family(self):
@@ -79,10 +81,10 @@ class TcpSocket(QTcpSocket):
     
 # -------------------------------------------------------------------------
 
-def TcpConnection(url):
+def TcpConnection(url, family=None):
     if not isinstance(url, URL): url = URL(url)
     socket = TcpSocket()
-    socket.connect(url.site.host, url.site.port)
+    socket.connect(url.site.host, url.site.port, family)
     return socket
 
 # -------------------------------------------------------------------------
@@ -97,11 +99,13 @@ if __name__=="__main__":
         url = URL("http://127.0.0.1:80")
     def dumpdata():
         print(c.receive())
+    def send_data(tid):
+        data = "HEAD %s HTTP/1.0\n\n"%url.path
+        c.send(data.encode())
     c = TcpConnection(url)
     c.readyRead.connect(dumpdata)
     c.disconnected.connect(EventLoop.stop)
-    data = "HEAD %s HTTP/1.0\n\n"%url.path
-    c.send(data.encode())
+    EventLoop.after(.1, send_data)
     EventLoop.run()
     c.close()
 

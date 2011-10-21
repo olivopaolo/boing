@@ -29,13 +29,17 @@ class UdpSocket(QUdpSocket):
 
     # ---------------------------------------------------------------------
                 
-    def bind(self, addr=QHostAddress.Any, port=0, 
+    def bind(self, host=None, port=0, family=None, 
              mode=QUdpSocket.DontShareAddress):
-        if not addr: addr = QHostAddress.Any
-        if not QHostAddress(addr) in (QHostAddress.Any, 
+        if not host: 
+            if family==ip.PF_INET: host = QHostAddress.Any
+            else: host = QHostAddress.AnyIPv6
+        if not QHostAddress(host) in (QHostAddress.Any, 
                                       QHostAddress.AnyIPv6):
-            addr, port = ip.resolve(addr, port, type=_socket.SOCK_DGRAM)[:2]
-        if not super().bind(QHostAddress(addr), port, mode):
+            host, port = ip.resolve(host, port, 
+                                    family if family is not None else 0, 
+                                    _socket.SOCK_DGRAM)[:2]
+        if not super().bind(QHostAddress(host), port, mode):
             raise Exception(self.errorString())
         return self
 
@@ -67,23 +71,28 @@ class UdpSocket(QUdpSocket):
     def url(self):
         """Return the socket's URL, i.e. tcp://<host>:<port>."""
         url = URL()
-        url.scheme = "tcp"
+        url.scheme = "udp"
         url.site.host, url.site.port = self.name()
         return url
 
     # ---------------------------------------------------------------------
     # Disconnected mode
     
-    def sendTo(self, data, addr, port, resolve=True):
-        if resolve: addr, port = ip.resolve(addr, port, type=_socket.SOCK_DGRAM)[:2]
-        return self.writeDatagram(data, QHostAddress(addr), port)
+    def sendTo(self, data, host, port, family=None, resolve=True):
+        if resolve: 
+            host, port = ip.resolve(host, port, 
+                                    family if family is not None else 0,
+                                    _socket.SOCK_DGRAM)[:2]
+        return self.writeDatagram(data, QHostAddress(host), port)
 
     # ---------------------------------------------------------------------
     # Connected mode
 
-    def connect(self, addr, port):
-        addr, port = ip.resolve(addr, port, type=_socket.SOCK_DGRAM)[:2]
-        self.connectToHost(addr, port)
+    def connect(self, host, port, family=None):
+        host, port = ip.resolve(host, port,
+                                family if family is not None else 0,
+                                _socket.SOCK_DGRAM)[:2]
+        self.connectToHost(host, port)
         return self
 
     def peerName(self):
@@ -91,12 +100,16 @@ class UdpSocket(QUdpSocket):
 
     def peerUrl(self):
         url = URL()
-        url.scheme = "tcp"
+        url.scheme = "udp"
         url.site.host, url.site.port = self.peerName()
         return url
 
     def send(self, data):
-        return self.write(data)
+        if self.state()==QAbstractSocket.ConnectedState:
+            return self.write(data)
+        else: 
+            self.logger.warning("send method invoked on disconnected socket.")
+            return 0
 
     """
     # ---------------------------------------------------------------------
@@ -126,19 +139,19 @@ class UdpSocket(QUdpSocket):
 
 # -------------------------------------------------------------------------
 
-def UdpListener(url="udp://0.0.0.0:0", options=tuple()):
+def UdpListener(url=None, family=None, options=tuple()):
     if not isinstance(url, URL): url = URL(url)
     s = UdpSocket()
     if "reuse" in options:
         kwargs = {"mode": QUdpSocket.ShareAddress|QUdpSocket.ReuseAddressHint}
     else: 
         kwargs = {}
-    return s.bind(url.site.host, url.site.port, **kwargs)
+    return s.bind(url.site.host, url.site.port, family, **kwargs)
 
-def UdpSender(url):
+def UdpSender(url, family=None):
     if not isinstance(url, URL): url = URL(url)
     s = UdpSocket()
-    return s.connect(url.site.host, url.site.port)
+    return s.connect(url.site.host, url.site.port, family)
 
 # -------------------------------------------------------------------------
 

@@ -18,17 +18,21 @@ from boing.url import URL
 
 class TcpServer(QTcpServer):
 
-    def __init__(self, addr=QHostAddress.Any, port=0, 
+    def __init__(self, host=None, port=0, family=None,
                  maxconnections=30, factory=TcpSocket, options=tuple()):
         super().__init__(parent=None)
         self.__factory = factory
         self.__options = options if options is not None else tuple()
         self.setMaxPendingConnections(maxconnections)
-        if not addr: addr = QHostAddress.Any
-        if not QHostAddress(addr) in (QHostAddress.Any, 
+        if not host: 
+            if family==ip.PF_INET: host = QHostAddress.Any
+            else: host = QHostAddress.AnyIPv6
+        if not QHostAddress(host) in (QHostAddress.Any, 
                                       QHostAddress.AnyIPv6):
-            addr, port = ip.resolve(addr, port, type=_socket.SOCK_STREAM)[:2]
-        if not self.listen(QHostAddress(addr), int(port)):
+            host, port = ip.resolve(host, port, 
+                                    family if family is not None else 0, 
+                                    _socket.SOCK_STREAM)[:2]
+        if not self.listen(QHostAddress(host), int(port)):
             raise Exception(self.errorString())
 
     def incomingConnection(self, descriptor):

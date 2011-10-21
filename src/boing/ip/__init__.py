@@ -37,7 +37,7 @@ def addrToString(addr):
         addr = addr.toIPv6Address()
         s = "" ; zeros = False
         for i in range(0,16,2):
-            c = addr[i]*16+addr[i+1]
+            c = (addr[i]<<8)+addr[i+1]
             if c==0:
                 if i==0: s += ":"
                 if not zeros: 

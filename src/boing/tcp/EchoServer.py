@@ -35,8 +35,8 @@ class EchoSocket(TcpSocket):
         self.logger.debug("%s: %s"%(peer, data))
         self.send(data)
     
-def EchoServer(addr=QHostAddress.Any, port=0, maxconnections=30):
-    return TcpServer(addr, port, maxconnections, EchoSocket)
+def EchoServer(host=None, port=0, family=None, maxconnections=30):
+    return TcpServer(host, port, family, maxconnections, EchoSocket)
 
 # -------------------------------------------------------------------
 

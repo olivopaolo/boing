@@ -13,7 +13,7 @@ import socket as _socket
 import weakref
 
 from PyQt4 import QtCore
-from PyQt4.QtNetwork import QAbstractSocket
+from PyQt4.QtNetwork import QAbstractSocket, QHostAddress
 
 from boing import ip
 from boing.eventloop.EventLoop import EventLoop
@@ -24,10 +24,8 @@ from boing.url import URL
 class TestTcpServer(QtCore.QObject, unittest.TestCase):
     
     def __init__(self, methodname):
-        # This enables to parametrize test cases.
-        method, self.options = methodname
         QtCore.QObject.__init__(self)
-        unittest.TestCase.__init__(self, method)
+        unittest.TestCase.__init__(self, methodname)
 
     def setUp(self):
         self.connections = []
@@ -52,11 +50,18 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
 
     def tryConnectToServer(self, server):
         s = _socket.socket(server.family(), _socket.SOCK_STREAM)
-        s.connect(server.name())
+        addr, port = server.name()
+        if QHostAddress(addr)==QHostAddress.Any:
+            addr = "127.0.0.1"
+        elif QHostAddress(addr)==QHostAddress.AnyIPv6:
+            addr = "::1"
+        s.connect((addr, port))
         s.send(self.data)
         tid_timeout = EventLoop.after(1, self.__timeout)
         EventLoop.run()
         sockname = s.getsockname()[:2]
+        if(server.family()==ip.PF_INET6):
+            sockname = (sockname[0].partition("%")[0], sockname[1])
         s.close()
         EventLoop.cancel_timer(tid_timeout)
         self.assertFalse(self.timeout)
@@ -64,26 +69,41 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
         conn = self.connections[0]
         self.assertIsInstance(conn, TcpSocket)
         self.assertEqual(conn.state(), QAbstractSocket.ConnectedState)
-        self.assertEqual(conn.peerName(), sockname)
+        self.assertEqual(sockname, conn.peerName())
         conn.close()
         self.assertEqual(self.result, self.data)
         self.connections = None
 
     def test_tcpserver_empty(self):
-        s = TcpServer(options=self.options)
+        s = TcpServer()
         s.newConnection.connect(self.__newconnection)
         ref = weakref.ref(s)
         url = s.url()
         self.assertIsInstance(url, URL)
         self.assertEqual(url.scheme, "tcp")
         self.assertEqual(s.name(), (url.site.host, url.site.port))
-        self.assertEqual(s.family(), ip.PF_INET)
+        self.assertIn(s.family(), (ip.PF_INET, ip.PF_INET6))
         self.tryConnectToServer(s)
         del s
         self.assertIsNone(ref())
 
     def test_tcpserver_localhost(self):
-        s = TcpServer(addr="localhost", options=self.options)
+        s = TcpServer(host="localhost")
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertIn(url.site.host, ("127.0.0.1", "::1"))
+        self.assertIsInstance(url.site.port, int)
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.assertIn(s.family(), (ip.PF_INET, ip.PF_INET6))
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    def test_tcpserver_localhost_IPv4(self):
+        s = TcpServer(host="127.0.0.1")
         s.newConnection.connect(self.__newconnection)
         ref = weakref.ref(s)
         url = s.url()
@@ -98,7 +118,7 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
         self.assertIsNone(ref())
 
     def test_tcpserver_localhost_IPv6(self):
-        s = TcpServer(addr="::1", options=self.options)
+        s = TcpServer(host="::1")
         s.newConnection.connect(self.__newconnection)
         ref = weakref.ref(s)
         url = s.url()
@@ -112,8 +132,8 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
         del s
         self.assertIsNone(ref())
 
-    def test_tcpserver_any(self):
-        s = TcpServer(addr="0.0.0.0", options=self.options)
+    def test_tcpserver_any_IPv4(self):
+        s = TcpServer(host="0.0.0.0")
         s.newConnection.connect(self.__newconnection)
         ref = weakref.ref(s)
         url = s.url()        
@@ -127,7 +147,7 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
         self.assertIsNone(ref())
 
     def test_tcpserver_any_IPv6(self):
-        s = TcpServer(addr="::", options=self.options)
+        s = TcpServer(host="::")
         s.newConnection.connect(self.__newconnection)
         ref = weakref.ref(s)
         url = s.url()        
@@ -140,16 +160,150 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
         del s
         self.assertIsNone(ref())
 
-    def test_tcpserver_hostname(self):
+    def test_tcpserver_hostname_IPv4(self):
         hostname = _socket.gethostname()
-        hostaddress, hostport = ip.resolve(hostname, 0)
-        s = TcpServer(addr=hostname, options=self.options)
+        hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET)
+        s = TcpServer(host=hostname, family=ip.PF_INET)
         s.newConnection.connect(self.__newconnection)
         ref = weakref.ref(s)
         url = s.url()        
         self.assertIsInstance(url, URL)
         self.assertEqual(url.scheme, "tcp")
-        self.assertEqual(url.site.host, hostaddress)
+        self.assertEqual(hostaddress, url.site.host)
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    def test_tcpserver_hostname_IPv6(self):
+        hostname = _socket.gethostname()
+        hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET6)[:2]
+        s = TcpServer(host=hostname, family=ip.PF_INET6)
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()        
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(hostaddress.partition("%")[0], url.site.host)
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    # ---------------------------------------------------------------------
+    # "nodelay" option cases    
+
+    def test_tcpserver_empty(self):
+        s = TcpServer(options=("nodelay",))
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.assertIn(s.family(), (ip.PF_INET, ip.PF_INET6))
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    def test_tcpserver_localhost(self):
+        s = TcpServer(host="localhost", options=("nodelay",))
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertIn(url.site.host, ("127.0.0.1", "::1"))
+        self.assertIsInstance(url.site.port, int)
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.assertIn(s.family(), (ip.PF_INET, ip.PF_INET6))
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    def test_tcpserver_localhost_IPv4(self):
+        s = TcpServer(host="127.0.0.1", options=("nodelay",))
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(url.site.host, "127.0.0.1")
+        self.assertIsInstance(url.site.port, int)
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.assertEqual(s.family(), ip.PF_INET)
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    def test_tcpserver_localhost_IPv6(self):
+        s = TcpServer(host="::1", options=("nodelay",))
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(url.site.host, "::1")
+        self.assertIsInstance(url.site.port, int)
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.assertEqual(s.family(), ip.PF_INET6)
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    def test_tcpserver_any_IPv4(self):
+        s = TcpServer(host="0.0.0.0", options=("nodelay",))
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()        
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(url.site.host, "0.0.0.0")
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.assertEqual(s.family(), ip.PF_INET)
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    def test_tcpserver_any_IPv6(self):
+        s = TcpServer(host="::", options=("nodelay",))
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()        
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(url.site.host, "::")
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.assertEqual(s.family(), ip.PF_INET6)
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    def test_tcpserver_hostname_IPv4(self):
+        hostname = _socket.gethostname()
+        hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET)
+        s = TcpServer(host=hostname, family=ip.PF_INET, options=("nodelay",))
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()        
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(hostaddress, url.site.host)
+        self.assertEqual(s.name(), (url.site.host, url.site.port))
+        self.tryConnectToServer(s)
+        del s
+        self.assertIsNone(ref())
+
+    def test_tcpserver_hostname_IPv6(self):
+        hostname = _socket.gethostname()
+        hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET6)[:2]
+        s = TcpServer(host=hostname, family=ip.PF_INET6, options=("nodelay",))
+        s.newConnection.connect(self.__newconnection)
+        ref = weakref.ref(s)
+        url = s.url()        
+        self.assertIsInstance(url, URL)
+        self.assertEqual(url.scheme, "tcp")
+        self.assertEqual(hostaddress.partition("%")[0], url.site.host)
         self.assertEqual(s.name(), (url.site.host, url.site.port))
         self.tryConnectToServer(s)
         del s
@@ -158,10 +312,8 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    tests = list((t,tuple()) for t in TestTcpServer.__dict__ \
-                             if t.startswith("test_"))
-    tests += list((t,("nodelay",)) for t in TestTcpServer.__dict__ \
-                                   if t.startswith("test_"))
+    tests = list(t for t in TestTcpServer.__dict__ \
+                   if t.startswith("test_"))
     return unittest.TestSuite(map(TestTcpServer, tests))    
 
 # -------------------------------------------------------------------
