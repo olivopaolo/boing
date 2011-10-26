@@ -149,7 +149,7 @@ def UdpListener(url=None, family=None, options=tuple()):
     if not isinstance(url, URL): url = URL(url)
     s = UdpSocket()
     if "reuse" in options:
-        kwargs = {"mode": QUdpSocket.ShareAddress|QUdpSocket.ReuseAddressHint}
+        kwargs = {"mode": QUdpSocket.ReuseAddressHint}
     else: 
         kwargs = {}
     return s.bind(url.site.host, url.site.port, family, **kwargs)
