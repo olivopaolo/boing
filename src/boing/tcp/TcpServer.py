@@ -20,6 +20,8 @@ class TcpServer(QTcpServer):
 
     def __init__(self, host=None, port=0, family=None,
                  maxconnections=30, factory=TcpSocket, options=tuple()):
+        """Raises Exception if TCP socket cannot be bound at specified
+        host and port."""
         super().__init__(parent=None)
         self.__factory = factory
         self.__options = options if options is not None else tuple()

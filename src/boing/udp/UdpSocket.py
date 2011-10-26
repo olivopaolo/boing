@@ -31,6 +31,8 @@ class UdpSocket(QUdpSocket):
                 
     def bind(self, host=None, port=0, family=None, 
              mode=QUdpSocket.DontShareAddress):
+        """Raises Exception if UDP socket cannot be bound at specified
+        host and port."""
         if not host: 
             if family==ip.PF_INET: host = QHostAddress.Any
             else: host = QHostAddress.AnyIPv6
@@ -79,6 +81,7 @@ class UdpSocket(QUdpSocket):
     # Disconnected mode
     
     def sendTo(self, data, host, port, family=None, resolve=True):
+        """Raises Exception if host cannot be resolved."""
         if resolve: 
             host, port = ip.resolve(host, port, 
                                     family if family is not None else 0,
@@ -89,6 +92,7 @@ class UdpSocket(QUdpSocket):
     # Connected mode
 
     def connect(self, host, port, family=None):
+        """Raises Exception if host cannot be resolved or connected."""
         host, port = ip.resolve(host, port,
                                 family if family is not None else 0,
                                 _socket.SOCK_DGRAM)[:2]
@@ -140,6 +144,8 @@ class UdpSocket(QUdpSocket):
 # -------------------------------------------------------------------------
 
 def UdpListener(url=None, family=None, options=tuple()):
+    """Raises Exception if UDP socket cannot be bound at specified
+    host and port."""    
     if not isinstance(url, URL): url = URL(url)
     s = UdpSocket()
     if "reuse" in options:
@@ -149,6 +155,7 @@ def UdpListener(url=None, family=None, options=tuple()):
     return s.bind(url.site.host, url.site.port, family, **kwargs)
 
 def UdpSender(url, family=None):
+    """Raises Exception if host cannot be resolved or connected."""
     if not isinstance(url, URL): url = URL(url)
     s = UdpSocket()
     return s.connect(url.site.host, url.site.port, family)

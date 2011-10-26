@@ -17,32 +17,14 @@ from boing.udp.UdpSocket import UdpSocket, UdpListener, UdpSender
 
 class TestUdpListener(unittest.TestCase):
 
-    def __init__(self, methodname):
-        unittest.TestCase.__init__(self, methodname)
-        #self.port = 7777
-        #self.lock = UdpListener("udp://0.0.0.0:%d"%self.port, 
-        #                        options=("reuse",))
-        #self.lock6 = UdpListener("udp://[::]:%d"%self.port, 
-        #                         options=("reuse",))
-
-    #def __del__(self):
-    #    self.lock.close()
-    #    self.lock6.close()
-                
     def setUp(self):
         self.data = b"boing-unittest"
-        #self.port = self.lock.url().site.port
-        #self.lock6 = UdpListener("udp://[::]:%d"%self.port, options=("reuse",))
-
-    #def tearDown(self):
-        #self.lock.close()
-        #self.lock6.close()
 
     def test_udplistener_empty_IPv4(self):
         s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
         l = UdpListener(family=ip.PF_INET)
         url = l.url()
-        s.connect((socket.gethostname(), url.site.port))
+        s.connect(("localhost", url.site.port))
         s.send(self.data)
         data, source = l.receiveFrom()
         self.assertEqual(data, self.data)
@@ -52,7 +34,7 @@ class TestUdpListener(unittest.TestCase):
         s = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
         l = UdpListener(family=ip.PF_INET6)
         url = l.url()
-        s.connect((socket.gethostname(), url.site.port))
+        s.connect(("localhost", url.site.port))
         sockname = s.getsockname()
         sockname = (sockname[0].partition("%")[0], sockname[1])
         s.send(self.data)
@@ -64,7 +46,7 @@ class TestUdpListener(unittest.TestCase):
         s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
         l = UdpListener("udp://:0", family=ip.PF_INET)
         url = l.url()
-        s.connect((socket.gethostname(), url.site.port))
+        s.connect(("localhost", url.site.port))
         s.send(self.data)
         data, source = l.receiveFrom()
         self.assertEqual(data, self.data)
@@ -74,7 +56,7 @@ class TestUdpListener(unittest.TestCase):
         s = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
         l = UdpListener("udp://:0", family=ip.PF_INET6)
         url = l.url()
-        s.connect((socket.gethostname(), url.site.port))
+        s.connect(("localhost", url.site.port))
         sockname = s.getsockname()
         sockname = (sockname[0].partition("%")[0], sockname[1])
         s.send(self.data)
@@ -86,7 +68,7 @@ class TestUdpListener(unittest.TestCase):
         s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
         l = UdpListener("udp://0.0.0.0:0")
         url = l.url()
-        s.connect((socket.gethostname(), url.site.port))
+        s.connect(("localhost", url.site.port))
         s.send(self.data)
         data, source = l.receiveFrom()
         self.assertEqual(data, self.data)
@@ -96,7 +78,7 @@ class TestUdpListener(unittest.TestCase):
         s = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
         l = UdpListener("udp://[::]:0")
         url = l.url()
-        s.connect((socket.gethostname(), url.site.port))
+        s.connect(("localhost", url.site.port))
         sockname = s.getsockname()
         sockname = (sockname[0].partition("%")[0], sockname[1])
         s.send(self.data)
@@ -107,8 +89,7 @@ class TestUdpListener(unittest.TestCase):
     def test_udplistener_localhost_IPv4(self):
         s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
         l = UdpListener("udp://localhost:0", ip.PF_INET)
-        url = l.url()
-        s.connect((url.site.host, url.site.port))
+        s.connect(l.name())
         s.send(self.data)
         data, source = l.receiveFrom()
         self.assertEqual(data, self.data)
@@ -117,8 +98,7 @@ class TestUdpListener(unittest.TestCase):
     def test_udplistener_localhost_IPv6(self):
         s = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
         l = UdpListener("udp://localhost:0", ip.PF_INET6)
-        url = l.url()
-        s.connect((url.site.host, url.site.port))
+        s.connect(l.name())
         s.send(self.data)
         data, source = l.receiveFrom()
         self.assertEqual(data, self.data)
@@ -127,8 +107,7 @@ class TestUdpListener(unittest.TestCase):
     def test_udplistener_loopback_IPv4(self):
         s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
         l = UdpListener("udp://127.0.0.1:0")
-        url = l.url()
-        s.connect((url.site.host, url.site.port))
+        s.connect(l.name())
         s.send(self.data)
         data, source = l.receiveFrom()
         self.assertEqual(data, self.data)
@@ -137,8 +116,7 @@ class TestUdpListener(unittest.TestCase):
     def test_udplistener_loopback_IPv6(self):
         s = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
         l = UdpListener("udp://[::1]:0")
-        url = l.url()
-        s.connect((url.site.host, url.site.port))
+        s.connect(l.name())
         s.send(self.data)
         data, source = l.receiveFrom()
         self.assertEqual(data, self.data)
@@ -147,27 +125,35 @@ class TestUdpListener(unittest.TestCase):
     def test_udplistener_hostname_IPv4(self):
         s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
         hostname = socket.gethostname()
-        l = UdpListener("udp://%s:0"%hostname, ip.PF_INET)
-        url = l.url()
-        s.connect((url.site.host, url.site.port))
-        sockname = s.getsockname()
-        s.send(self.data)
-        data, source = l.receiveFrom()
-        self.assertEqual(data, self.data)
-        self.assertEqual(source, sockname)
+        try:
+            hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET)
+        except Exception:
+            hostaddress, hostport = None, 0
+        if hostaddress is not None:
+            l = UdpListener("udp://%s:0"%hostname, ip.PF_INET)
+            s.connect(l.name())
+            sockname = s.getsockname()
+            s.send(self.data)
+            data, source = l.receiveFrom()
+            self.assertEqual(data, self.data)
+            self.assertEqual(source, sockname)
 
     def test_udplistener_hostname_IPv6(self):
         s = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
         hostname = socket.gethostname()
-        l = UdpListener("udp://%s:0"%hostname, ip.PF_INET6)
-        url = l.url()
-        s.connect((url.site.host, url.site.port))
-        sockname = s.getsockname()[:2]
-        sockname = (sockname[0].partition("%")[0], sockname[1])
-        s.send(self.data)
-        data, source = l.receiveFrom()
-        self.assertEqual(data, self.data)
-        self.assertEqual(source, sockname)
+        try:
+            hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET6)
+        except Exception:
+            hostaddress, hostport = None, 0
+        if hostaddress is not None:
+            l = UdpListener("udp://%s:0"%hostname, ip.PF_INET6)
+            s.connect(l.name())
+            sockname = s.getsockname()[:2]
+            sockname = (sockname[0].partition("%")[0], sockname[1])
+            s.send(self.data)
+            data, source = l.receiveFrom()
+            self.assertEqual(data, self.data)
+            self.assertEqual(source, sockname)
 
     # ---------------------------------------------------------------------
     # "reuse" option cases
@@ -182,7 +168,7 @@ class TestUdpListener(unittest.TestCase):
                         family=ip.PF_INET, options=("reuse",))
         url = l.url()
         self.assertEqual(url.site.port, port)
-        s.connect((socket.gethostname(), port))
+        s.connect(("localhost", port))
         s.send(self.data)
         if sys.platform=="win32": data, source = lock.receiveFrom()
         else: data, source = l.receiveFrom()
@@ -200,7 +186,7 @@ class TestUdpListener(unittest.TestCase):
                         family=ip.PF_INET6, options=("reuse",))
         url = l.url()
         self.assertEqual(url.site.port, port)
-        s.connect((socket.gethostname(), url.site.port))
+        s.connect(("localhost", url.site.port))
         sockname = s.getsockname()
         sockname = (sockname[0].partition("%")[0], sockname[1])
         s.send(self.data)
@@ -220,7 +206,7 @@ class TestUdpListener(unittest.TestCase):
                         options=("reuse",))
         url = l.url()
         self.assertEqual(url.site.port, port)
-        s.connect((socket.gethostname(), url.site.port))
+        s.connect(("localhost", url.site.port))
         s.send(self.data)
         if sys.platform=="win32":data, source = lock.receiveFrom()
         else: data, source = l.receiveFrom()
@@ -238,7 +224,7 @@ class TestUdpListener(unittest.TestCase):
                         options=("reuse",))
         url = l.url()
         self.assertEqual(url.site.port, port)
-        s.connect((socket.gethostname(), url.site.port))
+        s.connect(("localhost", url.site.port))
         sockname = s.getsockname()
         sockname = (sockname[0].partition("%")[0], sockname[1])
         s.send(self.data)
@@ -320,44 +306,54 @@ class TestUdpListener(unittest.TestCase):
 
     def test_udplistener_hostname_IPv4_reuse(self):
         hostname = socket.gethostname()
-        lock = UdpListener("udp://%s:0"%hostname, ip.PF_INET, ("reuse",))
-        port = lock.name()[1]
-        s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
-        self.assertRaises(Exception, UdpListener, 
-                          "udp://%s:%d"%(hostname, port), ip.PF_INET)
-        l = UdpListener("udp://%s:%d"%(hostname, port),
-                        ip.PF_INET, ("reuse",))
-        url = l.url()
-        self.assertEqual(url.site.port, port)
-        s.connect((url.site.host, url.site.port))
-        sockname = s.getsockname()
-        s.send(self.data)
-        if sys.platform=="win32":data, source = lock.receiveFrom()
-        else: data, source = l.receiveFrom()
-        self.assertEqual(data, self.data)
-        self.assertEqual(source, sockname)
-        lock.close()
+        try:
+            hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET6)
+        except Exception:
+            hostaddress, hostport = None, 0
+        if hostaddress is not None:
+            lock = UdpListener("udp://%s:0"%hostname, ip.PF_INET, ("reuse",))
+            port = lock.name()[1]
+            s = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
+            self.assertRaises(Exception, UdpListener, 
+                              "udp://%s:%d"%(hostname, port), ip.PF_INET)
+            l = UdpListener("udp://%s:%d"%(hostname, port),
+                            ip.PF_INET, ("reuse",))
+            url = l.url()
+            self.assertEqual(url.site.port, port)
+            s.connect(l.name())
+            sockname = s.getsockname()
+            s.send(self.data)
+            if sys.platform=="win32": data, source = lock.receiveFrom()
+            else: data, source = l.receiveFrom()
+            self.assertEqual(data, self.data)
+            self.assertEqual(source, sockname)
+            lock.close()
 
     def test_udplistener_hostname_IPv6_reuse(self):
         hostname = socket.gethostname()
-        lock = UdpListener("udp://%s:0"%hostname, ip.PF_INET6, ("reuse",))
-        port = lock.name()[1]
-        s = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
-        self.assertRaises(Exception, UdpListener, 
-                          "udp://%s:%d"%(hostname, port), ip.PF_INET6)
-        l = UdpListener("udp://%s:%d"%(hostname, port),
-                        ip.PF_INET6, ("reuse",))
-        url = l.url()
-        self.assertEqual(url.site.port, port)
-        s.connect((url.site.host, url.site.port))
-        sockname = s.getsockname()[:2]
-        sockname = (sockname[0].partition("%")[0], sockname[1])
-        s.send(self.data)
-        if sys.platform=="win32":data, source = lock.receiveFrom()
-        else: data, source = l.receiveFrom()
-        self.assertEqual(data, self.data)
-        self.assertEqual(source, sockname)
-        lock.close()
+        try:
+            hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET6)
+        except Exception:
+            hostaddress, hostport = None, 0
+        if hostaddress is not None:
+            lock = UdpListener("udp://%s:0"%hostname, ip.PF_INET6, ("reuse",))
+            port = lock.name()[1]
+            s = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
+            self.assertRaises(Exception, UdpListener, 
+                              "udp://%s:%d"%(hostname, port), ip.PF_INET6)
+            l = UdpListener("udp://%s:%d"%(hostname, port),
+                            ip.PF_INET6, ("reuse",))
+            url = l.url()
+            self.assertEqual(url.site.port, port)
+            s.connect(l.name())
+            sockname = s.getsockname()[:2]
+            sockname = (sockname[0].partition("%")[0], sockname[1])
+            s.send(self.data)
+            if sys.platform=="win32": data, source = lock.receiveFrom()
+            else: data, source = l.receiveFrom()
+            self.assertEqual(data, self.data)
+            self.assertEqual(source, sockname)
+            lock.close()
 
 
 class TestUdpSocket(unittest.TestCase):
@@ -408,26 +404,36 @@ class TestUdpSocket(unittest.TestCase):
         self.assertEqual(data, self.data)
 
     def test_udpsocket_hostname_IPv4(self):
-        l = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
-        l.bind((socket.gethostname(),0))
-        addr, port = l.getsockname()[:2]
-        s = UdpSocket()
-        n = s.sendTo(self.data, socket.gethostname(), int(port),
-                     ip.PF_INET)
-        self.assertEqual(n, len(self.data))
-        data, source = l.recvfrom(1024)
-        self.assertEqual(data, self.data)
+        hostname = socket.gethostname()
+        try:
+            hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET)
+        except Exception:
+            hostaddress, hostport = None, 0
+        if hostaddress is not None:
+            l = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
+            l.bind((hostname, 0))
+            addr, port = l.getsockname()[:2]
+            s = UdpSocket()
+            n = s.sendTo(self.data, socket.gethostname(), int(port), ip.PF_INET)
+            self.assertEqual(n, len(self.data))
+            data, source = l.recvfrom(1024)
+            self.assertEqual(data, self.data)
 
     def test_udpsocket_hostname_IPv6(self):
-        l = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
-        l.bind((socket.gethostname(),0))
-        addr, port = l.getsockname()[:2]
-        s = UdpSocket()
-        n = s.sendTo(self.data, socket.gethostname(), int(port),
-                     ip.PF_INET6)
-        self.assertEqual(n, len(self.data))
-        data, source = l.recvfrom(1024)
-        self.assertEqual(data, self.data)
+        hostname = socket.gethostname()
+        try:
+            hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET6)
+        except Exception:
+            hostaddress, hostport = None, 0
+        if hostaddress is not None:
+            l = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
+            l.bind((hostname, 0))
+            addr, port = l.getsockname()[:2]
+            s = UdpSocket()
+            n = s.sendTo(self.data, socket.gethostname(), int(port), ip.PF_INET6)
+            self.assertEqual(n, len(self.data))
+            data, source = l.recvfrom(1024)
+            self.assertEqual(data, self.data)
 
     def test_udpsocket_broadcast_IPv4(self):
         l = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
@@ -506,39 +512,48 @@ class TestUdpSender(unittest.TestCase):
         self.assertEqual(source[:2], (url.site.host, url.site.port))
 
     def test_udpsender_hostname_IPv4(self):
-        l = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
-        l.bind((socket.gethostname(),0))
-        addr, port = l.getsockname()[:2]
-        s = UdpSender("udp://%s:%d"%(socket.gethostname(),port), 
-                      ip.PF_INET)
-        url = s.url()
-        peerurl = s.peerUrl()
-        self.assertEqual((peerurl.site.host, peerurl.site.port), 
-                         l.getsockname()[:2])        
-        n = s.send(self.data)
-        self.assertEqual(n, len(self.data))
-        data, source = l.recvfrom(1024)
-        self.assertEqual(data, self.data)
-        self.assertEqual(source, (url.site.host, url.site.port))
+        hostname = socket.gethostname()
+        try:
+            hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET)
+        except Exception:
+            hostaddress, hostport = None, 0
+        if hostaddress is not None:
+            l = socket.socket(ip.PF_INET, socket.SOCK_DGRAM)
+            l.bind((hostname, 0))
+            addr, port = l.getsockname()[:2]
+            s = UdpSender("udp://%s:%d"%(hostname, port), ip.PF_INET)
+            url = s.url()
+            peerurl = s.peerUrl()
+            sockname = l.getsockname()[:2]
+            self.assertEqual((peerurl.site.host, peerurl.site.port), sockname)        
+            n = s.send(self.data)
+            self.assertEqual(n, len(self.data))
+            data, source = l.recvfrom(1024)
+            self.assertEqual(data, self.data)
+            self.assertEqual(source, (url.site.host, url.site.port))
 
     def test_udpsender_hostname_IPv6(self):
-        l = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
-        l.bind((socket.gethostname(),0))
-        addr, port = l.getsockname()[:2]
-        s = UdpSender("udp://%s:%d"%(socket.gethostname(),port), 
-                      ip.PF_INET6)
-        url = s.url()
-        peerurl = s.peerUrl()
-        sockname = l.getsockname()[:2]
-        sockname = (sockname[0].partition("%")[0], sockname[1])
-        self.assertEqual((peerurl.site.host, peerurl.site.port), 
-                         sockname)        
-        n = s.send(self.data)
-        self.assertEqual(n, len(self.data))
-        data, source = l.recvfrom(1024)
-        source = (source[0].partition("%")[0], source[1])
-        self.assertEqual(data, self.data)
-        self.assertEqual(source, (url.site.host, url.site.port))
+        hostname = socket.gethostname()
+        try:
+            hostaddress, hostport = ip.resolve(hostname, 0, ip.PF_INET6)
+        except Exception:
+            hostaddress, hostport = None, 0
+        if hostaddress is not None:
+            l = socket.socket(ip.PF_INET6, socket.SOCK_DGRAM)
+            l.bind((hostname,0))
+            addr, port = l.getsockname()[:2]
+            s = UdpSender("udp://%s:%d"%(hostname,port), ip.PF_INET6)
+            url = s.url()
+            peerurl = s.peerUrl()
+            sockname = l.getsockname()[:2]
+            sockname = (sockname[0].partition("%")[0], sockname[1])
+            self.assertEqual((peerurl.site.host, peerurl.site.port), sockname)        
+            n = s.send(self.data)
+            self.assertEqual(n, len(self.data))
+            data, source = l.recvfrom(1024)
+            source = (source[0].partition("%")[0], source[1])
+            self.assertEqual(data, self.data)
+            self.assertEqual(source, (url.site.host, url.site.port))
 
 # -------------------------------------------------------------------
 

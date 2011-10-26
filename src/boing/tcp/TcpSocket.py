@@ -23,6 +23,7 @@ class TcpSocket(QTcpSocket):
         self.logger = logging.getLogger("TcpSocket.%d"%id(self))
 
     def connect(self, host, port, family=None):
+        """Raises Exception if host cannot be resolved."""        
         host, port = ip.resolve(host, port,
                                 family if family is not None else 0,
                                 _socket.SOCK_STREAM)[:2]
@@ -82,6 +83,7 @@ class TcpSocket(QTcpSocket):
 # -------------------------------------------------------------------------
 
 def TcpConnection(url, family=None):
+    """Raises Exception if host cannot be resolved."""
     if not isinstance(url, URL): url = URL(url)
     socket = TcpSocket()
     socket.connect(url.site.host, url.site.port, family)
