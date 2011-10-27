@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
 # unittest/eventloop/test_ReactiveObject.py -
@@ -57,15 +58,22 @@ class testReactiveObject(unittest.TestCase):
 
     def test_add_remove_observers(self):
         o = Observable()
+        self.assertFalse(o.addObserver(None))
+        self.assertFalse(o.addObserver(12))
+        self.assertFalse(o.addObserver("test"))
         r1 = ReactiveObject()
         r2 = ReactiveObject()
-        o.addObserver(r1)
+        self.assertTrue(o.addObserver(r1))
+        self.assertFalse(o.addObserver(r1))
         self.assertEqual(o.observers(), {r1})
-        o.addObserver(r2)
+        self.assertTrue(o.addObserver(r2))
+        self.assertFalse(o.addObserver(r2))
         self.assertEqual(o.observers(), {r1, r2})
-        o.removeObserver(r1)
+        self.assertTrue(o.removeObserver(r1))
+        self.assertFalse(o.removeObserver(r1))
         self.assertEqual(o.observers(), {r2})
-        o.removeObserver(r2)
+        self.assertTrue(o.removeObserver(r2))
+        self.assertFalse(o.removeObserver(r2))
         self.assertIsInstance(o.observers(), frozenset)
         self.assertFalse(o.observers())
 
@@ -94,13 +102,20 @@ class testReactiveObject(unittest.TestCase):
         o1 = Observable()
         o2 = Observable()
         r = ReactiveObject()
-        r.subscribeTo(o1)
+        self.assertFalse(r.subscribeTo(None))
+        self.assertFalse(r.subscribeTo(21))
+        self.assertFalse(r.subscribeTo("test"))
+        self.assertTrue(r.subscribeTo(o1))
+        self.assertFalse(r.subscribeTo(o1))
         self.assertEqual(r.observed(), {o1})
-        r.subscribeTo(o2)
+        self.assertTrue(r.subscribeTo(o2))
+        self.assertFalse(r.subscribeTo(o2))
         self.assertEqual(r.observed(), {o1, o2})
-        r.unsubscribeFrom(o1)
+        self.assertTrue(r.unsubscribeFrom(o1))
+        self.assertFalse(r.unsubscribeFrom(o1))
         self.assertEqual(r.observed(), {o2})
-        r.unsubscribeFrom(o2)
+        self.assertTrue(r.unsubscribeFrom(o2))
+        self.assertFalse(r.unsubscribeFrom(o2))
         self.assertIsInstance(r.observed(), frozenset)
         self.assertFalse(r.observed())
 
@@ -156,7 +171,7 @@ class testReactiveObject(unittest.TestCase):
         t_del_r2 = EventLoop.after(.4, del_reactiveobject, r2, self)
         t_del_o3 = EventLoop.after(.5, del_observable, o3, t_o3)
         del r2, o3
-        EventLoop.run_for(.6)
+        EventLoop.runFor(.6)
         EventLoop.cancel_timer(t_o1)
         EventLoop.cancel_timer(t_o2)
         EventLoop.cancel_timer(t_del_o3)
@@ -275,7 +290,7 @@ class test_DelayedReactive(unittest.TestCase):
         t_del_r2 = EventLoop.after(.4, del_reactiveobject, r2, self)
         t_del_r3 = EventLoop.after(.5, del_reactiveobject, r3, self)
         del o2, r2, r3
-        EventLoop.run_for(.6)
+        EventLoop.runFor(.6)
         EventLoop.cancel_timer(t_o1)
         EventLoop.cancel_timer(t_o2)
         EventLoop.cancel_timer(t_del_o2)

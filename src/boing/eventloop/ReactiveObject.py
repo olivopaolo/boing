@@ -35,19 +35,27 @@ class Observable(QtCore.QObject):
         return frozenset(ref() for ref in self.__observers)
 
     def addObserver(self, reactiveobject, mode=QtCore.Qt.QueuedConnection):
-        if isinstance(reactiveobject, ReactiveObject) \
-          and reactiveobject not in self.observers():
+        """Return True if the reactiveobject has been correctly registered
+        to observe the triggered signals; False otherwise."""
+        if not isinstance(reactiveobject, ReactiveObject) \
+          or reactiveobject in self.observers():
+            return False
+        else:
             self.__observers.add(weakref.ref(reactiveobject))
             reactiveobject._addObservable(self)
             self.trigger.connect(reactiveobject._react, mode)
+            return True
 
     def removeObserver(self, reactiveobject):
+        """Return True if the reactiveobject has been found and removed;
+        False otherwise."""
         for ref in self.__observers:
             if ref() is reactiveobject:
                 reactiveobject._removeObservable(self)
                 self.trigger.disconnect(reactiveobject._react)
                 self.__observers.remove(ref)
-                break
+                return True
+        else: return False
 
     def notifyObservers(self):
         """Invoke the method "_react" of all the registered ReactiveObjects."""
@@ -78,11 +86,15 @@ class ReactiveObject(QtCore.QObject):
         return frozenset(ref() for ref in self.__observed)
 
     def subscribeTo(self, observable):
-        observable.addObserver(self)
+        if isinstance(observable, Observable):            
+            return observable.addObserver(self)
+        else: return False
 
     def unsubscribeFrom(self, observable):
-        observable.removeObserver(self)
-
+        if isinstance(observable, Observable):            
+            return observable.removeObserver(self)
+        else: return False
+    
     def _addObservable(self, observable):
         """It can be overridden, but do not invoke it directly."""
         self.__observed.add(weakref.ref(observable))
@@ -170,7 +182,7 @@ class DelayedReactive(ReactiveObject):
 if __name__ == '__main__':
     import sys
     if len(sys.argv)<2:
-        print("Usage: %s seconds"%sys.argv[0])
+        print("usage: %s <seconds>"%sys.argv[0])
         sys.exit(1)
     class DebugReactive(ReactiveObject):
         def _react(self):
@@ -205,4 +217,4 @@ if __name__ == '__main__':
     # run
     t_o1 = EventLoop.repeat_every(0.4, notify, o1)
     t_o2 = EventLoop.repeat_every(0.7, notify, o2)
-    EventLoop.run_for(int(sys.argv[1]))
+    EventLoop.runFor(int(sys.argv[1]))

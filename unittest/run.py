@@ -35,8 +35,9 @@ Available modules:
 
 list = []
 if len(sys.argv)==1 or 'eventloop' in sys.argv:
-    from eventloop import test_ReactiveObject
+    from eventloop import test_ReactiveObject, test_ProducerConsumer
     list += test_ReactiveObject.suite()
+    list += test_ProducerConsumer.suite()
 if len(sys.argv)==1 or 'display' in sys.argv:
     from display import test_DisplayDevice
     list += test_DisplayDevice.suite()

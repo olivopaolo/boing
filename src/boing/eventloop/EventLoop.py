@@ -39,8 +39,8 @@ class __metaclass(type):
 class EventLoop(metaclass=__metaclass):
         
     @staticmethod
-    def run_for(seconds, returnAfterSourceHandled=False):
-        EventLoop.mainloop.run_for(seconds, returnAfterSourceHandled)
+    def runFor(seconds, returnAfterSourceHandled=False):
+        EventLoop.mainloop.runFor(seconds, returnAfterSourceHandled)
     @staticmethod
     def run():
         return EventLoop.mainloop.run()
@@ -96,7 +96,7 @@ class EventLoop_PyQt(EventLoop):
         self.__qObservables = {}
         signal.signal(signal.SIGINT, lambda *args, **kwargs: self.stop())
         
-    def run_for(self, seconds, returnAfterSourceHandled=False):
+    def runFor(self, seconds, returnAfterSourceHandled=False):
         """
         @type seconds: number
         @param seconds: the time to run the event loop, greater or equal to 0
