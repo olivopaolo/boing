@@ -100,7 +100,7 @@ class Consumer(DelayedReactive):
 
 class DumpConsumer(Consumer):
 
-    def __init__(self, hz=None, dumpsrc=True, dumpdest=True, parent=None):
+    def __init__(self, hz=None, dumpsrc=False, dumpdest=False, parent=None):
         super(DumpConsumer, self).__init__(hz, parent)
         self.dumpsrc = dumpsrc
         self.dumpdest = dumpdest
