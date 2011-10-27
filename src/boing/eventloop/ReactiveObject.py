@@ -17,97 +17,93 @@ class Observable(QtCore.QObject):
     """An Observable can trigger a list of registered ReactiveObjects."""
 
     # trigger signal
-    trigger = QtCore.pyqtSignal(QtCore.QObject)
+    trigger = QtCore.pyqtSignal()
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.__observers = set()
-        
+                
     def __del__(self):
-        for reactiveobject in self.observers:
+        for reactiveobject in self.observers():
             # Notify of the subscribed ReactiveObjects that they have a None 
             # reference
-            reactiveobject._checkref()
+            reactiveobject._checkRef()
             self.trigger.disconnect(reactiveobject._react)
 
-    @property
     def observers(self):
         """Return the frozenset of the current observing ReactiveObject."""
-        # Return referents not references
         return frozenset(ref() for ref in self.__observers)
 
-    def add_observer(self, reactiveobject):
+    def addObserver(self, reactiveobject, mode=QtCore.Qt.QueuedConnection):
         if isinstance(reactiveobject, ReactiveObject) \
-          and reactiveobject not in self.observers:
+          and reactiveobject not in self.observers():
             self.__observers.add(weakref.ref(reactiveobject))
-            reactiveobject._add_observable(self)
-            self.trigger.connect(reactiveobject._react, 
-                                 QtCore.Qt.QueuedConnection)
+            reactiveobject._addObservable(self)
+            self.trigger.connect(reactiveobject._react, mode)
 
-    def remove_observer(self, reactiveobject):
+    def removeObserver(self, reactiveobject):
         for ref in self.__observers:
-            if ref()==reactiveobject:
-                reactiveobject._remove_observable(self)
+            if ref() is reactiveobject:
+                reactiveobject._removeObservable(self)
                 self.trigger.disconnect(reactiveobject._react)
                 self.__observers.remove(ref)
                 break
 
-    def notify_observers(self):
+    def notifyObservers(self):
         """Invoke the method "_react" of all the registered ReactiveObjects."""
-        self.trigger.emit(self)
+        self.trigger.emit()
 
-    def _checkref(self):
+    def _checkRef(self):
         # Keep only alive references
         self.__observers = set(ref for ref in self.__observers \
                                    if ref() is not None)
+
         
 
 class ReactiveObject(QtCore.QObject):
     """Object that can register to different Observables, in order to listen to
     their notifications."""
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.__observed = set()
         
     def __del__(self):
-        for observable in self.observed:
+        for observable in self.observed():
             # Notify of the subscribed Observables that they have a None 
             # reference
-            observable._checkref()
+            observable._checkRef()
 
-    @property
     def observed(self):
         """Return the frozenset of the current subscribed Observables."""
-        # Return referents not references
         return frozenset(ref() for ref in self.__observed)
 
-    def subscribe_to(self, observable):
-        observable.add_observer(self)
+    def subscribeTo(self, observable):
+        observable.addObserver(self)
 
-    def unsubscribe_from(self, observable):
-        observable.remove_observer(self)
+    def unsubscribeFrom(self, observable):
+        observable.removeObserver(self)
 
-    def _add_observable(self, observable):
+    def _addObservable(self, observable):
         """It can be overridden, but do not invoke it directly."""
         self.__observed.add(weakref.ref(observable))
 
-    def _remove_observable(self, observable):
+    def _removeObservable(self, observable):
         """It can be overridden, but do not invoke it directly."""
         for ref in self.__observed:
-            if ref()==observable: 
+            if ref() is observable: 
                 self.__observed.remove(ref) ; 
                 break
 
-    @QtCore.pyqtSlot(Observable)    
-    def _react(self, observable):
-        """It can be overridden to define business logic, but do not invoke it
-        directly."""
-        pass
-
-    def _checkref(self):
+    def _checkRef(self):
         # Keep only alive references
         self.__observed = set(ref for ref in self.__observed \
                                   if ref() is not None)
+
+    @QtCore.pyqtSlot()    
+    def _react(self):
+        """It can be overridden to define business logic, but do not invoke it
+        directly."""
+        pass
 
 
 class DelayedReactive(ReactiveObject):
@@ -115,11 +111,11 @@ class DelayedReactive(ReactiveObject):
     notification to a fixed refresh time. All the Observable that have been
     notified since last refresh are enqueued into the 'queue'."""
 
-    def __init__(self, hz=None):
+    def __init__(self, hz=None, parent=None):
         """'hz' defines the refresh frequency; if is is None, refresh is
         immediately done at react time, so that the DelayedReactive actually
         works the same as a ReactiveObject."""
-        super().__init__()
+        super().__init__(parent)
         self.__hz = hz
         if hz is None or float(hz)==0: self.__tid = None
         else: self.__tid = EventLoop.repeat_every(1/hz, 
@@ -127,39 +123,39 @@ class DelayedReactive(ReactiveObject):
                                                   weakref.ref(self))
         self.__queue = set()
 
-    @property
     def frequency(self):
         return self.__hz
 
-    @property
     def queue(self):
         """List of Observables that has notified since last refresh."""
         # Return referents not references
         return frozenset(ref() for ref in self.__queue)
 
-    def _react(self, observable):
-        if observable not in self.queue: 
+    def _react(self):
+        observable = self.sender()
+        if observable not in self.queue(): 
             self.__queue.add(weakref.ref(observable))
         if self.__hz is None:
             self._refresh()
             self.__queue = set()
 
-    def _remove_observable(self, observable):
+    def _removeObservable(self, observable):
         """It can be overridden, but do not invoke it directly."""
-        super()._remove_observable(observable)
-        if observable in self.queue: 
-             self.__queue = set(ref for ref in self.__queue \
-                                    if ref() is not None and ref()!=observable)
+        super()._removeObservable(observable)
+        for ref in self.__queue:
+            if ref() is observable: 
+                self.__queue.remove(ref) ; 
+                break
+
+    def _checkRef(self):
+        super()._checkRef()
+        # Keep only alive references
+        self.__queue = set(ref for ref in self.__queue if ref() is not None)
 
     def _refresh(self):
         """It can be overridden to define business logic, but do not invoke it
         directly."""
         pass
-
-    def _checkref(self):
-        super()._checkref()
-        # Keep only alive references
-        self.__queue = set(ref for ref in self.__queue if ref() is not None)
 
     @staticmethod
     def _timeout(tid, ref):
@@ -177,16 +173,17 @@ if __name__ == '__main__':
         print("Usage: %s seconds"%sys.argv[0])
         sys.exit(1)
     class DebugReactive(ReactiveObject):
-        def _react(self, obs):
+        def _react(self):
+            obs = self.sender()
             print("%s reacted to %s"%(self.name, obs.name))
     class DebugDelayedReactive(DelayedReactive):
         def _refresh(self):
             names = []
-            for i in self.queue:
+            for i in self.queue():
                 names.append(i.name)
             print("%s refresh to"%self.name, names)
     def notify(tid, obs, *args, **kwargs):
-        obs.notify_observers()
+        obs.notifyObservers()
     # Init observables
     o1 = Observable()
     o2 = Observable()
@@ -199,12 +196,12 @@ if __name__ == '__main__':
     r1.name = "r1"
     r2.name = "r2"
     r3.name = "r3"
-    r1.subscribe_to(o1)
-    r1.subscribe_to(o2)
-    r2.subscribe_to(o1)
-    r2.subscribe_to(o2) 
-    r3.subscribe_to(o1)
-    r3.subscribe_to(o2)
+    r1.subscribeTo(o1)
+    r1.subscribeTo(o2)
+    r2.subscribeTo(o1)
+    r2.subscribeTo(o2) 
+    r3.subscribeTo(o1)
+    r3.subscribeTo(o2)
     # run
     t_o1 = EventLoop.repeat_every(0.4, notify, o1)
     t_o2 = EventLoop.repeat_every(0.7, notify, o2)

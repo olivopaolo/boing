@@ -15,14 +15,14 @@ from boing.eventloop.ReactiveObject import Observable, ReactiveObject, \
                                            DelayedReactive
 
 def notify(tid, obs, *args, **kwargs):
-    obs.notify_observers()
+    obs.notifyObservers()
 
 class TestReactiveObject(ReactiveObject):
     def __init__(self):
         super().__init__()
         self.reaction = 0
 
-    def _react(self, observable):
+    def _react(self):
         self.reaction += 1
 
 
@@ -40,18 +40,18 @@ class testReactiveObject(unittest.TestCase):
 
     def test_observer_creation(self):
         o = Observable()
-        self.assertIsInstance(o.observers, frozenset)
-        self.assertFalse(o.observers)
-        o.notify_observers()
         ref = weakref.ref(o)
+        self.assertIsInstance(o.observers(), frozenset)
+        self.assertFalse(o.observers())
+        o.notifyObservers()
         del o
         self.assertIsNone(ref())
         
     def test_reactive_creation(self):
         r = ReactiveObject()
-        self.assertIsInstance(r.observed, frozenset)
-        self.assertFalse(r.observed)
         ref = weakref.ref(r)
+        self.assertIsInstance(r.observed(), frozenset)
+        self.assertFalse(r.observed())
         del r
         self.assertIsNone(ref())
 
@@ -59,15 +59,15 @@ class testReactiveObject(unittest.TestCase):
         o = Observable()
         r1 = ReactiveObject()
         r2 = ReactiveObject()
-        o.add_observer(r1)
-        self.assertEqual(o.observers, {r1})
-        o.add_observer(r2)
-        self.assertEqual(o.observers, {r1, r2})
-        o.remove_observer(r1)
-        self.assertEqual(o.observers, {r2})
-        o.remove_observer(r2)
-        self.assertIsInstance(o.observers, frozenset)
-        self.assertFalse(o.observers)
+        o.addObserver(r1)
+        self.assertEqual(o.observers(), {r1})
+        o.addObserver(r2)
+        self.assertEqual(o.observers(), {r1, r2})
+        o.removeObserver(r1)
+        self.assertEqual(o.observers(), {r2})
+        o.removeObserver(r2)
+        self.assertIsInstance(o.observers(), frozenset)
+        self.assertFalse(o.observers())
 
     def test_add_delete_observers(self):
         o = Observable()
@@ -76,17 +76,17 @@ class testReactiveObject(unittest.TestCase):
         ref_o = weakref.ref(o)
         ref_r1 = weakref.ref(r1)
         ref_r2 = weakref.ref(r2)
-        o.add_observer(r1)
-        self.assertEqual(o.observers, {r1})
-        o.add_observer(r2)
-        self.assertEqual(o.observers, {r1, r2})
+        o.addObserver(r1)
+        self.assertEqual(o.observers(), {r1})
+        o.addObserver(r2)
+        self.assertEqual(o.observers(), {r1, r2})
         del r1
         self.assertIsNone(ref_r1())
-        self.assertEqual(o.observers, {r2})
+        self.assertEqual(o.observers(), {r2})
         del r2
         self.assertIsNone(ref_r2())
-        self.assertIsInstance(o.observers, frozenset)
-        self.assertFalse(o.observers)
+        self.assertIsInstance(o.observers(), frozenset)
+        self.assertFalse(o.observers())
         del o
         self.assertIsNone(ref_o())
 
@@ -94,15 +94,15 @@ class testReactiveObject(unittest.TestCase):
         o1 = Observable()
         o2 = Observable()
         r = ReactiveObject()
-        r.subscribe_to(o1)
-        self.assertEqual(r.observed, {o1})
-        r.subscribe_to(o2)
-        self.assertEqual(r.observed, {o1, o2})
-        r.unsubscribe_from(o1)
-        self.assertEqual(r.observed, {o2})
-        r.unsubscribe_from(o2)
-        self.assertIsInstance(r.observed, frozenset)
-        self.assertFalse(r.observed)
+        r.subscribeTo(o1)
+        self.assertEqual(r.observed(), {o1})
+        r.subscribeTo(o2)
+        self.assertEqual(r.observed(), {o1, o2})
+        r.unsubscribeFrom(o1)
+        self.assertEqual(r.observed(), {o2})
+        r.unsubscribeFrom(o2)
+        self.assertIsInstance(r.observed(), frozenset)
+        self.assertFalse(r.observed())
 
     def test_subscribe_delete(self):
         o1 = Observable()
@@ -111,17 +111,17 @@ class testReactiveObject(unittest.TestCase):
         ref_o1 = weakref.ref(o1)
         ref_o2 = weakref.ref(o2)
         ref_r = weakref.ref(r)
-        r.subscribe_to(o1)
-        self.assertEqual(r.observed, {o1})
-        r.subscribe_to(o2)
-        self.assertEqual(r.observed, {o1, o2})
+        r.subscribeTo(o1)
+        self.assertEqual(r.observed(), {o1})
+        r.subscribeTo(o2)
+        self.assertEqual(r.observed(), {o1, o2})
         del o1
         self.assertIsNone(ref_o1())
-        self.assertEqual(r.observed, {o2})
+        self.assertEqual(r.observed(), {o2})
         del o2
         self.assertIsNone(ref_o2())
-        self.assertIsInstance(r.observed, frozenset)
-        self.assertFalse(r.observed)
+        self.assertIsInstance(r.observed(), frozenset)
+        self.assertFalse(r.observed())
         del r
         self.assertIsNone(ref_r())
     
@@ -143,12 +143,12 @@ class testReactiveObject(unittest.TestCase):
         r2 = TestReactiveObject()
         ref_r1 = weakref.ref(r1)
         ref_r2 = weakref.ref(r2)
-        o1.add_observer(r1)
-        o1.add_observer(r2)
-        o2.add_observer(r1)
-        o2.add_observer(r2)
-        o3.add_observer(r1)
-        o3.add_observer(r2)
+        o1.addObserver(r1)
+        o1.addObserver(r2)
+        o2.addObserver(r1)
+        o2.addObserver(r2)
+        o3.addObserver(r1)
+        o3.addObserver(r2)
         # test observation
         t_o1 = EventLoop.repeat_every(.1, notify, o1)
         t_o2 = EventLoop.repeat_every(.2, notify, o2)        
@@ -161,9 +161,9 @@ class testReactiveObject(unittest.TestCase):
         EventLoop.cancel_timer(t_o2)
         EventLoop.cancel_timer(t_del_o3)
         EventLoop.cancel_timer(t_del_r2)
-        self.assertEqual(o1.observers, {r1})
-        self.assertEqual(o2.observers, {r1})
-        self.assertEqual(r1.observed, {o1, o2})
+        self.assertEqual(o1.observers(), {r1})
+        self.assertEqual(o2.observers(), {r1})
+        self.assertEqual(r1.observed(), {o1, o2})
         self.assertGreater(r1.reaction, 0)
         del o1, o2, r1
         self.assertIsNone(ref_o1())
@@ -177,30 +177,30 @@ class test_DelayedReactive(unittest.TestCase):
 
     def test_creation_empty(self):
         r = DelayedReactive()
-        self.assertIsInstance(r.observed, frozenset)
-        self.assertIsInstance(r.queue, frozenset)
-        self.assertFalse(r.observed)
-        self.assertFalse(r.queue)
+        self.assertIsInstance(r.observed(), frozenset)
+        self.assertIsInstance(r.queue(), frozenset)
+        self.assertFalse(r.observed())
+        self.assertFalse(r.queue())
         ref = weakref.ref(r)
         del r
         self.assertIsNone(ref())
 
     def test_creation_None(self):
         r = DelayedReactive(None)
-        self.assertIsInstance(r.observed, frozenset)
-        self.assertIsInstance(r.queue, frozenset)
-        self.assertFalse(r.observed)
-        self.assertFalse(r.queue)
+        self.assertIsInstance(r.observed(), frozenset)
+        self.assertIsInstance(r.queue(), frozenset)
+        self.assertFalse(r.observed())
+        self.assertFalse(r.queue())
         ref = weakref.ref(r)
         del r
         self.assertIsNone(ref())
 
     def test_creation_value(self):
         r = DelayedReactive()
-        self.assertIsInstance(r.observed, frozenset)
-        self.assertIsInstance(r.queue, frozenset)
-        self.assertFalse(r.observed)
-        self.assertFalse(r.queue)
+        self.assertIsInstance(r.observed(), frozenset)
+        self.assertIsInstance(r.queue(), frozenset)
+        self.assertFalse(r.observed())
+        self.assertFalse(r.queue())
         ref = weakref.ref(r)
         del r
         self.assertIsNone(ref())
@@ -209,15 +209,15 @@ class test_DelayedReactive(unittest.TestCase):
         o = Observable()
         r1 = DelayedReactive()
         r2 = DelayedReactive()
-        o.add_observer(r1)
-        self.assertEqual(o.observers, {r1})
-        o.add_observer(r2)
-        self.assertEqual(o.observers, {r1, r2})
-        o.remove_observer(r1)
-        self.assertEqual(o.observers, {r2})
-        o.remove_observer(r2)
-        self.assertIsInstance(o.observers, frozenset)
-        self.assertFalse(o.observers)
+        o.addObserver(r1)
+        self.assertEqual(o.observers(), {r1})
+        o.addObserver(r2)
+        self.assertEqual(o.observers(), {r1, r2})
+        o.removeObserver(r1)
+        self.assertEqual(o.observers(), {r2})
+        o.removeObserver(r2)
+        self.assertIsInstance(o.observers(), frozenset)
+        self.assertFalse(o.observers())
 
     def test_add_delete_observers(self):
         o = Observable()
@@ -226,17 +226,17 @@ class test_DelayedReactive(unittest.TestCase):
         ref_o = weakref.ref(o)
         ref_r1 = weakref.ref(r1)
         ref_r2 = weakref.ref(r2)
-        o.add_observer(r1)
-        self.assertEqual(o.observers, {r1})
-        o.add_observer(r2)
-        self.assertEqual(o.observers, {r1, r2})
+        o.addObserver(r1)
+        self.assertEqual(o.observers(), {r1})
+        o.addObserver(r2)
+        self.assertEqual(o.observers(), {r1, r2})
         del r1
         self.assertIsNone(ref_r1())
-        self.assertEqual(o.observers, {r2})
+        self.assertEqual(o.observers(), {r2})
         del r2
         self.assertIsNone(ref_r2())
-        self.assertIsInstance(o.observers, frozenset)
-        self.assertFalse(o.observers)
+        self.assertIsInstance(o.observers(), frozenset)
+        self.assertFalse(o.observers())
         del o
         self.assertIsNone(ref_o())
 
@@ -260,14 +260,14 @@ class test_DelayedReactive(unittest.TestCase):
         ref_r2 = weakref.ref(r2)
         ref_r3 = weakref.ref(r3)
         ref_r4 = weakref.ref(r4)
-        o1.add_observer(r1)
-        o1.add_observer(r2)
-        o1.add_observer(r3)
-        o1.add_observer(r4)
-        o2.add_observer(r1)
-        o2.add_observer(r2)
-        o2.add_observer(r3)
-        o2.add_observer(r4)
+        o1.addObserver(r1)
+        o1.addObserver(r2)
+        o1.addObserver(r3)
+        o1.addObserver(r4)
+        o2.addObserver(r1)
+        o2.addObserver(r2)
+        o2.addObserver(r3)
+        o2.addObserver(r4)
         # test observation
         t_o1 = EventLoop.repeat_every(.1, notify, o1)
         t_o2 = EventLoop.repeat_every(.2, notify, o2)        
@@ -281,9 +281,9 @@ class test_DelayedReactive(unittest.TestCase):
         EventLoop.cancel_timer(t_del_o2)
         EventLoop.cancel_timer(t_del_r2)
         EventLoop.cancel_timer(t_del_r3)
-        self.assertEqual(o1.observers, {r1, r4})
-        self.assertEqual(r1.observed, {o1})
-        self.assertEqual(r4.observed, {o1})
+        self.assertEqual(o1.observers(), {r1, r4})
+        self.assertEqual(r1.observed(), {o1})
+        self.assertEqual(r4.observed(), {o1})
         self.assertGreater(r1.refresh, 0)
         self.assertGreater(r4.refresh, 0)
         del o1, r1, r4
@@ -298,11 +298,11 @@ class test_DelayedReactive(unittest.TestCase):
 
 def suite():    
     reactiveobject_tests = list(t for t in testReactiveObject.__dict__ \
-                                    if t.startswith("test_"))
+                                  if t.startswith("test_"))
     delayedreactive_tests = list(t for t in test_DelayedReactive.__dict__ \
-                                     if t.startswith("test_"))
+                                   if t.startswith("test_"))
     return unittest.TestSuite(list(map(testReactiveObject, 
-                                       reactiveobject_tests)) + \
+                                       reactiveobject_tests))+
                               list(map(test_DelayedReactive, 
                                        delayedreactive_tests)))
 
