@@ -19,8 +19,13 @@ from boing.url import URL
 class TcpSocket(QTcpSocket):
 
     def __init__(self, parent=None):
-        super().__init__(parent)
+        QTcpSocket.__init__(self, parent)
         self.logger = logging.getLogger("TcpSocket.%d"%id(self))
+        self.error.connect(self.__error)
+        
+    def __error(self, error):
+        if error!=QAbstractSocket.RemoteHostClosedError:
+            raise RuntimeError(self.errorString())
 
     def connect(self, host, port, family=None):
         """Raises Exception if host cannot be resolved."""        
@@ -54,12 +59,12 @@ class TcpSocket(QTcpSocket):
 
     def receive(self):
         size = self.bytesAvailable()
-        if size>0: return self.readAll()
+        if size>0: return self.readData(size)
         else: return None
 
     def receiveFrom(self):
         size = self.bytesAvailable()
-        if size>0: return self.readAll(), self.peerName()
+        if size>0: return self.readData(size), self.peerName()
         else: return None, None
 
     def setOption(self, option):

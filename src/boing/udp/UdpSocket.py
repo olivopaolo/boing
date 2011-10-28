@@ -25,8 +25,13 @@ class UdpSocket(QUdpSocket):
     # http://doc.qt.nokia.com/4.8/qudpsocket.html
 
     def __init__(self, parent=None):
-        super().__init__(parent)
-
+        QUdpSocket.__init__(self, parent)
+        self.error.connect(self.__error)
+        
+    def __error(self, error):
+        if error not in (QAbstractSocket.RemoteHostClosedError,
+                         QAbstractSocket.AddressInUseError) :
+            raise RuntimeError(self.errorString())
     # ---------------------------------------------------------------------
                 
     def bind(self, host=None, port=0, family=None, 
@@ -41,7 +46,7 @@ class UdpSocket(QUdpSocket):
             host, port = ip.resolve(host, port, 
                                     family if family is not None else 0, 
                                     _socket.SOCK_DGRAM)[:2]
-        if not super().bind(QHostAddress(host), port, mode):
+        if not QUdpSocket.bind(self, QHostAddress(host), port, mode):
             raise Exception(self.errorString())
         return self
 

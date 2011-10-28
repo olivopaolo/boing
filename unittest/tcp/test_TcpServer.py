@@ -30,7 +30,7 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
     def setUp(self):
         self.connections = []
         self.data = b"boing-unittest"
-        self.result = ""
+        self.result = None
         self.timeout = False
 
     def __timeout(self, tid):
@@ -39,7 +39,7 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
 
     def __readdata(self):
         conn = self.sender() 
-        self.result += conn.receive()
+        self.result = conn.receive()
         EventLoop.stop()
 
     def __newconnection(self):

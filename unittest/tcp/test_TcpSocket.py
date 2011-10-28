@@ -28,7 +28,7 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
 
     def setUp(self):
         self.data = b"boing-unittest"
-        self.result = ""
+        self.result = None
         self.timeout = False
     
     def __send_data(self, tid, sock):
@@ -36,7 +36,7 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
 
     def __readdata(self):
         conn = self.sender() 
-        self.result += conn.receive()
+        self.result = conn.receive()
         EventLoop.stop()
 
     def __timeout(self, tid):

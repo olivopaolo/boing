@@ -17,7 +17,7 @@ class Producer(Observable) :
     Products are kept until all the registered ReactiveObjects
     have taken the pending products."""
     def __init__(self, parent=None):
-        super().__init__(parent)
+        Observable.__init__(self, parent)
         """List of the pending products."""
         self._products = []
         """Store the index of the last product sent to each reactiveobject,
@@ -27,13 +27,13 @@ class Producer(Observable) :
         self.__history = {}
 
     def addObserver(self, observer):
-        if super().addObserver(observer):
+        if Observable.addObserver(self, observer):
             self.__history.setdefault(weakref.ref(observer), 0)
             return True
         else: return False
         
     def removeObserver(self, observer):
-        if super().removeObserver(observer):
+        if Observable.removeObserver(self, observer):
             for ref in self.__history.keys():
                 if ref() is observer:
                     del self.__history[ref]
@@ -79,7 +79,7 @@ class Producer(Observable) :
                     self.__history[key] -= min_
 
     def _checkRef(self):
-        super()._checkRef()
+        Observable._checkRef(self)
         # Keep only alive references
         self.__history = dict((ref,value) for (ref,value) in self.__history.items() \
                                           if ref() is not None)
@@ -87,7 +87,7 @@ class Producer(Observable) :
 class Consumer(DelayedReactive):
     """ReactiveObject that supports product consuming."""
     def __init__(self, hz=None, parent=None):
-        super().__init__(hz, parent)
+        DelayedReactive.__init__(self, hz, parent)
 
     def _refresh(self):
         for producer in self.queue():
@@ -101,7 +101,7 @@ class Consumer(DelayedReactive):
 class DumpConsumer(Consumer):
 
     def __init__(self, hz=None, dumpsrc=False, dumpdest=False, parent=None):
-        super(DumpConsumer, self).__init__(hz, parent)
+        Consumer.__init__(self, hz, parent)
         self.dumpsrc = dumpsrc
         self.dumpdest = dumpdest
 
@@ -122,10 +122,10 @@ if __name__ == '__main__':
         sys.exit(1)
     class DebugConsumer(Consumer):
         def __init__(self, hz=None):
-            super().__init__(hz)
+            Consumer.__init__(self, hz)
             self.store = {}
         def _refresh(self):
-            super()._refresh()
+            Consumer._refresh(self)
             print("%s got:"%self.name)
             for producer, products in self.store.items():
                 print("  %s from %s"%(products, producer.name))

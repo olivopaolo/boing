@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# test/osc/endpoint.py -
+# test/osc/oscdump.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
@@ -14,6 +14,7 @@ import sys
 
 from boing import osc
 from boing.eventloop.EventLoop import EventLoop
+from boing.utils.ExtensibleStruct import ExtensibleStruct
 from boing.eventloop.ProducerConsumer import Consumer
 from boing.osc.OscEndpoint import OscEndpoint
 from boing.url import URL
@@ -46,14 +47,14 @@ if len(args)<1:
     sys.exit(1)
 
 logging.basicConfig(level=logging.getLevelName(logginglevel))
-
 class DumpConsumer(Consumer):
     def __init__(self, hz=None):
         super().__init__(hz)
     def _consume(self, products, producer):
         for p in products:
-            if isinstance(p, osc.Packet):
-                p.debug(sys.stdout)
+            if isinstance(p, ExtensibleStruct):                 
+                packet = p.get("osc")
+                if packet is not None: packet.debug(sys.stdout)
 
 url = URL(args[0])
 if url.scheme.endswith("udp"):
@@ -62,7 +63,7 @@ if url.scheme.endswith("udp"):
     endpoint = OscEndpoint(UdpListener(url))
     consumer = DumpConsumer()
     consumer.subscribeTo(endpoint)
-    print("Listening on", endpoint.url())
+    print("Listening on", endpoint.socket().url())
     rvalue = EventLoop.run()
     del endpoint
     print()
@@ -76,26 +77,21 @@ elif url.scheme.endswith("tcp"):
     def newclient():
         socket = server.nextPendingConnection()
         logger.debug("New client: %s"%str(socket.peerName()))
-        socket.disconnected.connect(signalMapper.map)
-        endpoint = OscEndpoint(socket)
-        endpoints[socket] = endpoint
-        consumer.subscribeTo(endpoint)
-        signalMapper.setMapping(socket, id(socket))
-    def lostclient(id_):
-        socket = signalMapper.mapping(id_)
-        logger.debug("Lost client: %s"%str(socket.peerName()))
-        socket.close()
-        del endpoints[socket]
-    endpoints = {}
-    consumer = DumpConsumer()
-    logger = logging.getLogger("Logger")
-    signalMapper = QtCore.QSignalMapper()
-    signalMapper.mapped.connect(lostclient)
-    server = TcpServer(url.site.host, url.site.port)
+    class RedirectSocket(TcpSocket):
+        def __init__(self, parent=None):
+            TcpSocket.__init__(self, parent)
+            self.endpoint = OscEndpoint(self)
+            consumer.subscribeTo(self.endpoint)
+            self.disconnected.connect(self.__disconnected)
+        def __disconnected(self):
+            logger.debug("Lost client: %s"%str(self.peerName()))
+    server = TcpServer(url.site.host, url.site.port, factory=RedirectSocket)
     server.newConnection.connect(newclient)
     print("Listening at", server.url())
+    logger = logging.getLogger("Logger")
+    consumer = DumpConsumer()
     rvalue = EventLoop.run()
-    del server, endpoints
+    del server
     print()
     sys.exit(rvalue)
     

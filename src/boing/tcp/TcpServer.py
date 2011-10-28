@@ -22,7 +22,7 @@ class TcpServer(QTcpServer):
                  maxconnections=30, factory=TcpSocket, options=tuple()):
         """Raises Exception if TCP socket cannot be bound at specified
         host and port."""
-        super().__init__(parent=None)
+        QTcpServer.__init__(self, parent=None)
         self.__factory = factory
         self.__options = options if options is not None else tuple()
         self.setMaxPendingConnections(maxconnections)

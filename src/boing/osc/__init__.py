@@ -224,7 +224,9 @@ def decode(data, source=None):
             part = part[size:]
         packet = Bundle(timetag, elements)
     else:
-        if s[0]!='/': raise ValueError("Address pattern should start with '/'")
+        if s[0]!='/': 
+            print(s)
+            raise ValueError("Address pattern should start with '/'")
         typetags, part = _arg_decode(part,'s')
         if typetags[0]!=',': 
             raise ValueError("Type tag string should start with ','")

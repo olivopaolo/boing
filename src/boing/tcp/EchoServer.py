@@ -17,13 +17,13 @@ from boing.tcp.TcpServer import TcpServer
 class EchoSocket(TcpSocket):
     
     def __init__(self, parent=None):
-        super().__init__(parent)
+        TcpSocket.__init__(self, parent)
         self.logger = logging.getLogger("EchoSocket.%d"%id(self))
         self.readyRead.connect(self.__echoData)
         self.disconnected.connect(self.__disconnected)
 
     def setSocketDescriptor(self, descriptor):
-        super().setSocketDescriptor(descriptor)
+        TcpSocket.setSocketDescriptor(self, descriptor)
         if self.state()==QAbstractSocket.ConnectedState:
             self.logger.debug("New client: %s"%str(self.peerName()))
 

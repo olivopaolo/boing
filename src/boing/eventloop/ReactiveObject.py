@@ -20,7 +20,7 @@ class Observable(QtCore.QObject):
     trigger = QtCore.pyqtSignal()
     
     def __init__(self, parent=None):
-        super().__init__(parent)
+        QtCore.QObject.__init__(self, parent)
         self.__observers = set()
                 
     def __del__(self):
@@ -71,7 +71,7 @@ class ReactiveObject(QtCore.QObject):
     """Object that can register to different Observables, in order to listen to
     their notifications."""
     def __init__(self, parent=None):
-        super().__init__(parent)
+        QtCore.QObject.__init__(self, parent)
         self.__observed = set()
         
     def __del__(self):
@@ -126,7 +126,7 @@ class DelayedReactive(ReactiveObject):
         """'hz' defines the refresh frequency; if is is None, refresh is
         immediately done at react time, so that the DelayedReactive actually
         works the same as a ReactiveObject."""
-        super().__init__(parent)
+        ReactiveObject.__init__(self, parent)
         self.__hz = hz
         if hz is None or float(hz)==0: self.__tid = None
         else: self.__tid = EventLoop.repeat_every(1/hz, 
@@ -152,14 +152,14 @@ class DelayedReactive(ReactiveObject):
 
     def _removeObservable(self, observable):
         """It can be overridden, but do not invoke it directly."""
-        super()._removeObservable(observable)
+        ReactiveObject._removeObservable(self, observable)
         for ref in self.__queue:
             if ref() is observable: 
                 self.__queue.remove(ref) ; 
                 break
 
     def _checkRef(self):
-        super()._checkRef()
+        ReactiveObject._checkRef(self)
         # Keep only alive references
         self.__queue = set(ref for ref in self.__queue if ref() is not None)
 
