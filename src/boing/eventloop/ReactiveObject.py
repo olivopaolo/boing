@@ -65,8 +65,7 @@ class Observable(QtCore.QObject):
         # Keep only alive references
         self.__observers = set(ref for ref in self.__observers \
                                    if ref() is not None)
-
-        
+ 
 
 class ReactiveObject(QtCore.QObject):
     """Object that can register to different Observables, in order to listen to
