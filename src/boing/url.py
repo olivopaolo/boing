@@ -242,7 +242,7 @@ class URL(object):
         if self.opaque: result += self.opaque
         else:
             site = str(self.site)
-            if site:
+            if site or self.kind&URL.ABSOLUTE:
                 result += '//' + site
             result += str(self.path)
             query = str(self.query)
@@ -299,7 +299,8 @@ if __name__=="__main__":
         'mailto:user@host.domain',
         'mcast://225.0.0.250:8123',
         'mcast://<broadcast>:8080',
-        'udp6://[FF01:0:0:0:0:0:0:AA]:8888'
+        'udp6://[FF01:0:0:0:0:0:0:AA]:8888',
+        'file:///tmp/file.tmp',
         ]
 
     xmpp_tests = [

@@ -12,7 +12,7 @@
 
 <p>Boing needs Python version 3.2 or newer. To install, type:
 
-<pre>$ sudo apt-get install python3</pre>
+<pre>$ sudo apt-get install python3 python3-dev</pre>
 
 <!-- -------------------------------------------------------------- -->
 <h1>Qt 4</h1>
@@ -21,7 +21,7 @@
 install <a href="http://qt.nokia.com/products/library">Qt
 libraries</a>, type:</p>
 
-<pre>$ sudo apt-get install libqt4-dev</pre>
+<pre>$ sudo apt-get install libqt4-dev g++</pre>
 
 <!-- -------------------------------------------------------------- -->
 <h1>PyQt</h1>
@@ -70,7 +70,7 @@ sudo apt-get install libavahi-compat-libdnssd-dev
 such library, the <code>Avahi daemon</code> must be running.</p>
 
 <pre>
-sudo apt-get install avahi-daemon sudo avahi-daemon
+sudo avahi-daemon -D
 </pre>
 
 <p>WARNING! Avahi services cannot be found on
