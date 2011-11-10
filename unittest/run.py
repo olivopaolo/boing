@@ -29,7 +29,7 @@ If no module is specified, all modules are tested; otherwise only the
 specified modules will be executed. 
  
 Available modules: 
- dns_sd, display, eventloop, osc, tcp, udp, utils
+ dns_sd, display, eventloop, osc, slip, tcp, udp, utils
 """)
         sys.exit(0)
 
@@ -47,6 +47,9 @@ if len(sys.argv)==1 or 'dns_sd' in sys.argv:
 if len(sys.argv)==1 or 'osc' in sys.argv:
     from osc import test_osc
     list += test_osc.suite()
+if len(sys.argv)==1 or 'slip' in sys.argv:
+    from slip import test__slip__
+    list += test__slip__.suite()
 if len(sys.argv)==1 or 'tcp' in sys.argv:
     from tcp import test_TcpServer, test_TcpSocket
     list += test_TcpServer.suite()
