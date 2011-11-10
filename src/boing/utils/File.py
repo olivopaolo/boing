@@ -7,7 +7,6 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-import bz2
 import os
 import weakref
 
@@ -17,8 +16,11 @@ from boing.eventloop.EventLoop import EventLoop
 from boing.utils.IODevice import IODevice, CommunicationDevice
 from boing.url import URL
 
-
 def openFile(filepath, mode=IODevice.ReadOnly, uncompress=False):
+    """Open a file and return its file descriptor. If 'uncompress' is
+    True and 'filepath' points to a compressed archive, the
+    correspondent python module will be used to obtain the file
+    descriptor."""
     if mode&IODevice.ReadOnly:
         if mode&IODevice.Append: pymode = "r+b"
         elif mode&IODevice.WriteOnly: pymode = "w+b"
@@ -27,12 +29,14 @@ def openFile(filepath, mode=IODevice.ReadOnly, uncompress=False):
     else: pymode = "wb"
     if os.path.splitext(filepath)[1]==".bz2" \
             and (uncompress or mode&IODevice.WriteOnly or mode&IODevice.Append):
+        import bz2
         return bz2.BZ2File(filepath, pymode, 0)
     else:
         return open(filepath, pymode, 0)
 
 
 class BaseFile(object):
+    """BaseFile defines a set of common methods that any file should have.""" 
 
     def __init__(self, url):
         if not isinstance(url, URL): url = URL(url)
@@ -72,6 +76,10 @@ class CommunicationFile(BaseFile, CommunicationDevice):
 # -------------------------------------------------------------------------
 
 class FileReader(File):
+    """The FileReader can be used to read regular files along the
+    EventLoop. When the 'start' method is invoked, the FileReader will
+    trigger the readyRead signal and it will repeat it every time the
+    read method is invoked."""
 
     readyRead = pyqtSignal()
     completed = pyqtSignal()

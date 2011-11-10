@@ -11,6 +11,8 @@ from boing.utils.ExtensibleStruct import ExtensibleStruct
 from boing.eventloop.ProducerConsumer import Producer, Consumer
 
 class DataReader(Producer):
+    """It takes an input device and anytime it receives the readyRead
+    signal, it reads the device and it produces the obtained data."""
 
     def __init__(self, inputdevice, parent=None):
         Producer.__init__(self, parent)
@@ -26,6 +28,8 @@ class DataReader(Producer):
 
 
 class DataWriter(Consumer):
+    """It takes an output device and anytime it receives some data from
+    a Producer, it writes that data into the output device."""
 
     def __init__(self, outputdevice, parent=None):
         Consumer.__init__(self, parent=parent)

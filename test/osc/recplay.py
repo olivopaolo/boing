@@ -149,6 +149,3 @@ else:
     del source, output
     print()
     sys.exit(rvalue)
-
-
-

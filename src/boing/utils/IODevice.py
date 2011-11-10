@@ -15,7 +15,9 @@ from PyQt4.QtCore import QObject, pyqtSignal
 from boing.eventloop.EventLoop import EventLoop
 
 class IODevice(QObject):
-
+    """Class for wrapping a generic file descriptor, like a file,
+    the stdin or the stdout."""
+    
     # Open mode
     ReadOnly = 0x01
     WriteOnly = 0x02
@@ -67,6 +69,10 @@ class IODevice(QObject):
 
 
 class CommunicationDevice(IODevice):
+    """Specific class for devices for which the readyRead signal is
+    usefull like Unix not regular files and stdin. TcpSocket and
+    UdpSocket do not inherit this class because they inherit specific
+    Qt classes."""
     
     readyRead = pyqtSignal()
 
