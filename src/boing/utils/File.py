@@ -82,10 +82,12 @@ class FileReader(File):
         File.__init__(self, url, mode, uncompress, parent)
         self._atend = False
         self.__read.connect(self._emitReadyRead, Qt.QueuedConnection)
-        self.__read.emit()
         
     def atEnd(self):
         return self._atend
+
+    def start(self):
+        self.__read.emit()        
 
     def read(self, *args, **kwargs):
         data = File.read(self, *args, **kwargs) 

@@ -89,7 +89,12 @@ else:
                 if not output.outputDevice().bytesToWrite(): EventLoop.stop()
                 source.inputDevice().close()
             source = DataReader(FileReader(inurl))
-            source.inputDevice().completed.connect(closer)
+            source.inputDevice().completed.connect(closer, 
+                                                   QtCore.Qt.QueuedConnection)
+            if outurl.scheme.endswith("tcp"): 
+                output.outputDevice().connected.connect(source.inputDevice().start)
+            else:
+                source.inputDevice().start()
             if outurl: print("Reading from", source.inputDevice().fileName())
         elif os.path.exists(filepath):            
             from boing.utils.File import CommunicationFile
@@ -109,7 +114,8 @@ else:
             if source is None:
                 source = DataReader(conn)
                 output.subscribeTo(source)
-                conn.disconnected.connect(disconnected)
+                conn.disconnected.connect(disconnected, 
+                                          QtCore.Qt.QueuedConnection)
             else: conn.close()
         def disconnected():
             if not output.outputDevice().bytesToWrite(): 
