@@ -14,16 +14,26 @@
 <p>General documentation on OSC can be found
 at <a href="http://opensoundcontrol.org/">http://opensoundcontrol.org/</a></p>
 
-<ul>
-<li>Dump OSC packets received at the UDP/TCP socket specified by <code>url</code>:
+<ul><li><p>Record an OSC stream received at an UDP/TCP socket or send
+      a recorded stream to a target UDP/TCP socket.</p></li>
 <pre>
-&gt; python3 test/osc/oscdump.py [-l &lt;logging-level&gt;] &lt;url&gt;
+&gt; python3 test/osc/recplay.py record &lt;host&gt; &lt;file&gt;
+                              play|loop &lt;file&gt; &lt;host&gt;
                               [-h, --help]
    
 Options:
-  -l <u>logging-level</u>
-     Set logging level
+  -h, --help   
+     Display help and exit
+</pre>
+</ul>
 
+<ul><li><p>Dump to <code>stdout</code> any OSC packet received from an UDP/TCP
+      socket or read from an OSC log file:</p></li>
+<pre>
+&gt; python3 test/osc/oscdump.py &lt;url&gt;
+                              [-h, --help]
+   
+Options:
   -h, --help   
      Display help and exit
 </pre>

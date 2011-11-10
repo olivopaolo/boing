@@ -26,15 +26,20 @@ class UdpSocket(QUdpSocket):
 
     def __init__(self, parent=None):
         QUdpSocket.__init__(self, parent)
+        self.__open = False
         self.error.connect(self.__error)
+        self.connected.connect(self.__connected)
         
     def __error(self, error):
         if error not in (QAbstractSocket.RemoteHostClosedError,
                          QAbstractSocket.AddressInUseError) :
             raise RuntimeError(self.errorString())
+
+    def isOpen(self):
+        return self.__open
     # ---------------------------------------------------------------------
                 
-    def bind(self, host=None, port=0, family=None, 
+    def bind(self, host=None, port=0, family=None,
              mode=QUdpSocket.DontShareAddress):
         """Raises Exception if UDP socket cannot be bound at specified
         host and port."""
@@ -48,6 +53,7 @@ class UdpSocket(QUdpSocket):
                                     _socket.SOCK_DGRAM)[:2]
         if not QUdpSocket.bind(self, QHostAddress(host), port, mode):
             raise Exception(self.errorString())
+        self.__open = True
         return self
 
     def family(self):
@@ -63,17 +69,20 @@ class UdpSocket(QUdpSocket):
         """Return the server socket’s address (host, port)."""
         return ip.addrToString(self.localAddress()), self.localPort()
 
+    def read(self):
+        return self.receive()
+
     def receive(self):
         size = self.pendingDatagramSize()
         if size>0: return self.readDatagram(size)[0]
-        else: return None
+        else: return bytes()
 
     def receiveFrom(self):
         size = self.pendingDatagramSize()
         if size>0:
             data, addr, port = self.readDatagram(size)
             return data, (ip.addrToString(addr), port)
-        else: return None, None
+        else: return bytes(), None
 
     def url(self):
         """Return the socket's URL, i.e. tcp://<host>:<port>."""
@@ -103,6 +112,9 @@ class UdpSocket(QUdpSocket):
                                 _socket.SOCK_DGRAM)[:2]
         self.connectToHost(host, port)
         return self
+
+    def __connected(self):
+        self.__open = True
 
     def peerName(self):
         return ip.addrToString(self.peerAddress()), self.peerPort()

@@ -34,7 +34,15 @@ h2 {
 
 p {
     margin: 18px 0px 18px 10px;
-} 
+}
+
+th {
+    font-weight: bold;
+    margin: 20px 0px 18px 0px;
+    font-size: 11px;
+    text-align: left;
+    colspan: 0
+}
 
 dt {
     margin: 0px 0px 0px 10px;
@@ -74,6 +82,22 @@ code {
     /*font-size: 10px;*/
 }
 
+url {
+    font-family: Courier;
+}
+
+ossupport {
+    font-family: Courier;
+}
+
+#uris tr td {
+    vertical-align: top;
+    border: solid;
+    border-width: 1px 0 0 0;
+    border-color: #F5F5F5;
+    margin: 0;
+    padding: 5px;
+}
 table tr td {
     font-size: 11px;
 }

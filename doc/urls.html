@@ -1,0 +1,81 @@
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" />
+<title>Boing: URLs guide</title>
+</head>
+<body><div class="title">Boing: URLs guide</div>
+
+<p>L = Linux, W = Windows</p>
+
+<table id="uris">
+<!-- TCP/UDP socket -->
+<tr><th colspan="2">TCP/UDP socket</th></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>udp://[&lt;host&gt;]:&lt;port&gt;</url></td>
+  <td>UDP socket</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>tcp://[&lt;host&gt;]:&lt;port&gt;</url></td>
+  <td>TCP socket</td></tr>
+<!-- Host -->
+<tr><th colspan="2">Host</th></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><i>empty</i></td>
+  <td>same as any address</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>0.0.0.0</url></td>
+  <td>IPv4 any address</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>[::]</url></td>
+  <td>IPv6 any address</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>127.0.0.1</url></td>
+  <td>IPv4 loopback</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>[::1]</url></td>
+  <td>IPv6 loopback</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>x.x.x.x</url></td>
+  <td>specific IPv4 address</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>[x:x:x:x:x:x:x:x]</url></td>
+  <td>specific IPv6 address</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>hostname</url></td>
+  <td>specific hostname</td></tr>
+<!-- File -->
+<tr><th colspan="2">File<url><sup>1</sup><url></th></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>file://&lt;absolute-filepath&gt;</url></td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>&lt;absolute-filepath&gt;</url></td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>&lt;relative-filepath&gt;</url></td></tr>
+<!-- OSC -->
+<tr><th colspan="2">OSC</th></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>osc[.udp|tcp]://[&lt;host&gt;]:&lt;port&gt;</url></td>
+  <td>OSC through a socket</td></tr>
+</table>
+
+<p><sup>1</sup>On Windows, in order to define a file using the scheme
+  <url>file</url> it is necessary to place the
+  character <url>'/'</url> (slash) before the drive letter.<br>
+  (e.g. <url>file:///C:/Windows/explorer.exe</url>)
+</p>
+
+<p><a href="index.html">&lt;&lt; home</a></p>
+</body></html>

@@ -2,12 +2,12 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <link rel="stylesheet" type="text/css" href="style.css">
-  <title>Boing: Networking tools</title>
+  <title>Boing: networking tools</title>
 </head>
 
 <body>
 
-<div class="title">Boing: Networking tools</div>
+<div class="title">Boing: networking tools</div>
 
 <h1>Documentation</h1>
 
@@ -20,14 +20,17 @@
 of networking functionalities:</p>
 
 <ul>
-<li><p>Dump or redirect packets received at the UDP/TCP socket specified by url.</p>
+  <li><p>Redirect data from a source to an output.</p> 
+    <p>Source and output can be even a TCP/UDP socket, a file
+      or respectively the <code>stdin</code> or the <code>stdout</code>.</p></li>
+
 <pre>
-&gt; python3 test/utils/netcat.py [-l &lt;logging-level&gt;] &lt;url&gt; [&lt;redirect-url&gt;]
+&gt; python3 test/utils/netcat.py [-l &lt;source&gt;] [&lt;output&gt;]
                                [-h, --help]
    
 Options:
-  -l <u>logging-level</u>
-     Set logging level
+  -l &lt;source&gt;                
+     Listen from the specified source
 
   -h, --help   
      Display help and exit
@@ -38,13 +41,13 @@ Options:
 &gt; python3 test/tcp/echo.py [options]
    
 Options:
-  -o, --host= <u>host</u>
+  -o, --host= &lt;host&gt;
      Set server host
 
-  -p, --port= <u>port</u>
+  -p, --port= &lt;port&gt;
      Set server port
 
-  -l <u>logging-level</u>
+  -l &lt;logging-level&gt;
      Set logging level
 
   -h, --help   

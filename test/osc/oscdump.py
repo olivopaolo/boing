@@ -9,92 +9,90 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import getopt
-import logging
 import sys
+
+from PyQt4 import QtCore
 
 from boing import osc
 from boing.eventloop.EventLoop import EventLoop
-from boing.utils.ExtensibleStruct import ExtensibleStruct
 from boing.eventloop.ProducerConsumer import Consumer
-from boing.osc.OscEndpoint import OscEndpoint
+from boing.utils.DataIO import DataReader
 from boing.url import URL
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "l:h", ('help',))
+    opts, args = getopt.getopt(sys.argv[1:], "h", ('help',))
 except getopt.GetoptError as err:
     print(str(err)) # will print something like "option -a not recognized"
-    print("usage: %s [-l <logging-level>] <url>"%sys.argv[0])
+    print("usage: %s <url>"%sys.argv[0])
     print("       %s [-h, --help]"%(" "*len(sys.argv[0])))
     sys.exit(2)
-logginglevel = "WARNING"
 for o, a in opts:
     if o in ("-h", "--help"):
-        print("usage: %s [-l <logging-level>] <url>"%sys.argv[0])
+        print("usage: %s <url>"%sys.argv[0])
         print("       %s [-h, --help]"%(" "*len(sys.argv[0])))
         print("""
-Dump OSC packets received at the UDP/TCP socket specified by url.
+Dump to stdout any OSC packet received from an UDP/TCP socket or read
+from an OSC log file.
 
 Options:
- -l <logging-level>         set logging level
  -h, --help                 display this help and exit
  """)
         sys.exit(0)
-    elif o=="-l": logginglevel = a
 
 if len(args)<1:
-    print("usage: %s [-l <logging-level>] <url>"%sys.argv[0])
+    print("usage: %s <url>"%sys.argv[0])
     print("       %s [-h, --help]"%(" "*len(sys.argv[0])))
     sys.exit(1)
 
-logging.basicConfig(level=logging.getLevelName(logginglevel))
 class DumpConsumer(Consumer):
-    def __init__(self, hz=None):
-        super().__init__(hz)
     def _consume(self, products, producer):
         for p in products:
-            if isinstance(p, ExtensibleStruct):                 
-                packet = p.get("osc")
-                if packet is not None: packet.debug(sys.stdout)
-
+            data = p.get("data")
+            if data: 
+                packet = osc.decode(data)
+                packet.debug(sys.stdout)
+output = DumpConsumer()
 url = URL(args[0])
-if url.scheme.endswith("udp"):
-
+# Init output
+if url.scheme=="osc":
+    print("warning: no transport protocol specified in URL, assuming UDP.")
+    url.scheme="osc.udp"
+if url.kind in (URL.ABSPATH, URL.RELPATH) or url.scheme=="file":
+    from boing.slip.SlipDataIO import SlipDataReader
+    from boing.utils.File import FileReader
+    def closer():
+        EventLoop.stop()
+    source = SlipDataReader(FileReader(url, uncompress=True))
+    source.inputDevice().completed.connect(closer, QtCore.Qt.QueuedConnection)
+    output.subscribeTo(source)
+elif url.scheme.endswith("udp"):
     from boing.udp.UdpSocket import UdpListener
-    endpoint = OscEndpoint(UdpListener(url))
-    consumer = DumpConsumer()
-    consumer.subscribeTo(endpoint)
-    print("Listening on", endpoint.socket().url())
-    rvalue = EventLoop.run()
-    del endpoint
-    print()
-    sys.exit(rvalue)
-    
+    source = DataReader(UdpListener(url))
+    output.subscribeTo(source)
+    print("Listening at", source.inputDevice().url())
 elif url.scheme.endswith("tcp"):
-
-    from PyQt4 import QtCore
     from boing.tcp.TcpServer import TcpServer
-    from boing.tcp.TcpSocket import TcpSocket
+    from boing.slip.SlipDataIO import SlipDataReader
     def newclient():
-        socket = server.nextPendingConnection()
-        logger.debug("New client: %s"%str(socket.peerName()))
-    class RedirectSocket(TcpSocket):
-        def __init__(self, parent=None):
-            TcpSocket.__init__(self, parent)
-            self.endpoint = OscEndpoint(self)
-            consumer.subscribeTo(self.endpoint)
-            self.disconnected.connect(self.__disconnected)
-        def __disconnected(self):
-            logger.debug("Lost client: %s"%str(self.peerName()))
-    server = TcpServer(url.site.host, url.site.port, factory=RedirectSocket)
+        conn = server.nextPendingConnection()
+        global source
+        if source is None:
+            source = SlipDataReader(conn)
+            output.subscribeTo(source)
+            conn.disconnected.connect(disconnected, QtCore.Qt.QueuedConnection)
+        else: conn.close()
+    def disconnected():
+        EventLoop.stop()
+    server = TcpServer(url.site.host, url.site.port)
     server.newConnection.connect(newclient)
+    source = None
     print("Listening at", server.url())
-    logger = logging.getLogger("Logger")
-    consumer = DumpConsumer()
-    rvalue = EventLoop.run()
-    del server
-    print()
-    sys.exit(rvalue)
-    
 else:
     print("Unsupported url:", url)
     sys.exit(-1)
+rvalue = EventLoop.run()
+if "server" in globals(): del server
+if source: del source
+del output
+print()
+sys.exit(rvalue)

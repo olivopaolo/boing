@@ -57,15 +57,18 @@ class TcpSocket(QTcpSocket):
         url.site.host, url.site.port = self.peerName()
         return url
 
+    def read(self):
+        return self.receive()
+
     def receive(self):
         size = self.bytesAvailable()
         if size>0: return self.readData(size)
-        else: return None
+        else: return bytes()
 
     def receiveFrom(self):
         size = self.bytesAvailable()
         if size>0: return self.readData(size), self.peerName()
-        else: return None, None
+        else: return bytes(), None
 
     def setOption(self, option):
         if option=="nodelay":
