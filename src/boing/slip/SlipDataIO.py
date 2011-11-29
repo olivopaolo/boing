@@ -32,8 +32,8 @@ class SlipDataWriter(DataWriter):
     """The SlipDataWriter encodes using slip the received data prior
     to write it into the output file."""
 
-    def __init__(self, outputdevice, parent=None):
-        DataWriter.__init__(self, outputdevice, parent)
+    def __init__(self, outputdevice):
+        DataWriter.__init__(self, outputdevice)
 
     def _consume(self, products, producer):
         for p in products:

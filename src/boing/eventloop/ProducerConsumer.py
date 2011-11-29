@@ -11,7 +11,16 @@ import weakref
 
 from boing.eventloop.ReactiveObject import Observable, DelayedReactive
 
-class Producer(Observable) :
+class AbstractProducer(Observable):
+
+    def products(self):
+        raise NotImplementedError()
+
+    def _postProduct(self, product):
+        raise NotImplementedError()
+
+
+class Producer(AbstractProducer):
     """This Observable sends a notification each time it has a new
     product. Products can be obtained using the method products().
     Products are kept until all the registered ReactiveObjects
@@ -28,7 +37,7 @@ class Producer(Observable) :
 
     def addObserver(self, observer):
         if Observable.addObserver(self, observer):
-            self.__history.setdefault(weakref.ref(observer), 0)
+            self.__history[weakref.ref(observer)] = 0
             return True
         else: return False
         
@@ -84,10 +93,11 @@ class Producer(Observable) :
         self.__history = dict((ref,value) for (ref,value) in self.__history.items() \
                                           if ref() is not None)
 
+
 class Consumer(DelayedReactive):
     """ReactiveObject that supports product consuming."""
-    def __init__(self, hz=None, parent=None):
-        DelayedReactive.__init__(self, hz, parent)
+    def __init__(self, hz=None):
+        DelayedReactive.__init__(self, hz)
 
     def _refresh(self):
         for producer in self.queue():
@@ -97,20 +107,6 @@ class Consumer(DelayedReactive):
         """It can be overridden to define business logic, but do not invoke it
         directly."""
         pass
-
-class DumpConsumer(Consumer):
-
-    def __init__(self, hz=None, dumpsrc=False, dumpdest=False, parent=None):
-        Consumer.__init__(self, hz, parent)
-        self.dumpsrc = dumpsrc
-        self.dumpdest = dumpdest
-
-    def _consume(self, products, producer):
-        if self.dumpsrc: print("from:", str(producer))
-        if self.dumpdest: print("to:  ", str(self))
-        for p in products:
-            print(str(p))
-        print()
                 
 # -------------------------------------------------------------------
 
@@ -152,3 +148,4 @@ if __name__ == '__main__':
     cons2.name = "cons2"
     # run
     EventLoop.runFor(int(sys.argv[1]))
+    del prod1, prod2, cons1, cons2

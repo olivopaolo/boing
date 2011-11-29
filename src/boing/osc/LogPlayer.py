@@ -93,8 +93,7 @@ class LogPlayer(Producer):
     def __sendOut(self, packets):
         if packets:
             for packet in packets:
-                self._postProduct(ExtensibleStruct(osc=packet, 
-                                                   data=packet.encode()))
+                self._postProduct(ExtensibleStruct(osc=packet))
         else: 
             self._postProduct(ExtensibleStruct(data=bytes()))
 

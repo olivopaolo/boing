@@ -15,6 +15,7 @@ import sys
 from PyQt4 import QtCore
 
 from boing.eventloop.EventLoop import EventLoop
+from boing.slip.SlipDataIO import SlipDataReader, SlipDataWriter
 from boing.utils.DataIO import DataWriter, DataReader
 from boing.utils.IODevice import IODevice
 from boing.utils.File import File
@@ -35,8 +36,9 @@ for o, a in opts:
         print("""
 Redirect data from a source to an output.
 
-Source and output can be even a TCP/UDP socket, a file
-      or respectively the <code>stdin</code> or the <code>stdout</code>
+Source and output can be even a TCP/UDP socket, a file or respectively
+the stdin or the stdout. SLIP encode/decode is available for TCP
+sockets and files.
 
 Options:
  -l <source>                listen from the specified source
@@ -56,6 +58,8 @@ if len(args):
     outurl = URL(args[0])
     if outurl.kind in (URL.ABSPATH, URL.RELPATH) or outurl.scheme=="file":
         output = DataWriter(File(outurl, File.WriteOnly))
+    if outurl.scheme=="slip.file":
+        output = SlipDataWriter(File(outurl, File.WriteOnly))
     elif outurl.scheme.endswith("udp"):
         from boing.udp.UdpSocket import UdpSender
         output = DataWriter(UdpSender(outurl))
@@ -63,7 +67,10 @@ if len(args):
         from boing.tcp.TcpSocket import TcpConnection
         socket = TcpConnection(outurl)
         socket.disconnected.connect(EventLoop.stop, QtCore.Qt.QueuedConnection)
-        output = DataWriter(socket)
+        if outurl.scheme.endswith("slip.tcp"):
+            output = SlipDataWriter(socket)
+        else:
+            output = DataWriter(socket)
     else:
         print("Unsupported output:", outurl)
         sys.exit(-1)        
@@ -80,7 +87,8 @@ if inurl is None:
     output.subscribeTo(source)
     print("Reading from sys.stdin")
 else:
-    if inurl.kind in (URL.ABSPATH, URL.RELPATH) or inurl.scheme=="file":
+    if inurl.kind in (URL.ABSPATH, URL.RELPATH) \
+            or inurl.scheme in ("file", "slip.file"):
         filepath = str(inurl.path)
         if os.path.isfile(filepath):
             # Regular file
@@ -88,10 +96,13 @@ else:
             def closer():
                 if not output.outputDevice().bytesToWrite(): EventLoop.stop()
                 source.inputDevice().close()
-            source = DataReader(FileReader(inurl))
+            if inurl.scheme=="slip.file":
+                source = SlipDataReader(FileReader(inurl))
+            else:
+                source = DataReader(FileReader(inurl))
             source.inputDevice().completed.connect(closer, 
                                                    QtCore.Qt.QueuedConnection)
-            if outurl.scheme.endswith("tcp"): 
+            if outurl and outurl.scheme.endswith("tcp"): 
                 output.outputDevice().connected.connect(source.inputDevice().start)
             else:
                 source.inputDevice().start()
@@ -112,7 +123,11 @@ else:
             conn = server.nextPendingConnection()
             global source
             if source is None:
-                source = DataReader(conn)
+                global inurl
+                if inurl.scheme.endswith("slip.tcp"):
+                    source = SlipDataReader(conn)
+                else:
+                    source = DataReader(conn)
                 output.subscribeTo(source)
                 conn.disconnected.connect(disconnected, 
                                           QtCore.Qt.QueuedConnection)
@@ -124,7 +139,10 @@ else:
         server = TcpServer(inurl.site.host, inurl.site.port)
         server.newConnection.connect(newclient)
         source = None
-        print("Listening at", server.url())
+        serverurl = server.url()
+        if serverurl.scheme=="tcp" and inurl.scheme.endswith("slip.tcp"):
+            serverurl.scheme="slip.tcp"
+        print("Listening at", serverurl)
     else:
         print("Unsupported url:", inurl)
         sys.exit(-1)

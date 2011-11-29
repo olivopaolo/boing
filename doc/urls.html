@@ -63,12 +63,36 @@
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><url>&lt;relative-filepath&gt;</url></td></tr>
+<!-- SLIP -->
+<tr><th colspan="2">SLIP</th></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>slip.tcp://[&lt;host&gt;]:&lt;port&gt;</url></td>
+  <td>SLIP encoding/decoding over TCP socket</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>slip.file://&lt;absolute-filepath&gt;</url></td>
+  <td>SLIP data encoding/decoding over file</td></tr>
 <!-- OSC -->
 <tr><th colspan="2">OSC</th></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><url>osc[.udp|tcp]://[&lt;host&gt;]:&lt;port&gt;</url></td>
-  <td>OSC through a socket</td></tr>
+  <td>OSC through a socket (SLIP decoding for TCP connections)</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>osc://&lt;absolute-filepath&gt;</url></td>
+  <td>OSC from file (SLIP decoding)</td></tr>
+<!-- TUIO -->
+<tr><th colspan="2">TUIO</th></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>tuio[.udp|tcp]://[&lt;host&gt;]:&lt;port&gt;</url></td>
+  <td>TUIO/OSC through a socket (SLIP decoding for TCP connections)</td></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>tuio://&lt;absolute-filepath&gt;</url></td>
+  <td>TUIO/OSC from file (SLIP decoding)</td></tr>
 </table>
 
 <p><sup>1</sup>On Windows, in order to define a file using the scheme

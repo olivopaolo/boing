@@ -31,8 +31,8 @@ class DataWriter(Consumer):
     """It takes an output device and anytime it receives some data from
     a Producer, it writes that data into the output device."""
 
-    def __init__(self, outputdevice, parent=None):
-        Consumer.__init__(self, parent=parent)
+    def __init__(self, outputdevice):
+        Consumer.__init__(self)
         self.__out = outputdevice
 
     def _consume(self, products, producer):

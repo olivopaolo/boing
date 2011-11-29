@@ -10,14 +10,17 @@
 
 import datetime
 
+from PyQt4.QtCore import QObject
+
 from boing import osc, slip
 from boing.eventloop.ProducerConsumer import Consumer
 from boing.utils.ExtensibleStruct import ExtensibleStruct
 
-class LogFile(Consumer):
+class LogFile(QObject, Consumer):
 
     def __init__(self, outputdevice, raw=False, parent=None):
-        Consumer.__init__(self, parent=parent)
+        QObject.__init__(self, parent)
+        Consumer.__init__(self)
         self.__out = outputdevice
         self.raw = raw
         self.cnt = 0 # for statistics...

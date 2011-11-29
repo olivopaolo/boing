@@ -16,7 +16,8 @@ from boing.utils.ExtensibleStruct import ExtensibleStruct
 class TestExtensibleStruct(unittest.TestCase):
 
     def setUp(self):
-        self.e = ExtensibleStruct(i=1, t="boing", l=[])
+        self.dict = {"i":1, "t":"boing", "l":[1,2,3], "d":{"x":0}}
+        self.e = ExtensibleStruct(**self.dict)
 
     def test_isMutableMapping(self):
         self.assertTrue(isinstance(self.e, collections.MutableMapping))
@@ -26,23 +27,18 @@ class TestExtensibleStruct(unittest.TestCase):
         self.assertEqual(dict(e.items()), {})
         self.assertEqual(e.signature(), frozenset())
 
-    def test_constructor_direct(self):
-        e = ExtensibleStruct(i=1, t="boing", l=[])
-        self.assertEqual(dict(e.items()), {"i":1, "t":"boing", "l":[]})
-
     def test_constructor_dict(self):
-        mould = {"i":1, "t":"boing", "l":[]} 
-        e = ExtensibleStruct(**mould)
-        self.assertEqual(dict(e.items()), mould)
+        e = ExtensibleStruct(**self.dict)
+        self.assertEqual(dict(e.items()), self.dict)
 
     def test_copy(self):
         copy = self.e.copy()
-        self.assertEqual(dict(copy.items()), {"i":1, "t":"boing", "l":[]})
+        self.assertEqual(dict(copy.items()), self.dict)
 
     def test_get(self):
-        self.assertEqual(self.e.get("i"), 1)
-        self.assertEqual(self.e.get("t"), "boing")
-        self.assertEqual(self.e.get("l"), [])
+        self.assertEqual(self.e.get("i"), self.dict["i"])
+        self.assertEqual(self.e.get("t"), self.dict["t"])
+        self.assertEqual(self.e.get("l"), self.dict["l"])
         self.assertEqual(self.e.get('default', 0), 0)
 
     def test_setdefault(self):
@@ -51,31 +47,33 @@ class TestExtensibleStruct(unittest.TestCase):
         self.assertRaises(AttributeError, self.e.setdefault, 'setdefault', 0)
 
     def test_items(self):
-        self.assertEqual(dict(self.e.items()), {"i":1, "t":"boing", "l":[]})
+        self.assertEqual(dict(self.e.items()), self.dict)
         d = {}
         for key, value in self.e.items():
             d[key] = value
-        self.assertEqual(d, {"i":1, "t":"boing", "l":[]})
+        self.assertEqual(d, self.dict)
 
     def test_values(self):
         values = []
         for k in self.e.values():
             values.append(k)
-        self.assertEqual(len(values), 3)
+        self.assertEqual(len(values), 4)
         self.assertTrue(1 in values)
         self.assertTrue("boing" in values)
-        self.assertTrue([] in values)
+        self.assertTrue([1,2,3] in values)
+        self.assertTrue({"x":0} in values)
 
     def test_keys(self):
         keys = set()
         for k in self.e.keys():
             keys.add(k)
-        self.assertEqual(keys, {"i", "t", "l"})
+        self.assertEqual(keys, self.dict.keys())
 
     def test_signature(self):
-        self.assertEqual(self.e.signature(), {"i","t","l"})
+        self.assertEqual(self.e.signature(), self.dict.keys())
         self.assertEqual(self.e.signature(True), 
-                         {"i":type(1), "t":type("boing"), "l":type([])})
+                         {"i":type(1), "t":type("boing"), 
+                          "l":type([]), "d":type({})})
 
     def test_conformsToSignature(self):
         copy = self.e.copy()
@@ -84,7 +82,7 @@ class TestExtensibleStruct(unittest.TestCase):
     def test__getattr__(self):
         self.assertEqual(self.e.i, 1)
         self.assertEqual(self.e.t, "boing")
-        self.assertEqual(self.e.l, [])
+        self.assertEqual(self.e.l, [1,2,3])
         try:
             self.e.x
             self.fail()
@@ -106,7 +104,7 @@ class TestExtensibleStruct(unittest.TestCase):
 
     def test__delattr__(self):
         del self.e.i
-        self.assertEqual(self.e.signature(), {"t", "l"})
+        self.assertEqual(self.e.signature(), {"t", "l", "d"})
         try:
             del self.e.setdefault
             self.fail("Exception not Raised")
@@ -140,22 +138,22 @@ class TestExtensibleStruct(unittest.TestCase):
     #  Emulating container type   
 
     def test__len__(self):
-        self.assertEqual(len(self.e), 3)
+        self.assertEqual(len(self.e), 4)
 
     def test__iter__(self):
         keys = set()
         for k in self.e:
             keys.add(k)
-        self.assertEqual(keys, {"i", "t", "l"})
+        self.assertEqual(keys, self.dict.keys())
 
     def test__getitem__(self):
         self.assertEqual(self.e["i"], 1)
         self.assertEqual(self.e["t"], "boing")
-        self.assertEqual(self.e["l"], [])
+        self.assertEqual(self.e["l"], [1, 2, 3])
         try:
             self.e["default"]
             self.fail("Exception not Raised")
-        except KeyError: pass
+        except AttributeError: pass
 
     def test__setitem__(self):
         self.e["i"] = 2
@@ -166,12 +164,20 @@ class TestExtensibleStruct(unittest.TestCase):
             self.e["setdefault"] = 0
             self.fail()
         except AttributeError: pass
+        try:
+            self.e[12] = 0
+            self.fail()
+        except TypeError: pass
 
     def test__delitem__(self):
         del self.e["i"]
-        self.assertEqual(self.e.signature(), {"t", "l"})
+        self.assertEqual(self.e.signature(), {"t", "l", "d"})
         try:
             del self.e["setdefault"]
+            self.fail("Exception not Raised")
+        except AttributeError: pass
+        try:
+            del self.e["j"]
             self.fail("Exception not Raised")
         except AttributeError: pass
 

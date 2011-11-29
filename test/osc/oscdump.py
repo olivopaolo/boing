@@ -65,6 +65,7 @@ if url.kind in (URL.ABSPATH, URL.RELPATH) or url.scheme=="file":
     source = SlipDataReader(FileReader(url, uncompress=True))
     source.inputDevice().completed.connect(closer, QtCore.Qt.QueuedConnection)
     output.subscribeTo(source)
+    source.inputDevice().start()
 elif url.scheme.endswith("udp"):
     from boing.udp.UdpSocket import UdpListener
     source = DataReader(UdpListener(url))
@@ -86,7 +87,9 @@ elif url.scheme.endswith("tcp"):
     server = TcpServer(url.site.host, url.site.port)
     server.newConnection.connect(newclient)
     source = None
-    print("Listening at", server.url())
+    serverurl = server.url()
+    serverurl.scheme="tuio.slip.tcp"
+    print("Listening at", serverurl)
 else:
     print("Unsupported url:", url)
     sys.exit(-1)

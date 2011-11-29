@@ -1,0 +1,55 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="../style.css">
+  <title>Boing: input events tools</title>
+</head>
+
+<body>
+
+<div class="title">Boing: input events tools</div>
+
+<h1>Documentation</h1>
+
+<p>Redirecting input sources to different outputs:</p>
+
+<pre>
+&gt; python test/run.py [-i &lt;source&gt;]... [-o &lt;output&gt;]...
+   
+Options:
+  -i &lt;source&gt;
+     Define an input source
+
+  -o &lt;output&gt;
+     Define an output
+
+  -h, --help
+     Show help
+
+Sources:
+  TUIO socket URL
+     Grab a TUIO stream over a socket 
+     (e.g. tuio://sim@localhost:3333?rt=false)
+
+  TUIO log URL
+     Play a TUIO stream logged in a file 
+     (e.g. tuio:///tmp/test.osc.bz2?speed=1&amploop=false&amprt=false)
+
+     The "rt" parameter (i.e. reception time) defines how events'
+     timetag is determined.  If true the timetag is determined as the
+     moment when the event is received, instead of using the moment
+     when the event was generated.
+
+Outputs:
+  viz:
+     Display gesture events (default output) 
+     (e.g. viz:?hz=60&ampx=320&ampy=240)
+
+  dump:
+     Print the received events to the standard output 
+     (e.g. dump:?hz=60)
+
+</pre>
+
+<p><a href="../index.html">&lt;&lt; home</a></p>
+</body></html>

@@ -23,8 +23,8 @@ class TextReader(DataReader):
 
 class TextWriter(DataWriter):
 
-    def __init__(self, outputdevice, encoding="utf-8", parent=None):
-        DataWriter.__init__(self, outputdevice, parent)
+    def __init__(self, outputdevice, encoding="utf-8"):
+        DataWriter.__init__(self, outputdevice)
         self.encoding = encoding
         self.errors = "replace"
 

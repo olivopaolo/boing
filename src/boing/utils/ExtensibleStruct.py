@@ -22,7 +22,7 @@ class ExtensibleStruct(collections.MutableMapping):
 
     def get(self, key, defvalue=None):
         return self.__dict__.get(key, defvalue)
-
+    
     def items(self):
         return ((key, value) for key, value in self.__dict__.items() \
                     if key in self.__info)
@@ -54,6 +54,12 @@ class ExtensibleStruct(collections.MutableMapping):
             self.__setattr__(key, valueOrFunction)
             return valueOrFunction
 
+    def findItem(self, path):
+        elem = self
+        for i in path:
+            elem = elem[i]
+        return elem
+
     # ---------------------------------------------------------------------
     #  Customizing attribute access
         
@@ -70,10 +76,12 @@ class ExtensibleStruct(collections.MutableMapping):
         if key in self.__info: 
             self.__info.remove(key)
             object.__delattr__(self, key)
-        else: 
+        elif key in self.__class__.__dict__:
             raise AttributeError(
                 "Cannot remove item '%s': name reserved by %s"%(
                     key, self.__class__.__name__))
+        else: 
+            raise AttributeError(key)
 
     # ---------------------------------------------------------------------
     #  Basic customization
@@ -103,7 +111,7 @@ class ExtensibleStruct(collections.MutableMapping):
         return iter(self.__info)
 
     def __getitem__(self, key):
-        return self.__dict__[key]
+        return self.__getattribute__(key)
 
     def __setitem__(self, key, value):
         self.__setattr__(key, value)

@@ -17,7 +17,7 @@ class Observable(QtCore.QObject):
     """An Observable can trigger a list of registered ReactiveObjects."""
 
     # trigger signal
-    trigger = QtCore.pyqtSignal()
+    trigger = QtCore.pyqtSignal(QtCore.QObject)
     
     def __init__(self, parent=None):
         QtCore.QObject.__init__(self, parent)
@@ -59,7 +59,7 @@ class Observable(QtCore.QObject):
 
     def notifyObservers(self):
         """Invoke the method "_react" of all the registered ReactiveObjects."""
-        self.trigger.emit()
+        self.trigger.emit(self)
 
     def _checkRef(self):
         # Keep only alive references
@@ -67,11 +67,10 @@ class Observable(QtCore.QObject):
                                    if ref() is not None)
  
 
-class ReactiveObject(QtCore.QObject):
+class ReactiveObject(object):
     """Object that can register to different Observables, in order to listen to
     their notifications."""
-    def __init__(self, parent=None):
-        QtCore.QObject.__init__(self, parent)
+    def __init__(self):
         self.__observed = set()
         
     def __del__(self):
@@ -110,8 +109,7 @@ class ReactiveObject(QtCore.QObject):
         self.__observed = set(ref for ref in self.__observed \
                                   if ref() is not None)
 
-    @QtCore.pyqtSlot()    
-    def _react(self):
+    def _react(self, observable):
         """It can be overridden to define business logic, but do not invoke it
         directly."""
         pass
@@ -122,16 +120,16 @@ class DelayedReactive(ReactiveObject):
     notification to a fixed refresh time. All the Observable that have been
     notified since last refresh are enqueued into the 'queue'."""
 
-    def __init__(self, hz=None, parent=None):
+    def __init__(self, hz=None):
         """'hz' defines the refresh frequency; if is is None, refresh is
         immediately done at react time, so that the DelayedReactive actually
         works the same as a ReactiveObject."""
-        ReactiveObject.__init__(self, parent)
+        ReactiveObject.__init__(self)
         self.__hz = hz
-        if hz is None or float(hz)==0: self.__tid = None
-        else: self.__tid = EventLoop.repeat_every(1/hz, 
-                                                  DelayedReactive._timeout,
-                                                  weakref.ref(self))
+        if self.__hz: 
+            self.timer = QtCore.QTimer()
+            self.timer.timeout.connect(self.__timeout)
+            self.timer.start(1000/hz)
         self.__queue = set()
 
     def frequency(self):
@@ -142,13 +140,12 @@ class DelayedReactive(ReactiveObject):
         # Return referents not references
         return frozenset(ref() for ref in self.__queue)
 
-    def _react(self):
-        observable = self.sender()
+    def _react(self, observable):
         if observable not in self.queue(): 
             self.__queue.add(weakref.ref(observable))
         if self.__hz is None:
             self._refresh()
-            self.__queue = set()
+            self.__queue.clear()
 
     def _removeObservable(self, observable):
         """It can be overridden, but do not invoke it directly."""
@@ -163,18 +160,15 @@ class DelayedReactive(ReactiveObject):
         # Keep only alive references
         self.__queue = set(ref for ref in self.__queue if ref() is not None)
 
+    def __timeout(self):
+        if self.__queue:
+            self._refresh()
+            self.__queue.clear()
+
     def _refresh(self):
         """It can be overridden to define business logic, but do not invoke it
         directly."""
         pass
-
-    @staticmethod
-    def _timeout(tid, ref):
-        o = ref()
-        if o is None: EventLoop.cancel_timer(tid)
-        elif o._DelayedReactive__queue:
-            o._refresh()
-            o._DelayerReactive__queue = set()
 
 # -------------------------------------------------------------------
 
@@ -184,8 +178,7 @@ if __name__ == '__main__':
         print("usage: %s <seconds>"%sys.argv[0])
         sys.exit(1)
     class DebugReactive(ReactiveObject):
-        def _react(self):
-            obs = self.sender()
+        def _react(self, obs):
             print("%s reacted to %s"%(self.name, obs.name))
     class DebugDelayedReactive(DelayedReactive):
         def _refresh(self):

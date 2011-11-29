@@ -19,10 +19,10 @@ from boing.url import URL
 class TcpServer(QTcpServer):
 
     def __init__(self, host=None, port=0, family=None,
-                 maxconnections=30, factory=TcpSocket, options=tuple()):
+                 maxconnections=30, factory=TcpSocket, options=tuple(), parent=None):
         """Raises Exception if TCP socket cannot be bound at specified
         host and port."""
-        QTcpServer.__init__(self, parent=None)
+        QTcpServer.__init__(self, parent=parent)
         self.__factory = factory
         self.__options = options if options is not None else tuple()
         self.setMaxPendingConnections(maxconnections)
