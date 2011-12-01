@@ -47,7 +47,7 @@ class TestExtensibleTree(unittest.TestCase):
         self.assertEqual(e.i, 2)
         self.assertEqual(e.j, 0)
         self.assertRaises(AttributeError, setattr, e, "update", 0)
-        self.assertRaises(AttributeError, setattr, e, "_NonRecursiveNode__info", 0)
+        self.assertRaises(AttributeError, setattr, e, "_ExtensibleTree__info", 0)
 
     def test__delattr__(self):
         e = ExtensibleTree(self.dict)
@@ -55,7 +55,8 @@ class TestExtensibleTree(unittest.TestCase):
         self.assertEqual(set(e.keys()), {"t", "l", "d"})
         self.assertRaises(AttributeError, delattr, e, "noattr")
         self.assertRaises(AttributeError, delattr, e, "update")
-        self.assertRaises(AttributeError, delattr, e, "_NonRecursiveNode__info")
+        self.assertRaises(AttributeError, delattr, e, "clear")
+        self.assertRaises(AttributeError, delattr, e, "_ExtensibleTree__info")
 
     def test_items(self):
         self.e[1] = 6
@@ -86,6 +87,46 @@ class TestExtensibleTree(unittest.TestCase):
         for k in self.e.keys():
             keys.add(k)
         self.assertEqual(keys, self.dict.keys())
+
+    def test_discard(self):
+        e = ExtensibleTree()
+        e.a.a = 1
+        e.b.c = []
+        e.b.d = {}
+        # identifier 
+        self.assertTrue("a" in e)
+        e.discard("a")
+        self.assertFalse("a" in e)
+        # path
+        self.assertTrue(("b", "c") in e)
+        e.discard(("b", "c"))
+        self.assertFalse(("b", "c") in e)
+        # not present identifier
+        e.discard("d")
+        # not present path
+        e.discard(("d", "c"))
+
+    def test_update(self):
+        e = ExtensibleTree()
+        e.a.a = 1
+        e.b.c = []
+        e.b.d = {}
+        e.c = ExtensibleTree()
+        ee = ExtensibleTree()
+        ee.a.a = 2
+        ee.b = 3
+        ee.update(e)
+        self.assertEqualAndSeparated(e, ee)
+
+    def assertEqualAndSeparated(self, e1, e2):
+        for k, v in e1.items():
+            self.assertIn(k, e2)
+            v2 = e2[k]
+            if isinstance(v, ExtensibleTree):
+                self.assertNotEqual(id(v), id(v2))
+                self.assertEqualAndSeparated(v, v2)
+            else:
+                self.assertEqual(v, v2)
 
     # ---------------------------------------------------------------------
     #  Emulating container type   

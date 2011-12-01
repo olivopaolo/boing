@@ -8,6 +8,7 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import collections
+import copy as _copy
 import itertools
 import re
 
@@ -76,14 +77,14 @@ class tree_items(tree_iterable):
         return "tree_items([%s])"%output
 
 
-class NonRecursiveNode(collections.MutableMapping):
+class ExtensibleTree(collections.MutableMapping):
     
     def __init__(self, flattentree=None):
-        object.__setattr__(self, "_NonRecursiveNode__info", dict())
-        if isinstance(flattentree, collections.Mapping):
+        object.__setattr__(self, "_ExtensibleTree__info", dict())
+        if flattentree is not None:
             for path, value in flattentree.items():
                 self.set(path, value)
-    
+
     def keys(self, pattern=slice(None)):
         """Return a new view of the tree’s keys, which match to pattern."""
         iterable = None
@@ -98,8 +99,6 @@ class NonRecursiveNode(collections.MutableMapping):
                             if re.match("%s$"%pattern, 
                                         k if isinstance(k, str) else str(k)))
         else: 
-            print("pattern", pattern)
-            print()
             raise TypeError("pattern must be string, integer or slice, not %s"%
                             pattern.__class__.__name__)
         return tree_keys(iterable)
@@ -174,45 +173,90 @@ class NonRecursiveNode(collections.MutableMapping):
                 del prefix[-1]
         return accumulate
 
-    def set(self, path, value):
-        """Set to value the tree node which is pointed by path."""
-        if isinstance(path, str) or isinstance(path, int): path = (path, )
-        if path:
-            first, *rest = path
-            if not rest: 
-                self[first] = value
-            else: 
-                self[first].set(rest, value)
-
-    def match(self, path, forced=False):
+    def match(self, path, index=0):
         """Return the matched subtree or None if 'path' does not
-        matches. 'path' must fully match in order to be accepted. If
-        'forced' is True, recursion is forced to NonRecursiveNode
-        also."""
-        if isinstance(path, str) or isinstance(path, int): path = (path, )
-        if path:
-            first, *rest = path
-            matches = self.items(first)
-            if matches:
-                subtree = type(self)()
-                for key, value in matches:
-                    if not rest:
-                        subtree[key] = value
-                    elif isinstance(value, ExtensibleTree) \
-                            or isinstance(value, NonRecursiveNode) and forced:
-                        inner = value.match(rest, forced)
-                        if inner is not None: subtree[key] = inner
-                if not subtree: subtree = None
-                return subtree
-        return None
+        matches."""
+        rvalue = None
+        if isinstance(path, str):
+            if path.isidentifier():
+                if path in self.__info:
+                    value = self.__info[path]
+                    rvalue = ExtensibleTree()
+                    rvalue[path] = value if not isinstance(value, ExtensibleTree) \
+                        else value.copy()
+            else:
+                matches = ExtensibleTree()
+                for key, value in self.items(path):
+                    matches[key] = value if not isinstance(value, ExtensibleTree) \
+                        else value.copy()
+                if matches: rvalue = matches 
+        elif isinstance(path, int):
+            if path in self.__info:
+                value = self.__info[path]
+                rvalue = ExtensibleTree()
+                rvalue[path] = value if not isinstance(value, ExtensibleTree) \
+                    else value.copy()
+        elif isinstance(path, collections.Sequence):
+            current = path[index]
+            matches = ExtensibleTree()
+            for key, value in self.items(current):
+                if index==len(path)-1:
+                    matches[key] = value if not isinstance(value, ExtensibleTree) \
+                        else value.copy()
+                elif isinstance(value, ExtensibleTree):
+                    inner = value.match(path, index+1)
+                    if inner is not None: matches[key] = inner
+                else:
+                    matches[key] = value
+            if matches: rvalue = matches
+        return rvalue
 
-    def update(self, other, getdiff=False):
-        """Update the tree with the ('path','value') pairs from
-        'other'. If 'getdiff' is True the diff tree is returned,
-        otherwise None is returned."""
-        if not isinstance(other, collections.Mapping):
-            raise TypeError("other must be collections.Mapping type, not %s"%
-                            other.__class__.__name__)
+    def get(self, path, defvalue=None):
+        """Return the value at path, or defvalue if it does not
+        exist (no regexp)."""
+        rvalue = defvalue
+        if isinstance(path, str) or isinstance(path, int): 
+            rvalue = self.__info.get(path, defvalue)
+        elif isinstance(path, collections.Sequence):
+            node = self
+            for key in path:
+                if not isinstance(node, ExtensibleTree): break
+                node = node.get(key)
+            else: 
+                rvalue = node
+        return rvalue
+        
+    def set(self, path, value):
+        """Update the value at path (no regexp)."""
+        if isinstance(path, str) or isinstance(path, int):
+            self.__info[path] = value
+        elif isinstance(path, collections.Sequence):
+            node = self
+            for key in path[:-1]:
+                if not isinstance(node, ExtensibleTree):
+                    raise ValueError("Invalid path: %s"%str(path))
+                else: node = node[key]
+            if isinstance(node, ExtensibleTree):
+                node[path[-1]] = value
+            else:
+                raise ValueError("Invalid path: %s"%str(path))
+        else: raise TypeError("Invalid path: %s"%str(path))
+
+    def discard(self, path):
+        """Remove the subtree at 'path' from the tree if it is present
+        (no regexp)."""
+        if isinstance(path, str) or isinstance(path, int):
+            self.__info.pop(path, None)
+        elif isinstance(path, collections.Sequence):
+            node = self
+            for key in path[:-1]:
+                if not isinstance(node, ExtensibleTree): break
+                node = node.get(key)
+            else: 
+                if isinstance(node, ExtensibleTree):
+                    node.discard(path[-1])
+
+    def update(self, other, reuse=False, getdiff=False):
         diff = ExtensibleTree() if getdiff else None
         for key, value in other.items():
             if key in self.__info:
@@ -220,86 +264,48 @@ class NonRecursiveNode(collections.MutableMapping):
                 oldvalue = self.__info[key]
                 if isinstance(value, ExtensibleTree):
                     if isinstance(oldvalue, ExtensibleTree):
-                        inner = oldvalue.update(value, getdiff)
-                        if getdiff:
-                            for action in ("updated", "added"): 
-                                if action in inner: 
-                                    diff[action][key] = inner[action]
-                    else:
+                        inner = oldvalue.update(value, reuse, getdiff)
                         if getdiff: 
-                            diff["updated"][key] = NonRecursiveNode(value.flatten())
-                        self[key] = value
-                elif isinstance(value, NonRecursiveNode):
-                    if getdiff: diff["updated"][key] = value
-                    self[key] = ExtensibleNode(value.flatten())
-                elif oldvalue!=value: 
-                    if getdiff: diff["updated"][key] = value
+                            if "added" in inner: 
+                                diff.added[key] = inner.added
+                            if "updated" in inner: 
+                                diff.updated[key] = inner.updated
+                    else:
+                        self[key] = value if reuse else value.copy()
+                        if getdiff: diff.updated[key] = value.copy()
+                elif oldvalue!=value:
+                    if getdiff: diff.updated[key] = value
                     self[key] = value
             # Add case
             elif isinstance(value, ExtensibleTree):
-                if getdiff: 
-                    diff["added"][key] = NonRecursiveNode(value.flatten())
-                self[key] = value
-            elif isinstance(value, NonRecursiveNode):
-                if getdiff: 
-                    diff["added"][key] = value
-                self[key] = ExtensibleTree(value.flatten())
+                self[key] = value if reuse else value.copy()
+                if getdiff: diff.added[key] = value.copy()
             else:
-                if getdiff: diff["added"][key] = value
                 self[key] = value
         return diff
 
-    def remove(self, other, getdiff=False):
-        """Remove tree's nodes pointed by any path in 'other'.
-        'other's leaf values are not considered. If 'getdiff' is True
-        the diff tree is returned, otherwise None is returned."""
-        if not isinstance(other, ExtensibleTree):
-            raise TypeError("other must be ExtensibleTree, not %s"%
-                            other.__class__.__name__)
+    def remove_update(self, other, getdiff=False):
+        """Remove all nodes for any path in 'other'. 'other's leaf
+        values are not considered."""
         diff = ExtensibleTree() if getdiff else None
         for key, value in other.items():
             if key in self.__info:
                 oldvalue = self.__info[key]
-                if isinstance(value, ExtensibleTree) \
-                        and isinstance(oldvalue, ExtensibleTree):
-                    inner = oldvalue.remove(value, getdiff)
-                    if getdiff and inner: 
-                        diff["removed"][key] = inner["removed"]
+                if isinstance(value, ExtensibleTree):
+                    if isinstance(oldvalue, ExtensibleTree):
+                        inner = oldvalue.remove_update(value, getdiff)
+                        if inner: diff.removed[key] = inner.removed
+                    else: continue
                 else:
-                    if getdiff:
-                        if isinstance(oldvalue, ExtensibleTree):
-                            oldvalue = NonRecursiveNode(oldvalue.flatten())
-                        diff["removed"][key] = oldvalue
                     del self.__info[key]
-        return diff        
-
-    def difference_update(self, other):
-        """Update the tree, removing paths found in 'other'."""
-        if not isinstance(other, ExtensibleTree):
-            raise TypeError("other must be ExtensibleTree, not %s"%
-                            other.__class__.__name__)
-        changed = False
-        for key, value in other.items():
-            if key in self.__info:
-                oldvalue = self.__info[key]
-                if isinstance(value, ExtensibleTree) \
-                        and isinstance(oldvalue, ExtensibleTree):
-                    changed = oldvalue.difference_update(value)
-                    if changed and not oldvalue: 
-                        del self.__info[key]
-                else:
-                    changed = True
-                    del self.__info[key]
-        return changed
+                    if getdiff: diff.removed[key] = None
+        return diff
 
     # ---------------------------------------------------------------------
     #  Customizing attribute access
 
     def __getattr__(self, key):
-        if key=="_NonRecursiveNode__info":
-            return object.__getattribute__(self, key)
-        else:
-            value = self.__info.get(key)
+        value = self.__info.get(key)
         if value is None:
             value = ExtensibleTree()
             self[key] = value
@@ -311,8 +317,8 @@ class NonRecursiveNode(collections.MutableMapping):
             self.__info[key] = value
         elif key in dir(self.__class__) or key in self.__dict__:
             raise AttributeError(
-                "Can't set attribute '%s': name already used by %s"%(
-                    key, self.__class__.__name__))
+                "'%s' object attribute '%s' is read-only"%(
+                    self.__class__.__name__, key))
         else:
             # add
             self.__info[key] = value
@@ -320,13 +326,15 @@ class NonRecursiveNode(collections.MutableMapping):
     def __delattr__(self, key):
         if key in self.__class__.__dict__:
             raise AttributeError(
-                "Cannot remove item '%s': name reserved by %s"%(
-                    key, self.__class__.__name__))
+                "'%s' object attribute '%s' is read-only"%(
+                    self.__class__.__name__, key))
         else:
+            found = False
             try:
                 del self.__info[key]
-            except KeyError as err:
-                raise AttributeError(err)
+            except KeyError: pass
+            else: found = True
+            if not found: raise AttributeError(key)
 
     # ---------------------------------------------------------------------
     #  Basic customization
@@ -355,41 +363,77 @@ class NonRecursiveNode(collections.MutableMapping):
         
     def __setitem__(self, key, value):
         if isinstance(key, str) and key.isidentifier() or isinstance(key, int):
+            error = None
             try:
                 self.__setattr__(key, value)
             except AttributeError as err:
-                raise KeyError(err)
+                error = str(err.args[0])
+            if error is not None: raise KeyError(error)
         for k in self.keys(key):
             self.__info[k] = value
 
     def __delitem__(self, key):
         if isinstance(key, str) and key.isidentifier() or isinstance(key, int):
+            found = False
             try:
                 self.__delattr__(key)
-            except AttributeError as err:
-                raise KeyError(err)
-        for k in self.keys(key):
-            del self.__info[k]
+            except AttributeError: pass
+            else: found = True
+            if not found: raise KeyError(key)
+        else:
+            i = 0
+            for k in tuple(self.keys(key)):
+                i += 1
+                del self.__info[k]
+            if not i: raise KeyError(key)
 
     def __contains__(self, path):
         """'path' can be a single string or integer or event the path
-        to a tree node or leaf."""
+        to a tree node or leaf (no regexp)."""
+        rvalue = False
         if isinstance(path, str) or isinstance(path, int): 
-            return path in self.__info
-        else:
-            level = self
-            for k in path:
-                if not isinstance(level, ExtensibleTree) or k not in level:
-                    return False
-                else:
-                    level = level[k]
-            else:
-                return True
+            rvalue = path in self.__info
+        elif isinstance(path, collections.Sequence):
+            node = self
+            for key in path[:-1]:
+                if not isinstance(node, ExtensibleTree): break
+                node = node.get(key)
+            else: 
+                rvalue = isinstance(node, ExtensibleTree) and path[-1] in node
+        return rvalue
 
-# -------------------------------------------------------------------
+    # ---------------------------------------------------------------------
+    #  Copy methods
 
-class ExtensibleTree(NonRecursiveNode):
-    """Recursive Node."""
-    pass
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        copy = ExtensibleTree()
+        for key, value in self.items():
+            if isinstance(value, ExtensibleTree): value = value.copy()
+            copy[key] = value
+        return copy
+
+    def __deepcopy__(self, memo):
+        copy = ExtensibleTree()
+        for key, value in self.items():
+            copy[key] = _copy.deepcopy(value, memo)
+        return copy
+
+
+
+if __name__=="__main__":    
+    e = ExtensibleTree()
+    e.a.a = 1
+    e.b.c = []
+    e.b.d = {}
+    e.c = ExtensibleTree()
+    print(e)
+    ee = ExtensibleTree()
+    ee.a.a = 2
+    diff = ee.update(e, getdiff=True)
+    print(ee)
+    print(diff.flatten())
+
     
-

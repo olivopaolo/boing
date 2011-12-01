@@ -7,6 +7,9 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import copy
+import math
+
 from PyQt4 import QtCore, QtGui
 
 from boing.eventloop.OnDemandProduction import SelectiveConsumer
@@ -47,9 +50,10 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
             else:
                 return EventViz.SISIZE'''
             
-    def __init__(self, fps=60, parent=None):
+    def __init__(self, restrictions=(("diff", ".*", "gestures"),), 
+                 fps=60, parent=None):
         QtGui.QWidget.__init__(self, parent)
-        SelectiveConsumer.__init__(self, (("diff", ".*", "gestures"),), fps)
+        SelectiveConsumer.__init__(self, restrictions, fps)
         """Records of sources' touch events."""
         self.__sources = {}
         """self.oldest = None
@@ -58,7 +62,6 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
             print("WARNING: using dummy DisplayDevice")
             self.__display.debug()
         self.drawmode = EventViz.SISIZE"""
-        self.pointreduction = 1
         self.debuglevel = 0
         # Setup gui
         self.setWhatsThis("Event &Viz")
@@ -69,9 +72,13 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
         self.connect(QtGui.QShortcut('Alt+C', self), QtCore.SIGNAL("activated()"), self.__configpanel)"""
         self.connect(QtGui.QShortcut('Ctrl+Q', self), QtCore.SIGNAL("activated()"), self.close)
     
-    '''
+    
     def _addObservable(self, observable):
-        Consumer._addObservable(self, observable)
+        SelectiveConsumer._addObservable(self, observable)
+        if isinstance(observable, StateMachine):
+            self.__sources[observable] = ExtensibleTree(
+                {"state":observable.state().copy(), "gestures":{}})
+        '''
         if not isinstance(observable, SourceList):
             self.__sources.setdefault(observable, {})
             # resize the widget if necessary
@@ -85,28 +92,30 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
 
     def _removeObservable(self, observable):
         SelectiveConsumer._removeObservable(self, observable)
-        self.__sources.pop(observable, None)
+        self.__sources.pop(observable)
         self.update()
 
     def _consume(self, products, source):
-        tracks = self.__sources.setdefault(source, {})
-        diff = ExtensibleTree()
-        for item in products:
-            StateMachine.mergeDiff(diff, item.diff)
-        for id_, node in diff.added.gestures.items():
-            if "rel_pos" in node: 
-                tracks[id_] = [node.rel_pos]
-        for id_, node in diff.updated.gestures.items():
-            if "rel_pos" in node:
-                history = tracks.setdefault(id_, [])
-                history.append(node.rel_pos)
-        for id_, node in diff.removed.gestures.items():
-            if "rel_pos" in node:
-                tracks.pop(id_, None)
-        self.update()
-        """elif key=="timetag" and isinstance(value, datetime.datetime):
-            if self.oldest is None or value<self.oldest:
-            self.oldest = value"""
+        if products is None:
+            print("products is None")
+            return
+        if source in self.__sources:
+            record = self.__sources[source]            
+            for item in products:
+                if isinstance(item, ExtensibleTree) and "diff" in item:
+                    if "added" in item.diff:
+                        record.state.update(item.diff.added, reuse=True)
+                    if "updated" in item.diff:
+                        record.state.update(item.diff.updated, reuse=True)
+                    if "removed" in item.diff:
+                        record.state.remove_update(item.diff.removed)
+                        for gid in item.diff.removed.gestures:
+                            record.gestures.pop(gid, None)
+            for gid, gstate in record.state.gestures.items():
+                if "rel_pos" in gstate:
+                    history = record.gestures.setdefault(gid, [])
+                    history.append(gstate.rel_pos)
+            self.update()
 
     def paintEvent(self, event):
         if self.debuglevel>3:
@@ -124,9 +133,9 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
             painter.drawLine(0, y, width, y)
             painter.drawLine(x, 0, x, height)
         painter.setFont(QtGui.QFont( "courier", 9))
-        for source, tracks in self.__sources.items():
-            fill, outline = (#source.state.get("color",
-                                             (QtCore.Qt.gray, QtCore.Qt.black))
+        for source, record in self.__sources.items():
+            fill, outline = (record.state.get("color",
+                                              (QtCore.Qt.gray, QtCore.Qt.black)))
             deviceratio = None
             """gesturestate = source.state.get("gestures", {})
             pos_si_range = gesturestate.get("pos_si_range")
@@ -150,28 +159,29 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
                 painter.setBrush(QtCore.Qt.NoBrush)
                 painter.drawRect(0, 0, pixel_pos_range[0], pixel_pos_range[1])
                 painter.restore()"""
+            painter.setPen(outline)
+            painter.setBrush(fill)
             # Draw tracks
-            for evid, history in tracks.items():
-                #gesture = gesturestate.get(evid, ExtensibleEvent())
-                # Draw first point
-                painter.setPen(outline)
-                painter.setBrush(outline)
-                pos0 = self.__tovizpos(history[0], deviceratio)
-                painter.drawEllipse(pos0[0]-3, pos0[1]-3, 6, 6)
-                # Draw path
-                painter.setBrush(fill)
+            for gid, history in record.gestures.items():
                 posN = self.__tovizpos(history[-1], deviceratio)
-                x, y = posN[0], posN[1] 
+                x, y = posN
                 if len(history)>1:
+                    # Draw first point
+                    pos0 = self.__tovizpos(history[0], deviceratio)
+                    painter.save()
+                    painter.setPen(outline)
+                    painter.setBrush(outline)
+                    painter.drawEllipse(pos0[0]-3, pos0[1]-3, 6, 6)
+                    painter.restore()
+                    # Draw path
                     path = QtGui.QPainterPath()
-                    path.moveTo(pos0[0], pos0[1]);
-                    for e in history[1:-1:self.pointreduction]:
-                        posI = self.__tovizpos(e, deviceratio)
-                        path.lineTo(posI[0], posI[1])
-                        count += 1
-                    path.lineTo(x, y)
+                    path.moveTo(*pos0);
+                    for memento in history[1:]:
+                        posI = self.__tovizpos(memento, deviceratio)
+                        path.lineTo(*posI)
+                        # count += 1
                     painter.strokePath(path, painter.pen())
-                """
+                    """
                 # Draw boundingbox if defined                
                 bb = gesture.get("boundingbox")
                 if bb is not None:       
@@ -196,32 +206,31 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
                         painter.drawEllipse(QtCore.QPoint(0,0),
                                             int(bb_rel_size[0] * width),
                                             int(bb_rel_size[1] * height))     
-                        painter.restore()
+                        painter.restore()"""
                 # Draw objclass if defined
-                objclass = gesture.get("objclass")
-                if objclass is not None:
+                if "objclass" in record.state.gestures[gid]:
                     painter.save()
                     painter.setPen(QtCore.Qt.black)
-                    painter.drawText(x+1.5*o, y-2*o, "obj: %d"%objclass)
+                    painter.drawText(x+1.5*o, y-2*o, "obj: %d"%stateN.objclass)
                     painter.restore()
                 # Draw orientation if defined
-                angle = gesture.getSI("angle", gesturestate)
-                if angle is not None:
+                if "si_angle" in record.state.gestures[gid]:
                     painter.save()
                     pencolor = QtGui.QColor(fill)
                     pencolor.setAlphaF(0.85)
                     painter.setPen(QtGui.QPen(pencolor, 4))
                     l = 25
-                    dx = math.cos(angle[0]) * l
-                    dy = math.sin(angle[0]) * l
+                    angle = stateN.si_angle[0]
+                    dx = math.cos(angle) * l
+                    dy = math.sin(angle) * l
                     painter.drawLine(x, y, x+dx, y+dy)           
-                    painter.restore()"""
-                # Draw current position 
+                    painter.restore()
+                # Draw current position
                 painter.drawEllipse(x-o, y-o, o+o, o+o)
                 # Print additional information
                 """ if self.debuglevel>0:
                     painter.setPen(QtCore.Qt.black)
-                    painter.drawText(x+1.5*o, y+o, "%s (%s)"%(evid, len(history)))
+                    painter.drawText(x+1.5*o, y+o, "%s (%s)"%(gid, len(history)))
                     if self.debuglevel>1:
                         i = 1
                         rel_pos = history[-1].rel_pos
@@ -255,13 +264,13 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
                 msecs = lag.seconds*1000+lag.microseconds/1000.
                 painter.drawText(5, 20, "lag: %d msecs"%msecs)
         self.oldest = None"""
-    '''
+                
     def keyPressEvent(self, event):
         key = event.key()
         if key==QtCore.Qt.Key_Space:
             self.debuglevel = (self.debuglevel + 1) % 5
             self.update()
-        else: QtGui.QWidget.keyPressEvent(self, event)'''
+        else: QtGui.QWidget.keyPressEvent(self, event)
         
     def sizeHint(self):
         return self.sizehint

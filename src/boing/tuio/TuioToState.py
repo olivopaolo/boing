@@ -94,62 +94,62 @@ class TuioToState(StateMachine, SelectiveConsumer):
         diff = ExtensibleTree()
         for s_id, tobj in desc.items():
             source_ids = self.__idpairs.setdefault(source, {})
-            event_id = source_ids.get(s_id)
-            if event_id is None: 
-                event_id = self.__nextId()
-                source_ids[s_id] = event_id
+            gid = source_ids.get(s_id)
+            if gid is None: 
+                gid = self.__nextId()
+                source_ids[s_id] = gid
             if profile=="2Dcur":
                 node = ExtensibleTree()
                 node.rel_pos = (tobj.x, tobj.y)
                 node.rel_speed = (tobj.X, tobj.Y)
-                diff.updated.gestures[event_id] = node
+                diff.updated.gestures[gid] = node
             elif profile in ("25Dcur", "3Dcur"):
                 node = ExtensibleTree()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
-                diff.updated.gestures[event_id] = node
+                diff.updated.gestures[gid] = node
             elif profile=="2Dblb":
                 node = ExtensibleTree()
                 node.rel_pos = (tobj.x, tobj.y)
                 node.rel_speed = (tobj.X, tobj.Y)
                 node.si_angle = (tobj.a, )
                 node.rel_size = (tobj.w, tobj.h)
-                diff.updated.gestures[event_id].boundingbox = node
+                diff.updated.gestures[gid].boundingbox = node
             elif profile=="25Dblb":
                 node = ExtensibleTree()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
                 node.si_angle = (tobj.a, )
                 node.rel_size = (tobj.w, tobj.h)
-                diff.updated.gestures[event_id].boundingbox = node
+                diff.updated.gestures[gid].boundingbox = node
             elif profile=="3Dblb":
                 node = ExtensibleEvent()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
                 node.si_angle = (tobj.a, tobj.b, tobj.c)                
                 node.rel_size = (tobj.w, tobj.h, tobj.d)
-                diff.updated.gestures[event_id].boundingbox = node
+                diff.updated.gestures[gid].boundingbox = node
             elif profile=="2Dobj":
                 node = ExtensibleTree()
                 node.rel_pos = (tobj.x, tobj.y)
                 node.rel_speed = (tobj.X, tobj.Y)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, )
-                diff.updated.gestures[event_id] = node
+                diff.updated.gestures[gid] = node
             elif profile=="25Dobj":
                 node = ExtensibleTree()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, )
-                diff.updated.gestures[event_id] = node
+                diff.updated.gestures[gid] = node
             elif profile=="3Dobj":
                 node = ExtensibleTree()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, tobj.b, tobj.c)
-                diff.updated.gestures[event_id] = node
+                diff.updated.gestures[gid] = node
         # Remove items that are not alive
         src_profiles = self.__alive.setdefault(source, {})
         alive_old = src_profiles.get(profile, set())
@@ -163,9 +163,9 @@ class TuioToState(StateMachine, SelectiveConsumer):
                     keep = True
                     break
             if not keep:
-                event_id = self.__idpairs.get(source, {}).pop(s_id, None)
-                if event_id is not None:
-                    diff.removed.gestures[event_id] = None
+                gid = self.__idpairs.get(source, {}).pop(s_id, None)
+                if gid is not None:
+                    diff.removed.gestures[gid] = None
         src_profiles[profile] = alive
         additional = {"osc":packet}
         additional["timetag"] = timetag
