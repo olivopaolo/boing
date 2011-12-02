@@ -50,28 +50,31 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
             else:
                 return EventViz.SISIZE'''
             
-    def __init__(self, restrictions=(("diff", ".*", "gestures"),), 
+    def __init__(self, 
+                 restrictions=(("diff", ".*", "gestures"),),
+                 antialiasing=False,
                  fps=60, parent=None):
         QtGui.QWidget.__init__(self, parent)
         SelectiveConsumer.__init__(self, restrictions, fps)
         """Records of sources' touch events."""
         self.__sources = {}
-        """self.oldest = None
-        self.__display = DisplayDevice.create()
+        self.oldest = None
+        '''self.__display = DisplayDevice.create()
         if self.__display.url.scheme=="dummy": 
             print("WARNING: using dummy DisplayDevice")
             self.__display.debug()
-        self.drawmode = EventViz.SISIZE"""
+        self.drawmode = EventViz.SISIZE'''
         self.debuglevel = 0
+        self.antialiasing = antialiasing
         # Setup gui
         self.setWhatsThis("Event &Viz")
         self.sizehint = QtCore.QSize(320,240)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
-        """self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        '''self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.connect(self, QtCore.SIGNAL("customContextMenuRequested(const QPoint &)"), self.__contextmenu)
-        self.connect(QtGui.QShortcut('Alt+C', self), QtCore.SIGNAL("activated()"), self.__configpanel)"""
+        self.connect(QtGui.QShortcut('Alt+C', self), QtCore.SIGNAL("activated()"), self.__configpanel)'''
         self.connect(QtGui.QShortcut('Ctrl+Q', self), QtCore.SIGNAL("activated()"), self.close)
-    
+
     
     def _addObservable(self, observable):
         SelectiveConsumer._addObservable(self, observable)
@@ -123,8 +126,10 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
             timer.start();
         count = 0
         width, height = self.width(), self.height()
-        painter = QtGui.QPainter(self)        
         o = 4 # position circle size
+        painter = QtGui.QPainter(self)
+        if self.antialiasing: painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setFont(QtGui.QFont( "courier", 9))
         # Draw grid
         painter.setPen(QtGui.QColor(200,200,200))
         for i in range(0, 100, 10):
@@ -132,7 +137,6 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
             y = i*height/100
             painter.drawLine(0, y, width, y)
             painter.drawLine(x, 0, x, height)
-        painter.setFont(QtGui.QFont( "courier", 9))
         for source, record in self.__sources.items():
             fill, outline = (record.state.get("color",
                                               (QtCore.Qt.gray, QtCore.Qt.black)))
@@ -163,13 +167,13 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
             painter.setBrush(fill)
             # Draw tracks
             for gid, history in record.gestures.items():
-                posN = self.__tovizpos(history[-1], deviceratio)
+                stateN = record.state.gestures[gid]
+                posN = self.__tovizpos(stateN.rel_pos, deviceratio)
                 x, y = posN
                 if len(history)>1:
                     # Draw first point
                     pos0 = self.__tovizpos(history[0], deviceratio)
                     painter.save()
-                    painter.setPen(outline)
                     painter.setBrush(outline)
                     painter.drawEllipse(pos0[0]-3, pos0[1]-3, 6, 6)
                     painter.restore()
@@ -179,91 +183,95 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
                     for memento in history[1:]:
                         posI = self.__tovizpos(memento, deviceratio)
                         path.lineTo(*posI)
-                        # count += 1
+                        count += 1
                     painter.strokePath(path, painter.pen())
-                    """
                 # Draw boundingbox if defined                
-                bb = gesture.get("boundingbox")
-                if bb is not None:       
-                    bb_rel_size = bb.getRel("size", 
-                                            gesturestate.get("boundingbox"), 
-                                            True)                    
-                    if bb_rel_size is not None:
-                        bb_angle = bb.getSI("angle",
-                                            gesturestate.get("boundingbox"), 
-                                            True)
-                        bb_pos = self.__tovizpos(bb, deviceratio)
-                        if bb_pos is not None: bb_x, bb_y = bb_pos 
-                        else: bb_x, bb_y = x, y   
-                        painter.save()
-                        painter.setPen(QtGui.QPen(fill, 2))
-                        bb_brush_color = QtGui.QColor(fill)
-                        bb_brush_color.setAlphaF(0.5)
-                        painter.setBrush(bb_brush_color)
-                        painter.translate(bb_x, bb_y)
-                        if bb_angle is not None: 
-                            painter.rotate(bb_angle[0]*180/math.pi)
-                        painter.drawEllipse(QtCore.QPoint(0,0),
-                                            int(bb_rel_size[0] * width),
-                                            int(bb_rel_size[1] * height))     
-                        painter.restore()"""
-                # Draw objclass if defined
-                if "objclass" in record.state.gestures[gid]:
+                if "boundingbox" in stateN \
+                        and "rel_size" in stateN.boundingbox:
+                    bb = stateN.boundingbox
+                    bb_rel_size = bb.rel_size
+                    bb_angle = bb.get("si_angle")
+                    bb_x, bb_y = (x, y) if "rel_pos" not in bb \
+                        else self.__tovizpos(bb.rel_pos, deviceratio)
                     painter.save()
-                    painter.setPen(QtCore.Qt.black)
-                    painter.drawText(x+1.5*o, y-2*o, "obj: %d"%stateN.objclass)
+                    painter.setPen(QtGui.QPen(fill, 2))
+                    bb_brush_color = QtGui.QColor(fill)
+                    bb_brush_color.setAlphaF(0.5)
+                    painter.setBrush(bb_brush_color)
+                    painter.translate(bb_x, bb_y)
+                    if bb_angle is not None: 
+                        painter.rotate(bb_angle[0]*180/math.pi)
+                    painter.drawEllipse(QtCore.QPoint(0,0),
+                                        int(bb_rel_size[0] * width),
+                                        int(bb_rel_size[1] * height))     
                     painter.restore()
+                # Draw objclass if defined
+                if "objclass" in stateN:
+                    painter.drawText(x+1.5*o, y-2*o, "obj: %d"%stateN.objclass)
                 # Draw orientation if defined
                 if "si_angle" in record.state.gestures[gid]:
                     painter.save()
                     pencolor = QtGui.QColor(fill)
-                    pencolor.setAlphaF(0.85)
-                    painter.setPen(QtGui.QPen(pencolor, 4))
-                    l = 25
+                    pencolor.setAlphaF(0.4)
+                    painter.setPen(QtGui.QPen(pencolor, 16))
+                    l = 10
                     angle = stateN.si_angle[0]
                     dx = math.cos(angle) * l
                     dy = math.sin(angle) * l
-                    painter.drawLine(x, y, x+dx, y+dy)           
+                    painter.drawLine(x-dx, y-dy, x+dx, y+dy)           
+                    painter.restore()
+                # Draw speed if defined
+                if "rel_speed" in stateN:
+                    painter.save()
+                    pencolor = QtGui.QColor(fill)
+                    pencolor.setAlphaF(0.85)
+                    pen = QtGui.QPen(pencolor, 4)
+                    pen.setCapStyle(QtCore.Qt.RoundCap)
+                    painter.setPen(pen)
+                    l = 25
+                    X, Y = self.__tovizpos(stateN.rel_speed, deviceratio)
+                    painter.drawLine(x, y, x+X*0.5, y+Y*0.5)           
                     painter.restore()
                 # Draw current position
+                count += 1
                 painter.drawEllipse(x-o, y-o, o+o, o+o)
                 # Print additional information
-                """ if self.debuglevel>0:
+                if self.debuglevel>0:
                     painter.setPen(QtCore.Qt.black)
                     painter.drawText(x+1.5*o, y+o, "%s (%s)"%(gid, len(history)))
                     if self.debuglevel>1:
-                        i = 1
-                        rel_pos = history[-1].rel_pos
-                        painter.drawText(x+1.5*o, y+o+i*10,
-                                         "%.3f,%.3f (rel)"%(rel_pos[0], 
-                                                            rel_pos[1]))
-                        pos = gesture.get("pos")
-                        if pos: 
-                            i += 1 
-                            painter.drawText(x+1.5*o, y+o+i*10,
-                                             "%g,%g"%(pos[0], pos[1]))
-                        si_pos = history[-1].get("si_pos")
-                        if si_pos: 
-                            i += 1
-                            painter.drawText(x+1.5*o, y+o+i*10,
-                                             "%.4f,%.4f (m)"%(si_pos[0], 
-                                                              si_pos[1]))
+                        i = 1 ;
+                        painter.drawText(
+                            x+1.5*o, y+o+i*10, 
+                            "%.3f,%.3f (rel_pos)"%(stateN.rel_pos[:2]))
+                        if "rel_speed" in stateN:
+                            i += 1 ;
+                            painter.drawText(
+                                x+1.5*o, y+o+i*10, 
+                                "%+.3f,%+.3f (rel_speed)"%(stateN.rel_speed[:2]))
+                        if "si_angle" in stateN:
+                            i += 1 ;
+                            painter.drawText(
+                                x+1.5*o, y+o+i*10, 
+                                "%+.3f (si_angle)"%(stateN.si_angle[0]))
                         if self.debuglevel>2:
                             i += 1
-                            painter.drawText(x+1.5*o, y+o+i*10, 
-                                             source.state.get("name","???"))
+                            painter.drawText(
+                                x+1.5*o, y+o+i*10, 
+                                "%s (name)"%record.state.get("name","???"))
         if self.debuglevel>3:
             painter.setPen(QtCore.Qt.black)
-            sum = 0
-            for tracks in self.__sources.values(): sum = sum + len(tracks)
+            _sum = 0
+            for record in self.__sources.values(): 
+                _sum = _sum + len(record.gestures)
             painter.drawText(5,10,
                              "%d sources; %d tracks; %d points;  %d ms"\
-                                 %(len(self.__sources), sum, count, timer.elapsed()))
+                                 %(len(self.__sources), _sum, count, timer.elapsed()))
             if self.oldest:
                 lag = datetime.datetime.now()-self.oldest
                 msecs = lag.seconds*1000+lag.microseconds/1000.
                 painter.drawText(5, 20, "lag: %d msecs"%msecs)
-        self.oldest = None"""
+        self.oldest = None
                 
     def keyPressEvent(self, event):
         key = event.key()
@@ -295,7 +303,7 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
         if rvalue is None:
             pos = event#.get("rel_pos")
             if pos is not None:
-                rvalue = list(pos)
+                rvalue = list(pos[:2])
                 rvalue[0] *= self.width()
                 rvalue[1] *= self.height()
         return rvalue

@@ -30,29 +30,35 @@ def Output(url):
                       hz.__class__.__name__)
         output = DumpConsumer(**args)
     elif url.scheme=="viz":
-        hz = url.query.data.get('hz')
-        if hz is not None:
+        if 'hz' in url.query.data:
+            hz = url.query.data['hz']
             if hz.lower()=="none": args["fps"] = None
             else:
                 try: args["fps"] = float(hz)
                 except ValueError: 
                     print("ValueError: hz must be numeric, not %s"%
                           hz.__class__.__name__)
-        width = url.query.data.get('w')
-        if width is not None:
-            try: args["width"] = int(width)
+        if "antialiasing" in url.query.data:
+            args["antialiasing"] = url.query.data["antialiasing"].lower()!="false"
+        output = EventViz(**args)
+        hint = output.sizeHint()
+        width = hint.width()
+        height = hint. height()
+        if 'w' in url.query.data:
+            try: 
+                width = int(url.query.data['w'])                
             except ValueError: 
                 print("ValueError: width must be integer, not %s"%
                       width.__class__.__name__)
-        height = url.query.data.get('h')
-        if height is not None:
-            try: args["height"] = int(height)
+        if 'h' in url.query.data:
+            try: 
+                height = int(url.query.data['h'])
             except ValueError: 
                 print("ValueError: height must be integer, not %s"%
                       height.__class__.__name__)
-        output = EventViz(**args)
         output.show()
         output.raise_()
+        output.resize(width, height)
         """elif url.scheme.startswith("tuio"):        
         output = TuioOutput(url)"""
     else:

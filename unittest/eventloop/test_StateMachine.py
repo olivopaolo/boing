@@ -24,12 +24,8 @@ class ConcatenateConsumer(SelectiveConsumer):
         
     def _consume(self, products, producer):
         diff = ExtensibleTree()
-        additional = {}
         for p in products:
-            if "diff" in p: StateMachine.mergeDiff(diff, p.diff)
-            for k, v in p.items():
-                if k!="diff": additional[k] = v            
-        self.target.setState(diff=diff, additional=additional)
+            if "diff" in p: self.target.setState(diff=p.diff)
         self.test.assertEqual(producer.state(), self.target.state())
 
 def incrementTime(tid, m):
@@ -49,11 +45,11 @@ class TestStateMachine(unittest.TestCase):
         c2 = ConcatenateConsumer(self, m3)
         c2.subscribeTo(m2)
         EventLoop.repeat_every(1, incrementTime, m1)
-        EventLoop.after(2, setState, m1, add={("gestures",0,"pos"):(0,0)})
+        EventLoop.after(2, setState, m1, update={("gestures",0,"pos"):(0,0)})
         EventLoop.after(3, setState, m1, update={("gestures",0,"pos"):(1,2)})
         EventLoop.after(4, setState, m1,
-                        update={("gestures",0,"pos"):(1,3)},
-                        add={("gestures",1):ExtensibleTree({"pos":(3,3)})})
+                        update={("gestures",0,"pos"):(1,3),
+                                ("gestures",1):ExtensibleTree({"pos":(3,3)})})
         EventLoop.after(5, setState, m1,
                         update={("gestures",0,"pos"):(1,3),
                                 ("gestures",1,"pos"):(3,5)})

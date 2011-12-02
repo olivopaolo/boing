@@ -43,8 +43,8 @@ class StateMachine(OnDemandProducer):
                 elif "added" not in diff: update_tree = diff.updated
                 else: update_tree = diff.updated.copy()
             if "added" in diff: 
-                if updated_tree is None: updated_tree = diff.added
-                else: updated_tree.update(diff.added)
+                if update_tree is None: update_tree = diff.added
+                else: update_tree.update(diff.added)
             if "removed" in diff:
                 if remove_tree is None: remove_tree = diff.removed
                 else: remove_tree.update(diff.removed)

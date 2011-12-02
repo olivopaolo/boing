@@ -78,7 +78,9 @@ class tree_items(tree_iterable):
 
 
 class ExtensibleTree(collections.MutableMapping):
-    
+
+    _fullslice = slice(None)
+
     def __init__(self, flattentree=None):
         object.__setattr__(self, "_ExtensibleTree__info", dict())
         if flattentree is not None:
@@ -89,15 +91,16 @@ class ExtensibleTree(collections.MutableMapping):
         """Return a new view of the tree’s keys, which match to pattern."""
         iterable = None
         if isinstance(pattern, slice):
-            if pattern==slice(None): iterable = self.__info.keys()
+            if pattern==ExtensibleTree._fullslice: iterable = self.__info.keys()
             else: raise ValueError("slice %s not supported"%pattern)
-        elif isinstance(pattern, str) and pattern.isidentifier() \
-                or isinstance(pattern, int):
-            iterable = (pattern, ) if pattern in self.__info else tuple()
-        elif isinstance(pattern, str):
+        elif pattern==".*": 
+            iterable = self.__info.keys()
+        elif isinstance(pattern, str) and not pattern.isidentifier():
             iterable = (k for k in self.__info.keys() \
                             if re.match("%s$"%pattern, 
                                         k if isinstance(k, str) else str(k)))
+        elif isinstance(pattern, str) or isinstance(pattern, int):
+            iterable = (pattern, ) if pattern in self.__info else tuple()
         else: 
             raise TypeError("pattern must be string, integer or slice, not %s"%
                             pattern.__class__.__name__)
@@ -107,16 +110,17 @@ class ExtensibleTree(collections.MutableMapping):
         """Return a new view of the tree’s branches, which match to pattern."""
         iterable = None
         if isinstance(pattern, slice):
-            if pattern==slice(None): iterable = self.__info.values()
+            if pattern==ExtensibleTree._fullslice: iterable = self.__info.values()
             else: raise ValueError("slice %s not supported"%pattern)
-        elif isinstance(pattern, str) and pattern.isidentifier() \
-                or isinstance(pattern, int):
-            iterable = (self.__info[pattern], ) if pattern in self.__info \
-                else tuple()
-        elif isinstance(pattern, str):
+        elif pattern==".*":
+            iterable = self.__info.values()
+        elif isinstance(pattern, str) and not pattern.isidentifier():
             iterable = (v for k, v in self.__info.items() \
                             if re.match("%s$"%pattern, 
                                         k if isinstance(k, str) else str(k)))
+        elif isinstance(pattern, str) or isinstance(pattern, int):
+            iterable = (self.__info[pattern], ) if pattern in self.__info \
+                else tuple()
         else: 
             raise TypeError("pattern must be string, integer or slice, not %s"%
                             pattern.__class__.__name__)
@@ -127,16 +131,17 @@ class ExtensibleTree(collections.MutableMapping):
         which match to pattern."""
         iterable = None
         if isinstance(pattern, slice):
-            if pattern==slice(None): iterable = self.__info.items()
+            if pattern==ExtensibleTree._fullslice: iterable = self.__info.items()
             else: raise ValueError("slice %s not supported"%pattern)
-        elif isinstance(pattern, str) and pattern.isidentifier() \
-                or isinstance(pattern, int):
-            iterable = ((pattern, self.__info[pattern]), ) \
-                if pattern in self.__info else tuple()
-        elif isinstance(pattern, str):
+        elif pattern==".*":
+            iterable = self.__info.items()
+        elif isinstance(pattern, str) and not pattern.isidentifier():
             iterable = ((k,v) for k, v in self.__info.items() \
                             if re.match("%s$"%pattern, 
                                         k if isinstance(k, str) else str(k)))
+        elif isinstance(pattern, str) or isinstance(pattern, int):
+            iterable = ((pattern, self.__info[pattern]), ) \
+                if pattern in self.__info else tuple()
         else: 
             raise TypeError("pattern must be string, integer or slice, not %s"%
                             pattern.__class__.__name__)
@@ -420,20 +425,5 @@ class ExtensibleTree(collections.MutableMapping):
         for key, value in self.items():
             copy[key] = _copy.deepcopy(value, memo)
         return copy
-
-
-
-if __name__=="__main__":    
-    e = ExtensibleTree()
-    e.a.a = 1
-    e.b.c = []
-    e.b.d = {}
-    e.c = ExtensibleTree()
-    print(e)
-    ee = ExtensibleTree()
-    ee.a.a = 2
-    diff = ee.update(e, getdiff=True)
-    print(ee)
-    print(diff.flatten())
 
     
