@@ -29,25 +29,32 @@ Options:
 Sources:
   TUIO socket URL
      Grab a TUIO stream over a socket 
-     (e.g. tuio://sim@localhost:3333?rt=false)
+      e.g. tuio://sim@localhost:3333?rt=false
 
   TUIO log URL
      Play a TUIO stream logged in a file 
-     (e.g. tuio:///tmp/test.osc.bz2?speed=1&amploop=false&amprt=false)
+      e.g. tuio:///tmp/test.osc.bz2?speed=1&amploop=false&amprt=false
 
-     The "rt" parameter (i.e. reception time) defines how events'
-     timetag is determined.  If true the timetag is determined as the
-     moment when the event is received, instead of using the moment
-     when the event was generated.
+     If "rt" (i.e. reception time) is true, the event's timetag is the
+     time when the event is received, otherwise the OSC bundle
+     timestamp is considered.
 
 Outputs:
   viz:
      Display gesture events (default output) 
-     (e.g. viz:?hz=60&ampx=320&ampy=240)
+      e.g. viz:?req=(diff,.*,gestures),timetag&amphz=60&ampx=320&ampy=240
 
   dump:
      Print the received events to the standard output 
-     (e.g. dump:?hz=60)
+      e.g. dump:?req=.*&amphz=60
+
+  TUIO socket URL
+     Redirect gesture events as a TUIO stream to a socket
+      e.g. tuio://[::1]:3333?req=(diff,.*,gestures),timetag&amphz=none
+
+  TUIO log URL
+     Log gesture events as a TUIO log file
+      e.g. tuio:///tmp/test.osc.bz2?req=(diff,.*,gestures),timetag&amphz=none
 
 </pre>
 

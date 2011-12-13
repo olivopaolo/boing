@@ -19,58 +19,79 @@ class ConsumerRecord(QObject):
     
     trigger = pyqtSignal(QObject)
 
-    def __init__(self):
+    def __init__(self, requests):
         QObject.__init__(self)
         self.products = None
+        self.requests = requests
         self.notified = False
 
 
 class OnDemandProducer(AbstractProducer):
     """OnDemandProducers filter the posted products with respect to
-    consumers' restrictions, if any. Each subscribed consumer is
+    consumers' requests, if any. Each subscribed consumer is
     associated to a list to store pending products and a trigger
     signal, which is used to notify the new products."""
+    
+    ANY_PRODUCT = ".*"
 
-    def __init__(self, cumulate=None, match=None, parent=None):
+    def __init__(self, productoffer=None, cumulate=None, filter_=None, parent=None):
+        """
+        Set 'productoffer' to define the kind of objects this instance
+        can produce.
+
+        Set 'cumulate' to define a specific callable function used to cumulate 
+        products.
+
+        Set 'filter_' to define a specific callable function used to filter the 
+        posted products for each registered consumers requirements.
+        """
         AbstractProducer.__init__(self, parent)
-        self._consumers = {}
+        self._consumers = dict()
+        self._productoffer = productoffer
         self.cumulate = cumulate if isinstance(cumulate, collections.Callable) \
             else lambda p, s: [p] if s is None else s + [p]
-        self.match = match if isinstance(match, collections.Callable) \
-            else lambda *args: True
+        self.filter = filter_ if isinstance(filter_, collections.Callable) \
+            else lambda product, requests: product
     
-    def addObserver(self, observer, mode=Qt.QueuedConnection):
-        if AbstractProducer.addObserver(self, observer):
-            record = ConsumerRecord()
+    def addObserver(self, observer, mode=Qt.QueuedConnection, 
+                    requests=ANY_PRODUCT):
+        rvalue = AbstractProducer.addObserver(self, observer)
+        if rvalue:
+            record = ConsumerRecord(requests)
             record.trigger.connect(observer._react, mode)
             self._consumers[weakref.ref(observer)] = record
-            return True
-        else: return False
+        return rvalue
 
     def removeObserver(self, observer):
-        if AbstractProducer.removeObserver(self, observer):
+        rvalue = AbstractProducer.removeObserver(self, observer)
+        if rvalue:
             for ref in self._consumers.keys():
-                if ref() is observer:
-                    del self._consumers[ref]
-                    break
-            return True
-        else: return False
+                if ref() is observer: 
+                    del self._consumers[ref] ; break
+        return rvalue
+
+    def productOffer(self):
+        return self._productoffer
+
+    def overallDemand(self):
+        """Return the union of all requests of the registered consumers."""
+        raise NotImplementedError()
 
     def products(self, consumer):
+        products = None
         for ref, record in self._consumers.items():
             if ref() is consumer:
                 record.notified = False
                 products = record.products
                 record.products = None
-                return products
-        else: return None
+                break
+        return products
 
     def _postProduct(self, product):
         for ref, record in self._consumers.items():
             consumer = ref()
-            subset = product if not hasattr(consumer, "restrictions") \
-                else self.match(product, consumer.restrictions()) 
-            if subset:
+            subset = self.filter(product, record.requests) 
+            if subset is not None:
                 record.products = self.cumulate(subset, record.products)
                 if record.products and not record.notified: 
                     record.notified = True
@@ -84,27 +105,36 @@ class OnDemandProducer(AbstractProducer):
 
 
 class SelectiveConsumer(Consumer):
-    """The SelectiveConsumer has a tuple of requests that a Producer
+    """The SelectiveConsumer has some requests that a Producer
     may used to filter products production or storing. It is not
     guaranteed that only requested products are provided to the
     SelectiveConsumer."""
-   
-    def __init__(self, restrictions=None, hz=None):
-        """The argument 'restrictions' must be a tuple or None."""
-        Consumer.__init__(self, hz)
-        if restrictions is not None and not isinstance(restrictions, tuple): 
-            raise ValueError("restrictions must be tuple or None, not %s"%
-                             restrictions.__class__.__name__)
-        self.__restrictions = restrictions
 
-    def restrictions(self):
-        return self.__restrictions
+    def __init__(self, requests=OnDemandProducer.ANY_PRODUCT, hz=None):
+        Consumer.__init__(self, hz)
+        self._requests = requests
+
+    def requests(self):
+        return self._requests
+
+    def subscribeTo(self, observable, **kwargs):
+        """Accepts argument 'requests' also."""
+        req = self._requests
+        for key, value in kwargs.items():
+            if key=="requests": req = value
+            else: raise TypeError(
+                "subscribeTo() got an unexpected keyword argument '%s'"%
+                key)
+        if isinstance(observable, OnDemandProducer):
+            return observable.addObserver(self, requests=req)
+        else:
+            return Consumer.subscribeTo(self, observable) 
 
 
 class DumpConsumer(SelectiveConsumer):
 
-    def __init__(self, restrictions=None, hz=None, dumpsrc=False, dumpdest=False):
-        SelectiveConsumer.__init__(self, restrictions, hz)
+    def __init__(self, dumpsrc=False, dumpdest=False, **kwargs):
+        SelectiveConsumer.__init__(self, **kwargs)
         self.dumpsrc = dumpsrc
         self.dumpdest = dumpdest
 
@@ -121,14 +151,16 @@ if __name__ == '__main__':
     from boing.eventloop.EventLoop import EventLoop
     class DebugConsumer(SelectiveConsumer):
         def _consume(self, products, producer):
-            print("Consumer", self.restrictions(), "obtained [",
+            print("Consumer", self.requests(), "obtained [",
                   ", ".join((str(p) for p in products)), "]")
     def produce(tid, producer, product):
         producer._postProduct(product)
-    def match(product, request):
+    def filter_(product, request):
         return product if product in request else None
     # init producer
-    prod = OnDemandProducer(match=match)
+    prod = OnDemandProducer(
+        productoffer={"statue", "painting", "obelisk", "temple"},
+        filter_=filter_)
     EventLoop.repeat_every(0.4, produce, prod, "statue")
     EventLoop.repeat_every(0.5, produce, prod, "painting")
     EventLoop.repeat_every(0.8, produce, prod, "obelisk")

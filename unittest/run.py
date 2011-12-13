@@ -61,9 +61,11 @@ if len(sys.argv)==1 or 'udp' in sys.argv:
     from udp import test_UdpSocket
     list += test_UdpSocket.suite()
 if len(sys.argv)==1 or 'utils' in sys.argv:
-    from utils import test_ExtensibleStruct, test_ExtensibleTree
+    from utils import test_ExtensibleStruct, test_ExtensibleTree, \
+        test_matching
     list += test_ExtensibleStruct.suite()
     list += test_ExtensibleTree.suite()
+    list += test_matching.suite()
 alltests = unittest.TestSuite(list)
 runner = unittest.TextTestRunner()
 runner.run(alltests)

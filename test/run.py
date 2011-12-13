@@ -9,6 +9,7 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import getopt
+import signal
 import sys
 
 from PyQt4.QtGui import QApplication, QStyleFactory
@@ -39,22 +40,29 @@ for o, a in opts:
         print("""Redirect input streams to different outputs.
 
 Options:
- -i <source>                define an input source
- -o <output>                define an output
- -h, --help                 display this help and exit
+ -i <source>          define an input source
+ -o <output>          define an output
+ -h, --help           display this help and exit
 
 Sources: 
- TUIO socket URL            grab a TUIO stream over a socket
-                            (e.g. tuio://localhost:3333?rt=false)
- TUIO log URL               play a TUIO log from a file
-                            (e.g. tuio:///tmp/test.osc.bz2?speed=1&loop=false&rt=false)
+ TUIO socket URL      grab a TUIO stream over a socket
+                       e.g. "tuio://localhost:3333?rt=false"
+ TUIO log URL         play a TUIO log from a file
+                       e.g. "tuio:///tmp/test.osc.bz2?speed=1&loop=false&rt=false"
+
+ If "rt" (i.e. reception time) is true, the event's timetag is the
+ time when the event is received, otherwise the OSC bundle
+ timestamp is considered.
 
 Outputs: 
- dump:                      dump received events to standard output.
-                            (e.g. dump:?rest=diff,.*&hz=60&src=true&dest=true)
- viz:                       display gestures 
-                            (e.g. viz:?hz=60&x=320&y=240)
-)
+ dump:                dump received events to standard output.
+                       e.g. "dump:?req=.*&hz=none&src=false&dest=false"
+ viz:                 display gestures (DEFAULT)
+                       e.g. "viz:?req=(diff,.*,gestures),timetag&hz=60&x=320&y=240"
+ TUIO socket URL      redirect gesture events as a TUIO stream to a socket
+                       e.g. "tuio://[::1]:3333?req=(diff,.*,gestures),timetag&hz=none"
+ TUIO log URL         log gesture events as a TUIO log file
+                       e.g. "tuio:///tmp/test.osc.bz2?req=(diff,.*,gestures),timetag&hz=none"
 """)
         """  
  MTDEV device node URL      open device using libmtdev
@@ -64,11 +72,7 @@ Outputs:
   specifying the parameter "conf" in the url path. 
   (e.g. tuio://ipad@localhost:3333?conf=./test/multitouch/tuiopad.conf)
 
-  The "rt" parameter (i.e. reception time) defines how events' timetag is
-  determined.  If true the timetag is determined as the moment when the
-  event is received, instead of using the moment when the event was
-  generated.
-  """
+"""
         sys.exit(0)
     elif o=="-i": sources.append(a)
     elif o=="-o": outputs.append(a)
@@ -78,7 +82,7 @@ if not sources:
     print("No input source.")
     sys.exit(0)
 # Init outputs
-if not outputs: outputs.append("dump:")
+if not outputs: outputs.append("viz:")
 outs = []
 for url in outputs:
     o = Output(url)
@@ -93,6 +97,7 @@ for s in srcs:
     for o in outs:
         o.subscribeTo(s)
 # Run
+signal.signal(signal.SIGINT, lambda *args: app.quit())
 rvalue = app.exec_()
 print("Exiting...")
 # Close all

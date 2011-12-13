@@ -9,11 +9,12 @@
 
 from datetime import datetime
 
-from PyQt4.QtCore import pyqtSignal, QObject
+from PyQt4.QtCore import QObject
 
 from boing import osc, tuio
 from boing.eventloop.OnDemandProduction import SelectiveConsumer
 from boing.eventloop.StateMachine import StateMachine
+from boing.eventloop.MappingEconomy import MappingProducer
 from boing.osc.LogPlayer import LogPlayer
 from boing.slip.SlipDataIO import SlipDataReader
 from boing.tcp.TcpServer import TcpServer
@@ -31,8 +32,11 @@ class TuioToState(StateMachine, SelectiveConsumer):
     than one source or for more than one TUIO profile."""
 
     def __init__(self, parent=None):
-        StateMachine.__init__(self, parent)
-        SelectiveConsumer.__init__(self, restrictions=("osc", "data"))
+        StateMachine.__init__(self, 
+                              productoffer={("diff",".*","gestures"),
+                                            "osc", "data"},
+                              parent=parent)
+        SelectiveConsumer.__init__(self, requests={"osc", "data"})
         """Alive TUIO items."""
         # self.__alive[source][profile] = set of session_ids
         self.__alive = {}
@@ -42,10 +46,11 @@ class TuioToState(StateMachine, SelectiveConsumer):
         # self.__idpairs[source][session_id] = event_id
         self.__idpairs = {}
         self.__idcount = 0
-        """If rt is True, the event is tagged using the timestamp
-        at the event creation instead of using the OSC bundle time
-        tag."""
+        """If rt is True, the event is tagged using the timestamp at
+        the event creation instead of using the OSC bundle time tag."""
         self.rt = False
+        self._postosc = False
+        self._postdata = False
         # Setup initial state
         self._state.gestures
 
@@ -57,8 +62,14 @@ class TuioToState(StateMachine, SelectiveConsumer):
         StateMachine._checkRef(self)
         SelectiveConsumer._checkRef(self)
 
+    def _updateOverallDemand(self):
+        StateMachine._updateOverallDemand(self)
+        self._postosc = MappingProducer.match("osc", self._overalldemand)
+        self._postdata = MappingProducer.match("data", self._overalldemand)
+
     def _consume(self, products, producer):
         for p in products:
+            packet = None
             if "osc" in p: 
                 packet = p.osc
                 data = p.data if "data" in p else None
@@ -167,10 +178,14 @@ class TuioToState(StateMachine, SelectiveConsumer):
                 if gid is not None:
                     diff.removed.gestures[gid] = None
         src_profiles[profile] = alive
-        additional = {"osc":packet}
-        additional["timetag"] = timetag
-        if data: additional["data"] = data
+        additional = {"timetag": timetag}
         self.setState(diff=diff, additional=additional)
+        if self._postosc or self._postdata:
+            product = {}
+            if self._postosc: product["osc"] = packet
+            if self._postdata: 
+                product["data"] = data if data is not None else packet.encode()
+            self._postProduct(product)
 
     def __nextId(self):
         value = self.__idcount
@@ -186,7 +201,7 @@ def TuioSource(url):
     rt = url.query.data.get("rt")
     source.rt = rt.lower()!="false" if rt is not None else False
     if url.kind in (URL.ABSPATH, URL.RELPATH) \
-            or url.scheme=="file" \
+            or url.scheme=="tuio.file" \
             or (url.scheme=="tuio" and not str(url.site)):
         loop = url.query.data.get("loop")
         speed = url.query.data.get("speed")

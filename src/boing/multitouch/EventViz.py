@@ -8,6 +8,7 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import copy
+import datetime
 import math
 
 from PyQt4 import QtCore, QtGui
@@ -51,11 +52,11 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
                 return EventViz.SISIZE'''
             
     def __init__(self, 
-                 restrictions=(("diff", ".*", "gestures"),),
+                 requests={"diff", "timetag"},
                  antialiasing=False,
                  fps=60, parent=None):
         QtGui.QWidget.__init__(self, parent)
-        SelectiveConsumer.__init__(self, restrictions, fps)
+        SelectiveConsumer.__init__(self, requests, fps)
         """Records of sources' touch events."""
         self.__sources = {}
         self.oldest = None
@@ -66,6 +67,10 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
         self.drawmode = EventViz.SISIZE'''
         self.debuglevel = 0
         self.antialiasing = antialiasing
+        self.__fps_count = 0
+        self.__fps_previous = 0
+        self.__fps_timer = QtCore.QTimer()
+        self.__fps_timer.timeout.connect(self._fpsTimeout)
         # Setup gui
         self.setWhatsThis("Event &Viz")
         self.sizehint = QtCore.QSize(320,240)
@@ -99,21 +104,24 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
         self.update()
 
     def _consume(self, products, source):
-        if products is None:
-            print("products is None")
-            return
         if source in self.__sources:
             record = self.__sources[source]            
             for item in products:
                 if isinstance(item, ExtensibleTree) and "diff" in item:
-                    if "added" in item.diff:
-                        record.state.update(item.diff.added, reuse=True)
-                    if "updated" in item.diff:
-                        record.state.update(item.diff.updated, reuse=True)
-                    if "removed" in item.diff:
-                        record.state.remove_update(item.diff.removed)
-                        for gid in item.diff.removed.gestures:
+                    diff = item.diff
+                    if "added" in diff:
+                        record.state.update(diff.added, reuse=True)
+                    if "updated" in diff:
+                        record.state.update(diff.updated, reuse=True)
+                    if "removed" in diff:
+                        record.state.remove_update(diff.removed)
+                        for gid in diff.removed.gestures:
                             record.gestures.pop(gid, None)
+                    if "timetag" in item:
+                        timetag = item.timetag
+                        if isinstance(timetag, datetime.datetime) \
+                                and (self.oldest is None or timetag<self.oldest):
+                            self.oldest = item.timetag
             for gid, gstate in record.state.gestures.items():
                 if "rel_pos" in gstate:
                     history = record.gestures.setdefault(gid, [])
@@ -267,16 +275,23 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
             painter.drawText(5,10,
                              "%d sources; %d tracks; %d points;  %d ms"\
                                  %(len(self.__sources), _sum, count, timer.elapsed()))
-            if self.oldest:
+            if self.oldest is not None:
                 lag = datetime.datetime.now()-self.oldest
                 msecs = lag.seconds*1000+lag.microseconds/1000.
                 painter.drawText(5, 20, "lag: %d msecs"%msecs)
+            self.__fps_count += 1
+            painter.drawText(5, height-5, "fps: %d Hz"%self.__fps_previous)
         self.oldest = None
                 
     def keyPressEvent(self, event):
         key = event.key()
         if key==QtCore.Qt.Key_Space:
             self.debuglevel = (self.debuglevel + 1) % 5
+            if self.debuglevel>3:
+                self.__fps_count = 0
+                self.__fps_timer.start(1000)
+            else:
+                self.__fps_timer.stop()
             self.update()
         else: QtGui.QWidget.keyPressEvent(self, event)
         
@@ -307,6 +322,11 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
                 rvalue[0] *= self.width()
                 rvalue[1] *= self.height()
         return rvalue
+
+    def _fpsTimeout(self):
+        self.__fps_previous = self.__fps_count
+        self.__fps_count = 0
+        self.update()
     
     '''
     def __contextmenu(self, pos):

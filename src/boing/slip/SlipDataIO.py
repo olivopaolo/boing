@@ -7,9 +7,11 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import collections
+
 from boing import slip
 from boing.utils.DataIO import DataWriter, DataReader
-from boing.utils.ExtensibleStruct import ExtensibleStruct
+from boing.utils.ExtensibleTree import ExtensibleTree
 
 class SlipDataReader(DataReader):
     """The SlipDataReader espects from its input device slip encoded
@@ -17,28 +19,29 @@ class SlipDataReader(DataReader):
 
     def __init__(self, inputdevice, parent=None):
         DataReader.__init__(self, inputdevice, parent)
-        self.__slipbuffer = None
+        self._slipbuffer = None
 
     def _postData(self):
         encoded = self.inputDevice().read()
         if encoded:
-            packets, self.__slipbuffer = slip.decode(encoded, self.__slipbuffer)
+            packets, self._slipbuffer = slip.decode(encoded, self._slipbuffer)
             for packet in packets:
-                self._postProduct(ExtensibleStruct(data=packet))
-        else: self._postProduct(ExtensibleStruct(data=bytes()))
+                self._postProduct(ExtensibleTree({"data":packet}))
+        else: 
+            self._postProduct(ExtensibleTree({"data":bytes()}))
 
 
 class SlipDataWriter(DataWriter):
     """The SlipDataWriter encodes using slip the received data prior
     to write it into the output file."""
 
-    def __init__(self, outputdevice):
-        DataWriter.__init__(self, outputdevice)
+    def __init__(self, outputdevice, parent=None):
+        DataWriter.__init__(self, outputdevice, parent)
 
     def _consume(self, products, producer):
         for p in products:
-            if isinstance(p, ExtensibleStruct): 
-                data = p.get("data")
+            if isinstance(p, collections.Mapping) and "data" in p: 
+                data = p["data"]
                 if data:
                     out = self.outputDevice()
                     out.write(slip.encode(data))

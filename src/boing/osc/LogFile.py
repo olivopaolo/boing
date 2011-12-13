@@ -8,13 +8,13 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import collections
 import datetime
 
 from PyQt4.QtCore import QObject
 
 from boing import osc, slip
 from boing.eventloop.ProducerConsumer import Consumer
-from boing.utils.ExtensibleStruct import ExtensibleStruct
 
 class LogFile(QObject, Consumer):
 
@@ -49,11 +49,9 @@ class LogFile(QObject, Consumer):
  
     def _consume(self, products, producer):
         for p in products:
-            if isinstance(p, ExtensibleStruct): 
+            if isinstance(p, collections.Mapping): 
                 data = p.get("data")
                 if data: self.logData(data)
-                else:
-                    packet = p.get("osc")
-                    if packet is not None: self.logPacket(packet)
+                elif "osc" in p: self.logPacket(p["osc"])
 
 

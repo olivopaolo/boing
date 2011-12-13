@@ -9,85 +9,62 @@
 
 import collections
 
-from boing.eventloop.OnDemandProduction import OnDemandProducer
+from boing.eventloop.MappingEconomy import MappingProducer
 from boing.utils.ExtensibleTree import ExtensibleTree
 
-class StateMachine(OnDemandProducer):
+class StateMachine(MappingProducer):
     """The StateMachine has a state defined by an ExtensibleTree.
-    Everytime the state changes, it produces a diff ExtensibleTree."""
+    Everytime the state changes, it produces a diff ExtensibleTree if
+    anyone registered for it."""
 
-    def __init__(self, initial=None, parent=None):
-        OnDemandProducer.__init__(self, 
-                                  match=StateMachine._match,
-                                  parent=parent)
+    def __init__(self, initial=None, productoffer="diff", parent=None, **kwargs):
+        MappingProducer.__init__(self, productoffer, parent=parent)
         self._state = ExtensibleTree(initial)
+        self._postdiff = False
         
     def state(self):
-        """Return the state. Any direct modification won't be reported
-        as a state change event."""
         return self._state
 
     def setState(self, update=None, remove=None, 
                  diff=None, additional=None):
         """Modify the internal state applying 'update', 'remove',
-        (which must be flatten trees), and 'diff' (an
-        ExtensibleTrees). The diff tree is then posted as a product
-        after having being updated with 'additional'."""
-        update_tree = remove_tree = None
+        (which must be mapping types), and 'diff' (an
+        ExtensibleTree). The value of diff is consumed. The diff tree
+        is then posted as a product after having being updated with
+        'additional'."""
+        update_tree = remove_tree = real_diff = None
         if update is not None: update_tree = ExtensibleTree(update)
         if remove is not None: remove_tree = ExtensibleTree(remove)
-        if diff is not None:            
-            if "updated" in diff:
-                if update_tree is not None:
-                    set_tree.update(diff.updated)
-                elif "added" not in diff: update_tree = diff.updated
-                else: update_tree = diff.updated.copy()
+        if diff is not None:
             if "added" in diff: 
                 if update_tree is None: update_tree = diff.added
-                else: update_tree.update(diff.added)
+                else: update_tree.update(diff.added, reuse=True)
+            if "updated" in diff:
+                if update_tree is None: update_tree = diff.updated
+                else: update_tree.update(diff.updated, reuse=True)
             if "removed" in diff:
                 if remove_tree is None: remove_tree = diff.removed
-                else: remove_tree.update(diff.removed)
+                else: remove_tree.update(diff.removed, reuse=True)
         # Apply diff
-        real_diff = None
         if update_tree is not None:
-            real_diff = self._state.update(update_tree, getdiff=True)
-            if remove_tree is not None:
-                real_diff.update(self._state.remove_update(remove_tree, getdiff=True))
-        elif remove_tree is not None:
-            real_diff = self._state.remove_update(remove_tree, getdiff=True)
-        if real_diff: 
+            real_diff = self._state.update(update_tree, reuse=True, 
+                                           getdiff=self._postdiff)
+        if remove_tree is not None:
+            remove_diff = self._state.remove_update(remove_tree, 
+                                                    getdiff=self._postdiff)
+            if real_diff is None:
+                real_diff = remove_diff
+            else:
+                real_diff.update(remove_diff, reuse=True)
+        if self._postdiff and real_diff: 
             product = ExtensibleTree()
             product.diff = real_diff
             if additional is not None: product.update(additional)
             self._postProduct(product)
-        elif additional is not None:
-            self._postProduct(ExtensibleTree(additional))
 
-    @staticmethod
-    def _match(product, patterns):
-        """Return the subtree from 'product' that matches 'patterns'.
-        If 'product' is not ExtensibleTree, it is validated only if
-        'patterns' is None."""
-        if patterns is None: return product
-        elif isinstance(product, ExtensibleTree):
-            subtree = ExtensibleTree()
-            for path in patterns:
-                matches = product.match(path)
-                if matches is not None: subtree.update(matches, reuse=True)
-            return subtree
-        elif isinstance(product, collections.Mapping):
-            tree = ExtensibleTree(product)
-            subtree = ExtensibleTree()
-            for path in patterns:
-                matches = tree.match(path)
-                if matches is not None: subtree.update(matches, reuse=True)
-            subproduct = type(product)()
-            for key, value in product.items():
-                if key in subtree: subproduct[key] = value
-            return subproduct
-        else:
-            return None
+    def _updateOverallDemand(self):
+        MappingProducer._updateOverallDemand(self)
+        self._postdiff = MappingProducer.match("diff", self._overalldemand)
 
 # -------------------------------------------------------------------
 
@@ -97,7 +74,7 @@ if __name__ == '__main__':
     from boing.eventloop.OnDemandProduction import SelectiveConsumer
     class DebugConsumer(SelectiveConsumer):
         def _consume(self, products, producer):
-            print(self.restrictions(), ": ", 
+            print(self.requests(), ": ", 
                   ", ".join(str(p) for p in products))
     def setState(tid, **kwargs):
         stateMachine.setState(**kwargs)
@@ -109,15 +86,16 @@ if __name__ == '__main__':
     stateMachine = StateMachine()
     state = stateMachine.state()
     state.gestures = ExtensibleTree()
-    o1 = DebugConsumer(restrictions=(".*",))
+    o1 = DebugConsumer(requests=".*")
     o1.subscribeTo(stateMachine)
-    o2 = DebugConsumer(restrictions=(("diff",".*","gestures",1),))
+    o2 = DebugConsumer(requests={("diff",".*","gestures",1),
+                                 ("diff",".*","gestures",2)})
     o2.subscribeTo(stateMachine)
-    o3 = DebugConsumer(restrictions=(("diff","removed"),))
+    o3 = DebugConsumer(requests=("diff","removed"))
     o3.subscribeTo(stateMachine)
-    o4 = DebugConsumer(restrictions=(("diff",".*","gestures",".*", ".*pos.*"),))
+    o4 = DebugConsumer(requests=("diff",".*","gestures",".*", ".*pos.*"))
     o4.subscribeTo(stateMachine)
-    o5 = DebugConsumer(restrictions=(("diff",".*","gestures", 0),"seconds"),
+    o5 = DebugConsumer(requests={("diff",".*","gestures", 0),"seconds"},
                        hz=0.1)
     o5.subscribeTo(stateMachine)
     EventLoop.repeat_every(1, incrementTime)
