@@ -315,6 +315,7 @@ def TuioOutput(url):
         consumer.subscribeTo(output)
     elif url.scheme.endswith("tuio.tcp"):
         consumer = SlipDataWriter(TcpConnection(url), parent=output)
+        consumer.outputDevice().setOption("nodelay")
         consumer.subscribeTo(output)
     else:
         raise Exception("Unrecognized TUIO output: %s"%str(url))

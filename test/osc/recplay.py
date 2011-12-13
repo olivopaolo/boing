@@ -137,6 +137,7 @@ else:
         from boing.tcp.TcpSocket import TcpConnection
         from boing.slip.SlipDataIO import SlipDataWriter
         socket = TcpConnection(hosturl)
+        socket.setOption("nodelay")
         socket.connected.connect(startPlayer)
         socket.disconnected.connect(EventLoop.stop)
         output = SlipDataWriter(socket)

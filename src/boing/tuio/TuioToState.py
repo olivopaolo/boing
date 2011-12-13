@@ -71,10 +71,10 @@ class TuioToState(StateMachine, SelectiveConsumer):
         for p in products:
             packet = None
             if "osc" in p: 
-                packet = p.osc
-                data = p.data if "data" in p else None
+                packet = p["osc"]
+                data = p["data"] if "data" in p else None
             elif "data" in p:
-                data = p.data
+                data = p["data"]
                 packet = osc.decode(data) if data else None
             if isinstance(packet, osc.Bundle): 
                 self.__handleOsc(packet, data)

@@ -25,7 +25,7 @@ class ConcatenateConsumer(SelectiveConsumer):
     def _consume(self, products, producer):
         diff = ExtensibleTree()
         for p in products:
-            if "diff" in p: self.target.setState(diff=p.diff)
+            if "diff" in p: self.target.setState(diff=p["diff"])
         self.test.assertEqual(producer.state(), self.target.state())
 
 def incrementTime(tid, m):

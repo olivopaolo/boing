@@ -53,7 +53,7 @@ class TestLogPlayer(unittest.TestCase):
         EventLoop.run()
         self.assertFalse(self.timeout)
         for p in consumer.store:
-            packet = p.osc
+            packet = p["osc"]
             self.assertIsInstance(packet, osc.Packet)
             """data = p.data
             packet_debug = io.StringIO()

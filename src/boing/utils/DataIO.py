@@ -11,7 +11,6 @@ import collections
 
 from PyQt4.QtCore import QObject
 
-from boing.utils.ExtensibleTree import ExtensibleTree
 from boing.eventloop.ProducerConsumer import Producer, Consumer
 
 class DataReader(Producer):
@@ -25,7 +24,7 @@ class DataReader(Producer):
 
     def _postData(self):
         data = self.__in.read()
-        self._postProduct(ExtensibleTree({"data":data}))
+        self._postProduct({"data":data})
 
     def inputDevice(self):
         return self.__in
