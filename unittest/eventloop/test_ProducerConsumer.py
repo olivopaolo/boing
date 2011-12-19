@@ -43,21 +43,20 @@ class TestProducerConsumer(unittest.TestCase):
         self.assertFalse(p.addObserver("test"))
         self.assertTrue(p.addObserver(c1))
         self.assertFalse(p.addObserver(c1))
-        self.assertEqual(p.observers(), {c1})
+        self.assertEqual(set(p.observers()), {c1})
         self.assertTrue(p.addObserver(c2))
         self.assertFalse(p.addObserver(c2))
-        self.assertEqual(p.observers(), {c1, c2})
+        self.assertEqual(set(p.observers()), {c1, c2})
         self.assertTrue(p.removeObserver(c1))
         self.assertFalse(p.removeObserver(c1))
         del c1
         self.assertIsNone(ref_c1())
-        self.assertEqual(p.observers(), {c2})
+        self.assertEqual(set(p.observers()), {c2})
         self.assertTrue(p.removeObserver(c2))
         self.assertFalse(p.removeObserver(c2))
         del c2
         self.assertIsNone(ref_c2())
-        self.assertIsInstance(p.observers(), frozenset)
-        self.assertFalse(p.observers())
+        self.assertFalse(set(p.observers()))
         del p
         self.assertIsNone(ref_p())
 
@@ -69,16 +68,15 @@ class TestProducerConsumer(unittest.TestCase):
         ref_c1 = weakref.ref(c1)
         ref_c2 = weakref.ref(c2)
         p.addObserver(c1)
-        self.assertEqual(p.observers(), {c1})
+        self.assertEqual(set(p.observers()), {c1})
         p.addObserver(c2)
-        self.assertEqual(p.observers(), {c1, c2})
+        self.assertEqual(set(p.observers()), {c1, c2})
         del c1
         self.assertIsNone(ref_c1())
-        self.assertEqual(p.observers(), {c2})
+        self.assertEqual(set(p.observers()), {c2})
         del c2
         self.assertIsNone(ref_c2())
-        self.assertIsInstance(p.observers(), frozenset)
-        self.assertFalse(p.observers())
+        self.assertFalse(set(p.observers()))
         del p
         self.assertIsNone(ref_p())
 

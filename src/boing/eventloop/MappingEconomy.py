@@ -33,6 +33,10 @@ class MappingProducer(OnDemandProducer):
         if rvalue: self._updateOverallDemand()
         return rvalue
 
+    def clearObservers(self):
+        OnDemandProducer.clearObservers(self)
+        self._overalldemand = set()        
+
     def overallDemand(self):
         return self._overalldemand
 

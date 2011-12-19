@@ -10,21 +10,10 @@
 import collections
 import weakref
 
-from PyQt4.QtCore import QObject, pyqtSignal, Qt
+from PyQt4 import QtCore
 
 from boing.eventloop.ProducerConsumer import AbstractProducer, Consumer
 from boing.eventloop.ReactiveObject import Observable
-
-class ConsumerRecord(QObject):
-    
-    trigger = pyqtSignal(QObject)
-
-    def __init__(self, requests):
-        QObject.__init__(self)
-        self.products = None
-        self.requests = requests
-        self.notified = False
-
 
 class OnDemandProducer(AbstractProducer):
     """OnDemandProducers filter the posted products with respect to
@@ -33,6 +22,16 @@ class OnDemandProducer(AbstractProducer):
     signal, which is used to notify the new products."""
     
     ANY_PRODUCT = ".*"
+
+    class ConsumerRecord(QtCore.QObject):
+    
+        trigger = QtCore.pyqtSignal(QtCore.QObject)
+
+        def __init__(self, requests):
+            QtCore.QObject.__init__(self)
+            self.products = None
+            self.requests = requests
+            self.notified = False
 
     def __init__(self, productoffer=None, cumulate=None, filter_=None, parent=None):
         """
@@ -52,12 +51,17 @@ class OnDemandProducer(AbstractProducer):
             else lambda p, s: [p] if s is None else s + [p]
         self.filter = filter_ if isinstance(filter_, collections.Callable) \
             else lambda product, requests: product
+
+    def __del__(self):        
+        for ref, record in self._consumers.items():            
+            record.trigger.disconnect(ref()._react)
+        AbstractProducer.__del__(self)
     
-    def addObserver(self, observer, mode=Qt.QueuedConnection, 
+    def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection, 
                     requests=ANY_PRODUCT):
         rvalue = AbstractProducer.addObserver(self, observer)
         if rvalue:
-            record = ConsumerRecord(requests)
+            record = OnDemandProducer.ConsumerRecord(requests)
             record.trigger.connect(observer._react, mode)
             self._consumers[weakref.ref(observer)] = record
         return rvalue
@@ -65,10 +69,17 @@ class OnDemandProducer(AbstractProducer):
     def removeObserver(self, observer):
         rvalue = AbstractProducer.removeObserver(self, observer)
         if rvalue:
-            for ref in self._consumers.keys():
+            for ref, record in self._consumers.values():
                 if ref() is observer: 
+                    record.trigger.disconnect(observer._react)
                     del self._consumers[ref] ; break
         return rvalue
+
+    def clearObservers(self):
+        AbstractProducer.clearObservers(self)
+        for ref, record in self._consumers.items():
+            record.trigger.disconnect(ref()._react)
+        self._consumers.clear()        
 
     def productOffer(self):
         return self._productoffer
@@ -100,8 +111,9 @@ class OnDemandProducer(AbstractProducer):
     def _checkRef(self):
         AbstractProducer._checkRef(self)
         # Keep only alive references
-        self._consumers = dict((ref,value) for ref,value in self._consumers.items() \
-                                          if ref() is not None)
+        self._consumers = dict((ref, value) \
+                                   for ref, value in self._consumers.items() \
+                                   if ref() is not None)
 
 
 class SelectiveConsumer(Consumer):
@@ -131,12 +143,12 @@ class SelectiveConsumer(Consumer):
             return Consumer.subscribeTo(self, observable) 
 
 
-class DumpConsumer(SelectiveConsumer, QObject):
+class DumpConsumer(SelectiveConsumer, QtCore.QObject):
 
     def __init__(self, dumpsrc=False, dumpdest=False, count=False, 
                  parent=None, **kwargs):
         SelectiveConsumer.__init__(self, **kwargs)
-        QObject.__init__(self, parent)
+        QtCore.QObject.__init__(self, parent)
         self.dumpsrc = dumpsrc
         self.dumpdest = dumpdest
         self.count = 0 if count else None

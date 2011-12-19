@@ -51,6 +51,11 @@ class Producer(AbstractProducer):
             return True
         else: return False
 
+    def clearObservers(self):
+        AbstractProducer.clearObservers(self)
+        self.__history.clear()
+        self._products = []
+
     def products(self, reactiveobject=None):
         """Return the list of the new products. If reactiveobject is
         None then the entire list is returned, otherwise only the new
@@ -72,7 +77,7 @@ class Producer(AbstractProducer):
 
     def _postProduct(self, product):
         """Add a new product and notify it."""
-        if len(self.observers()) > 0:
+        if self._Observable__observers:
             self._products.append(product)
             self.notifyObservers()
 

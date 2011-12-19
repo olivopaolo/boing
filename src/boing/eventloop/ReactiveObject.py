@@ -11,8 +11,6 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing.eventloop.EventLoop import EventLoop
-
 class Observable(QtCore.QObject):
     """An Observable can trigger a list of registered ReactiveObjects."""
 
@@ -22,17 +20,17 @@ class Observable(QtCore.QObject):
     def __init__(self, parent=None):
         QtCore.QObject.__init__(self, parent)
         self.__observers = set()
-                
+
     def __del__(self):
         for reactiveobject in self.observers():
             # Notify of the subscribed ReactiveObjects that they have a None 
             # reference
-            reactiveobject._checkRef()            
             self.trigger.disconnect(reactiveobject._react)
+            reactiveobject._checkRef()            
 
     def observers(self):
-        """Return the frozenset of the current observing ReactiveObject."""
-        return frozenset(ref() for ref in self.__observers)
+        """Return an iterator over the current observing ReactiveObject."""
+        return (ref() for ref in self.__observers)
 
     def addObserver(self, reactiveobject, mode=QtCore.Qt.QueuedConnection):
         """Return True if the reactiveobject has been correctly registered
@@ -51,20 +49,31 @@ class Observable(QtCore.QObject):
         False otherwise."""
         for ref in self.__observers:
             if ref() is reactiveobject:
-                reactiveobject._removeObservable(self)
                 self.trigger.disconnect(reactiveobject._react)
+                reactiveobject._removeObservable(self)
                 self.__observers.remove(ref)
                 return True
         else: return False
 
+    def clearObservers(self):
+        """Remove all registered observers."""
+        for reactiveobject in self.observers():
+            self.trigger.disconnect(reactiveobject._react)
+            reactiveobject._removeObservable(self)
+        self.__observers.clear()
+
     def notifyObservers(self):
         """Invoke the method "_react" of all the registered ReactiveObjects."""
         self.trigger.emit(self)
-
+            
     def _checkRef(self):
         # Keep only alive references
         self.__observers = set(ref for ref in self.__observers \
                                    if ref() is not None)
+
+    def deleteLater(self):
+        self.clearObservers()
+        QtCore.QObject.deleteLater(self)
  
 
 class ReactiveObject(object):
@@ -80,8 +89,8 @@ class ReactiveObject(object):
             observable._checkRef()
 
     def observed(self):
-        """Return the frozenset of the current subscribed Observables."""
-        return frozenset(ref() for ref in self.__observed)
+        """Return an iterator over the current observed Observables."""
+        return (ref() for ref in self.__observed)
 
     def subscribeTo(self, observable):
         if isinstance(observable, Observable):            
@@ -92,6 +101,10 @@ class ReactiveObject(object):
         if isinstance(observable, Observable):            
             return observable.removeObserver(self)
         else: return False
+
+    def clearObserved(self):
+        for observable in tuple(self.observed()):
+            observable.removeObserver(self)
     
     def _addObservable(self, observable):
         """It can be overridden, but do not invoke it directly."""
@@ -136,9 +149,9 @@ class DelayedReactive(ReactiveObject):
         return self.__hz
 
     def queue(self):
-        """List of Observables that has notified since last refresh."""
-        # Return referents not references
-        return frozenset(ref() for ref in self.__queue)
+        """Iterator over the Observables that have notified since last
+        refresh."""
+        return (ref() for ref in self.__queue)
 
     def _react(self, observable):
         if observable not in self.queue(): 
@@ -152,8 +165,7 @@ class DelayedReactive(ReactiveObject):
         ReactiveObject._removeObservable(self, observable)
         for ref in self.__queue:
             if ref() is observable: 
-                self.__queue.remove(ref) ; 
-                break
+                self.__queue.remove(ref) ; break
 
     def _checkRef(self):
         ReactiveObject._checkRef(self)
@@ -174,6 +186,7 @@ class DelayedReactive(ReactiveObject):
 
 if __name__ == '__main__':
     import sys
+    from boing.eventloop.EventLoop import EventLoop
     if len(sys.argv)<2:
         print("usage: %s <seconds>"%sys.argv[0])
         sys.exit(1)
