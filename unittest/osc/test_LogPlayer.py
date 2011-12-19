@@ -63,7 +63,6 @@ class TestLogPlayer(unittest.TestCase):
             self.assertEqual(packet_debug.getvalue(), data_debug.getvalue())
             self.assertEqual(packet.encode(), data)"""
 
-
 # -------------------------------------------------------------------
 
 def suite():

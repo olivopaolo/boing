@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# boing/multitouch/EventViz.py -
+# boing/multitouch/GestureViz.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
@@ -10,6 +10,7 @@
 import copy
 import datetime
 import math
+import weakref
 
 from PyQt4 import QtCore, QtGui
 
@@ -19,7 +20,7 @@ from boing.utils.ExtensibleTree import ExtensibleTree
 
 #import uiVizConfig
 
-class EventViz(QtGui.QWidget, SelectiveConsumer):
+class GestureViz(QtGui.QWidget, SelectiveConsumer):
 
     """Gestures' position is fit to the widget size"""
     WINSIZE = 1
@@ -29,27 +30,27 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
     SISIZE = 3
     '''
     class ConfigPanel(QtGui.QDialog, uiVizConfig.Ui_ConfigPanel):
-        """Configuration panel for the eventviz properties."""
+        """Configuration panel for the GestureViz properties."""
         def __init__(self, current):
             QtGui.QDialog.__init__(self)
             self.setupUi(self)
-            if current==EventViz.WINSIZE:
+            if current==GestureViz.WINSIZE:
                 self.winsize.setChecked(True)
-            elif current==EventViz.RATIOSIZE:
+            elif current==GestureViz.RATIOSIZE:
                 self.ratiosize.setChecked(True)
-            elif current==EventViz.SISIZE:
+            elif current==GestureViz.SISIZE:
                 self.sisize.setChecked(True)
 
         def drawmode(self):
             """Return the selected drawmode."""
             if self.winsize.isChecked():
-                return EventViz.WINSIZE
+                return GestureViz.WINSIZE
             elif self.ratiosize.isChecked():
-                return EventViz.RATIOSIZE
+                return GestureViz.RATIOSIZE
             elif self.sisize.isChecked():
-                return EventViz.SISIZE
+                return GestureViz.SISIZE
             else:
-                return EventViz.SISIZE'''
+                return GestureViz.SISIZE'''
             
     def __init__(self, 
                  requests={"diff", "timetag"},
@@ -58,13 +59,14 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
         QtGui.QWidget.__init__(self, parent)
         SelectiveConsumer.__init__(self, requests, fps)
         """Records of sources' touch events."""
+        # self.__sources[observable-ref] = tree(state: tree(), gestures: dict())
         self.__sources = {}
         self.oldest = None
         '''self.__display = DisplayDevice.create()
         if self.__display.url.scheme=="dummy": 
             print("WARNING: using dummy DisplayDevice")
             self.__display.debug()
-        self.drawmode = EventViz.SISIZE'''
+        self.drawmode = GestureViz.SISIZE'''
         self.debuglevel = 0
         self.antialiasing = antialiasing
         self.__fps_count = 0
@@ -78,21 +80,24 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
         '''self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.connect(self, QtCore.SIGNAL("customContextMenuRequested(const QPoint &)"), self.__contextmenu)
         self.connect(QtGui.QShortcut('Alt+C', self), QtCore.SIGNAL("activated()"), self.__configpanel)'''
-        self.connect(QtGui.QShortcut('Ctrl+Q', self), QtCore.SIGNAL("activated()"), self.close)
-
+        self.connect(QtGui.QShortcut('Ctrl+Q', self), 
+                     QtCore.SIGNAL("activated()"), self.close)
     
     def _addObservable(self, observable):
         SelectiveConsumer._addObservable(self, observable)
         if isinstance(observable, StateMachine):
-            self.__sources[observable] = ExtensibleTree(
-                {"state":observable.state().copy(), "gestures":{}})
+            self.__sources[weakref.ref(observable)] = ExtensibleTree(
+                {"state":observable.state().copy(), "gestures":dict()})
+        else:
+            self.__sources[weakref.ref(observable)] = ExtensibleTree(
+                {"state":ExtensibleTree(), "gestures":dict()})
         '''
         if not isinstance(observable, SourceList):
             self.__sources.setdefault(observable, {})
             # resize the widget if necessary
             gesturestate = observable.state.get("gestures", {})
             pos_si_range = gesturestate.get("pos_si_range")
-            if pos_si_range and self.drawmode==EventViz.SISIZE:
+            if pos_si_range and self.drawmode==GestureViz.SISIZE:
                 s = self.__display.mm2pixels([i*1000 for i in pos_si_range], trunc=True)
                 self.sizehint = QtCore.QSize(max(s[0], self.width()), max(s[1], self.height()))
                 self.window().adjustSize()
@@ -100,19 +105,27 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
 
     def _removeObservable(self, observable):
         SelectiveConsumer._removeObservable(self, observable)
-        self.__sources.pop(observable)
+        for ref in self.__sources.keys():
+            if ref() is observable: 
+                del self.__sources[ref] ; break
+        self.update()
+
+    def _checkRef(self):
+        SelectiveConsumer._checkRef(self)
+        self.__sources = dict(((k,v) for k,v in self.__sources.items() \
+                                   if k() is not None))
         self.update()
 
     def _consume(self, products, source):
-        if source in self.__sources:
-            record = self.__sources[source]            
+        for ref, record in self.__sources.items():
+            if ref() is not source: continue
             for item in products:
                 if isinstance(item, ExtensibleTree) and "diff" in item:
                     diff = item.diff
                     if "added" in diff:
-                        record.state.update(diff.added, reuse=True)
+                        record.state.update(diff.added)
                     if "updated" in diff:
-                        record.state.update(diff.updated, reuse=True)
+                        record.state.update(diff.updated)
                     if "removed" in diff:
                         record.state.remove_update(diff.removed)
                         for gid in diff.removed.gestures:
@@ -127,6 +140,7 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
                     history = record.gestures.setdefault(gid, [])
                     history.append(gstate.rel_pos)
             self.update()
+            break
 
     def paintEvent(self, event):
         if self.debuglevel>3:
@@ -154,9 +168,9 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
             if pos_si_range is not None:
                 deviceratio = float(pos_si_range[0])/pos_si_range[1] 
             else: deviceratio = None
-            if pos_si_range and self.drawmode!=EventViz.WINSIZE:
+            if pos_si_range and self.drawmode!=GestureViz.WINSIZE:
                 # Draw device area
-                if self.drawmode==EventViz.SISIZE:
+                if self.drawmode==GestureViz.SISIZE:
                     pixel_pos_range = self.__display.mm2pixels([i*1000 for i in pos_si_range])
                 else:
                     width, height = self.width(), self.height()
@@ -266,7 +280,7 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
                             i += 1
                             painter.drawText(
                                 x+1.5*o, y+o+i*10, 
-                                "%s (name)"%record.state.get("name","???"))
+                                "%s (source)"%source())
         if self.debuglevel>3:
             painter.setPen(QtCore.Qt.black)
             _sum = 0
@@ -274,7 +288,8 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
                 _sum = _sum + len(record.gestures)
             painter.drawText(5,10,
                              "%d sources; %d tracks; %d points;  %d ms"\
-                                 %(len(self.__sources), _sum, count, timer.elapsed()))
+                                 %(len(self.__sources), 
+                                   _sum, count, timer.elapsed()))
             if self.oldest is not None:
                 lag = datetime.datetime.now()-self.oldest
                 msecs = lag.seconds*1000+lag.microseconds/1000.
@@ -302,9 +317,9 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
         """Return the coordinates in pixel for the specified event
         of None if it can't be determined."""
         rvalue = None
-        """if self.drawmode==EventViz.SISIZE:
+        """if self.drawmode==GestureViz.SISIZE:
             rvalue = event.get("pixel_pos")
-        elif self.drawmode==EventViz.RATIOSIZE and deviceratio is not None:
+        elif self.drawmode==GestureViz.RATIOSIZE and deviceratio is not None:
             width, height = self.width(), self.height()
             vizratio = float(width) / height
             if vizratio>deviceratio: width = float(height) * deviceratio
@@ -339,7 +354,7 @@ class EventViz(QtGui.QWidget, SelectiveConsumer):
 
     def __configpanel(self):
         """Show the configuration panel."""
-        config = EventViz.ConfigPanel(self.drawmode)
+        config = GestureViz.ConfigPanel(self.drawmode)
         if config.exec_():
             self.drawmode = config.drawmode()
             self.update()'''

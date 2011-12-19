@@ -17,7 +17,8 @@ def Source(url):
     """Create a new event source instance using the argument "url"."""
     if not isinstance(url, URL): url = URL(str(url))
     source = None
-    if url.scheme.startswith("tuio"): 
+    if url.kind in (URL.ABSPATH, URL.RELPATH) \
+            or url.scheme.startswith("tuio"): 
         source = TuioSource(url)
         """elif url.scheme.startswith("mtdev"):
         if sys.platform == "linux2":

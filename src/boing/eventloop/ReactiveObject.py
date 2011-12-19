@@ -27,7 +27,7 @@ class Observable(QtCore.QObject):
         for reactiveobject in self.observers():
             # Notify of the subscribed ReactiveObjects that they have a None 
             # reference
-            reactiveobject._checkRef()
+            reactiveobject._checkRef()            
             self.trigger.disconnect(reactiveobject._react)
 
     def observers(self):

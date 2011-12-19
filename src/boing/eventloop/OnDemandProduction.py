@@ -131,18 +131,24 @@ class SelectiveConsumer(Consumer):
             return Consumer.subscribeTo(self, observable) 
 
 
-class DumpConsumer(SelectiveConsumer):
+class DumpConsumer(SelectiveConsumer, QObject):
 
-    def __init__(self, dumpsrc=False, dumpdest=False, **kwargs):
+    def __init__(self, dumpsrc=False, dumpdest=False, count=False, 
+                 parent=None, **kwargs):
         SelectiveConsumer.__init__(self, **kwargs)
+        QObject.__init__(self, parent)
         self.dumpsrc = dumpsrc
         self.dumpdest = dumpdest
+        self.count = 0 if count else None
 
     def _consume(self, products, producer):
         if self.dumpsrc: print("from:", str(producer))
         if self.dumpdest: print("to:  ", str(self))
         for p in products:
-            print(str(p))
+            if self.count is not None:
+                self.count += 1
+                print("%d: %s"%(self.count, str(p)))
+            else: print(str(p))
         print()
 
 # -------------------------------------------------------------------

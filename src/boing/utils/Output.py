@@ -8,7 +8,8 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 from boing.eventloop.OnDemandProduction import DumpConsumer
-from boing.multitouch.EventViz import EventViz
+#from boing.multitouch.GestureBuffer import GestureBuffer
+from boing.multitouch.GestureViz import GestureViz
 from boing.eventloop.MappingEconomy import parseRequests
 from boing.tuio.StateToTuio import TuioOutput
 from boing.url import URL
@@ -17,13 +18,18 @@ def Output(url):
     if not isinstance(url, URL): url = URL(str(url))
     output = None
     args = {}
-    if url.scheme=="dump":
+    if url.kind in (URL.ABSPATH, URL.RELPATH) \
+            or url.scheme.startswith("tuio"):        
+        output = TuioOutput(url)
+    elif url.scheme=="dump":
         req = url.query.data.get('req')
         if req is not None: args["requests"] = parseRequests(req)
         src = url.query.data.get('src')
         if src is not None: args["dumpsrc"] = src.lower()!="false"
         dest = url.query.data.get('dest')
         if dest is not None: args["dumpdest"] = dest.lower()!="false"
+        count = url.query.data.get('count')
+        if count is not None: args["count"] = count.lower()!="false"
         hz = url.query.data.get('hz')
         if hz is not None:
             try: args["hz"] = float(hz)
@@ -44,7 +50,7 @@ def Output(url):
                           hz.__class__.__name__)
         if "antialiasing" in url.query.data:
             args["antialiasing"] = url.query.data["antialiasing"].lower()!="false"
-        output = EventViz(**args)
+        output = GestureViz(**args)
         hint = output.sizeHint()
         width = hint.width()
         height = hint. height()
@@ -63,8 +69,18 @@ def Output(url):
         output.show()
         output.raise_()
         output.resize(width, height)
-    elif url.scheme.startswith("tuio"):        
-        output = TuioOutput(url)
+        '''elif url.scheme=="buffer":
+        req = url.query.data.get('req')
+        if req is not None: args["requests"] = parseRequests(req)
+        if 'hz' in url.query.data:
+            hz = url.query.data['hz']
+            if hz.lower()=="none": args["hz"] = None
+            else:
+                try: args["hz"] = float(hz)
+                except ValueError: 
+                    print("ValueError: hz must be numeric, not %s"%
+                          hz.__class__.__name__)
+        output = GestureBuffer(**args)'''
     else:
         print("Unrecognized output URL:", str(url))
     return output

@@ -15,7 +15,6 @@ from PyQt4.QtCore import pyqtSignal
 from boing import osc, slip
 from boing.eventloop.EventLoop import EventLoop
 from boing.eventloop.ProducerConsumer import Producer
-from boing.utils.ExtensibleStruct import ExtensibleStruct
 
 class LogPlayer(Producer):
     """

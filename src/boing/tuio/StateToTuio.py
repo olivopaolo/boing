@@ -9,6 +9,7 @@
 
 import collections
 import datetime
+import weakref
 
 from PyQt4.QtCore import QCoreApplication
 
@@ -30,10 +31,10 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
     def __init__(self,
                  requests={("diff", ".*", "gestures"), "timetag", "osc", "data"},
                  hz=None, parent=None):
-        MappingProducer.__init__(self, {"osc", "data"}, parent=parent)        
+        MappingProducer.__init__(self, productoffer={"osc", "data"},
+                                 parent=parent)
         SelectiveConsumer.__init__(self, requests, hz)
-        # self._tuiostate = {observable: {profile: [fseq, 
-        #                                           {s_id: TuioDescriptor}]}}
+        # self._tuiostate[observable-ref][profile] = [fseq, {s_id: TuioDescriptor}]
         self._tuiostate = {}
 
     def __del__(self):
@@ -41,12 +42,16 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
         SelectiveConsumer.__del__(self)
     
     def _checkRef(self):
-        MappingProducer._checkRef(self)        
+        MappingProducer._checkRef(self)
         SelectiveConsumer._checkRef(self)
+        self._tuiostate = dict(((k,v) for k,v in self._tuiostate.items() \
+                                    if k() is not None))
 
     def _removeObservable(self, observable):
         MappingProducer._removeObservable(self, observable)
-        self._tuiostate.pop(observable, None)
+        for ref in self._tuiostate.keys():
+            if ref() is observable:
+                del self._tuiostate[ref] ; break
 
     def subscribeTo(self, observable, **kwargs):
         """Accepts argument 'requests' also."""
@@ -75,7 +80,13 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
         return rvalue
 
     def _consume(self, products, producer):
-        sourcestate = self._tuiostate.setdefault(producer, {})
+        sourcetuiostate = None
+        for ref, state in self._tuiostate.items():
+            if ref() is producer: 
+                sourcetuiostate = state ; break
+        if sourcetuiostate is None:
+            sourcetuiostate = dict()
+            self._tuiostate[weakref.ref(producer)] = sourcetuiostate
         for product in products:
             if isinstance(product, collections.Mapping):
                 if "osc" in product:
@@ -108,7 +119,7 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
                         for gid, gdiff in update_tree.items():
                             # Determine the tuio profiles for the gesture event
                             profiles = set()
-                            for profile, profilestate in sourcestate.items():
+                            for profile, profilestate in sourcetuiostate.items():
                                 if gid in profilestate[1]: profiles.add(profile)
                             if not profiles:
                                 if "rel_pos" not in gdiff: continue
@@ -132,7 +143,8 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
                             # Create set descriptors for each detected profile
                             for profile in profiles:
                                 update = False
-                                profilestate = sourcestate.setdefault(profile, [0, {}])
+                                profilestate = sourcetuiostate.setdefault(
+                                    profile, [0, {}])
                                 if gid in profilestate[1]: 
                                     prev = profilestate[1][gid]
                                 else:
@@ -243,7 +255,7 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
                                 if update: setters.setdefault(profile, set()).add(gid)
                     if ("removed", "gestures") in diff:
                         for gid in diff.removed.gestures.keys():
-                            for profile, profilestate in sourcestate.items():
+                            for profile, profilestate in sourcetuiostate.items():
                                 if gid in profilestate[1]:
                                     del profilestate[1][gid]
                                     removed.add(profile)
@@ -252,7 +264,7 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
                     # Create an OSC bundle 
                     packets = []
                     for profile in (set(setters.keys()) | removed):
-                        profilestate = sourcestate[profile]
+                        profilestate = sourcetuiostate[profile]
                         sourcemsg = osc.Message("/tuio/%s"%profile, 
                                                 "ss", "source", 
                                                 self.__class__.__name__)
