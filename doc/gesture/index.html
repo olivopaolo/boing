@@ -39,10 +39,18 @@ Sources:
      time when the event is received, otherwise the OSC bundle
      timestamp is considered.
 
+  MTDEV device URL  
+     Open input device using libmtdev (LINUX ONLY)
+      e.g. mtdev:///dev/input/event5
+
 Outputs:
   viz:
      Display gesture events (default output) 
       e.g. viz:?req=(diff,.*,gestures),timetag&amphz=60&ampx=320&ampy=240
+
+  stat:
+     Print data production statistics.
+      e.g. stat:?req=.*&ampclear=False&amphz=1
 
   dump:
      Print the received events to the standard output 
@@ -50,11 +58,11 @@ Outputs:
 
   TUIO socket URL
      Redirect gesture events as a TUIO stream to a socket
-      e.g. tuio://[::1]:3333?req=(diff,.*,gestures),timetag&amphz=None
+      e.g. tuio://[::1]:3333?req=(diff,.*,gestures),timetag,osc,data
 
   TUIO log URL
      Log gesture events as a TUIO log file
-      e.g. tuio:///tmp/test.osc.bz2?req=(diff,.*,gestures),timetag&amphz=None
+      e.g. tuio:///tmp/test.osc.bz2?req=(diff,.*,gestures),timetag,osc,data
 
 </pre>
 

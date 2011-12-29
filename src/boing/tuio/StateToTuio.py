@@ -41,17 +41,17 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
         MappingProducer.__del__(self)        
         SelectiveConsumer.__del__(self)
     
-    def _checkRef(self):
-        MappingProducer._checkRef(self)
-        SelectiveConsumer._checkRef(self)
-        self._tuiostate = dict(((k,v) for k,v in self._tuiostate.items() \
-                                    if k() is not None))
-
     def _removeObservable(self, observable):
         MappingProducer._removeObservable(self, observable)
         for ref in self._tuiostate.keys():
             if ref() is observable:
                 del self._tuiostate[ref] ; break
+
+    def _checkRef(self):
+        MappingProducer._checkRef(self)
+        SelectiveConsumer._checkRef(self)
+        self._tuiostate = dict(((k,v) for k,v in self._tuiostate.items() \
+                                    if k() is not None))
 
     def subscribeTo(self, observable, **kwargs):
         """Accepts argument 'requests' also."""
@@ -82,9 +82,8 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
     def _consume(self, products, producer):
         sourcetuiostate = None
         for ref, state in self._tuiostate.items():
-            if ref() is producer: 
-                sourcetuiostate = state ; break
-        if sourcetuiostate is None:
+            if ref() is producer: sourcetuiostate = state ; break
+        else:
             sourcetuiostate = dict()
             self._tuiostate[weakref.ref(producer)] = sourcetuiostate
         for product in products:
@@ -117,30 +116,42 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
                             update_tree.update(diff.updated.gestures, reuse=True)
                     if update_tree is not None:
                         for gid, gdiff in update_tree.items():
-                            # Determine the tuio profiles for the gesture event
+                            # Determine the TUIO profiles for the gesture event
                             profiles = set()
                             for profile, profilestate in sourcetuiostate.items():
                                 if gid in profilestate[1]: profiles.add(profile)
                             if not profiles:
-                                if "rel_pos" not in gdiff: continue
-                                elif "objclass" in gdiff: 
-                                    if len(gdiff.rel_pos)==2: profiles.add("2Dobj")
-                                    elif len(gdiff.rel_pos)==3: profiles.add("3Dobj")
-                                elif len(gdiff.rel_pos)==2: profiles.add("2Dcur")
-                                elif len(gdiff.rel_pos)==3: profiles.add("3Dcur")
+                                if "rel_pos" in gdiff:
+                                    if "objclass" in gdiff: 
+                                        if len(gdiff.rel_pos)==2: 
+                                            profiles.add("2Dobj")
+                                        elif len(gdiff.rel_pos)==3: 
+                                            profiles.add("3Dobj")
+                                    elif len(gdiff.rel_pos)==2: 
+                                        profiles.add("2Dcur")
+                                    elif len(gdiff.rel_pos)==3: 
+                                        profiles.add("3Dcur")
                                 if "boundingbox" in gdiff: 
-                                    if len(gdiff.rel_pos)==2: profiles.add("2Dblb")
-                                    elif len(gdiff.rel_pos)==3: profiles.add("3Dblb")
-                                elif "boundingbox" in gdiff:
                                     if "rel_pos" in gdiff.boundingbox:
                                         if len(gdiff.boundingbox.rel_pos)==2: 
                                             profiles.add("2Dblb")
+                                        elif len(gdiff.boundingbox.rel_pos)==3: 
+                                            profiles.add("3Dblb")
+                                    elif "rel_pos" in gdiff:
+                                        if len(gdiff.rel_pos)==2: 
+                                            profiles.add("2Dblb")
+                                        elif len(gdiff.rel_pos)==3: 
+                                            profiles.add("3Dblb")
+                            elif len(profiles)==1 and "boundingbox" in gdiff:
+                                if "rel_pos" in gdiff.boundingbox:
+                                    if len(gdiff.boundingbox.rel_pos)==2: 
+                                        profiles.add("2Dblb")
                                     elif len(gdiff.boundingbox.rel_pos)==3: 
                                         profiles.add("3Dblb")
                                 elif "rel_pos" in gdiff:
                                     if len(gdiff.rel_pos)==2: profiles.add("2Dblb")
                                     elif len(gdiff.rel_pos)==3: profiles.add("3Dblb")
-                            # Create set descriptors for each detected profile
+                            # Create set descriptors for each updated profile
                             for profile in profiles:
                                 update = False
                                 profilestate = sourcetuiostate.setdefault(
@@ -148,9 +159,10 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
                                 if gid in profilestate[1]: 
                                     prev = profilestate[1][gid]
                                 else:
+                                    len_ = len(TuioDescriptor.profiles[profile])
                                     prev = TuioDescriptor(
                                         None, profile, None, None, None,
-                                        *([0.0]*len(TuioDescriptor.profiles[profile])))
+                                        *([TuioDescriptor.undef_value]*len_))
                                     prev.s = gid
                                     profilestate[1][gid] = prev
                                     update = True
@@ -299,22 +311,17 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
 def TuioOutput(url):
     """
     Return a StateToTuio from an URL with scheme="tuio*".
-    examples:
-     tuio.stdout:
-     tuio:///home/boing/gestures/test.osc.bz2
-     tuio://localhost:3333
-     tuio.osc.udp://127.0.0.1:3333 
-
-    FIXME: it creates only osc.udp sockets.
+     examples:
+      test.osc.bz2
+      /home/boing/gestures/test.osc.bz2
+      tuio:///home/boing/gestures/test.osc.bz2
+      tuio://localhost:3333
+      tuio.udp://127.0.0.1:3333 
+      tuio.tcp://127.0.0.1:3333 
     """
     kwargs = {}
     req = url.query.data.get('req')
     if req is not None: kwargs["requests"] = parseRequests(req)
-    hz = url.query.data.get('hz')
-    if hz is not None:
-        try: args["hz"] = float(hz)
-        except ValueError: 
-            print("ValueError: hz must be numeric, not %s"%hz.__class__.__name__)
     output =  StateToTuio(**kwargs)
     if not isinstance(url, URL): url = URL(str(url))
     if url.kind in (URL.ABSPATH, URL.RELPATH) \
