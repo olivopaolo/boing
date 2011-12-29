@@ -24,6 +24,9 @@ class TuioDescriptor(object):
         "3Dblb":("s","x","y","z","a","b","c","w","h","d","v","X","Y","Z","A","B","C","m","r"),
         }
 
+    undef_value = -1.0
+
+
     def __init__(self, client,
                  profile, timetag, source, fseq,
                  *args):

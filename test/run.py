@@ -51,23 +51,25 @@ Sources:
                        e.g. "tuio:///tmp/test.osc.bz2?speed=1&loop=False&rt=False"
 
  If "rt" (i.e. reception time) is true, the event's timetag is the
- time when the event is received, otherwise the OSC bundle
- timestamp is considered.
+ time when the event is received, otherwise the OSC bundle timestamp
+ is considered.
+
+ MTDEV device URL     open input device using libmtdev (LINUX ONLY)
+                       e.g. "mtdev:///dev/input/event5"
 
 Outputs: 
  dump:                dump received events to standard output.
                        e.g. "dump:?req=.*&hz=none&src=False&dest=False&count=False"
+ stat:                print data production statistics.
+                       e.g. "stat:?req=.*&clear=False&hz=1"
  viz:                 display gestures (DEFAULT)
                        e.g. "viz:?req=(diff,.*,gestures),timetag&hz=60&x=320&y=240"
  TUIO socket URL      redirect gesture events as a TUIO stream to a socket
-                       e.g. "tuio://[::1]:3333?req=(diff,.*,gestures),timetag&hz=None"
+                       e.g. "tuio://[::1]:3333?req=(diff,.*,gestures),timetag"
  TUIO log URL         log gesture events as a TUIO log file
-                       e.g. "tuio:///tmp/test.osc.bz2?req=(diff,.*,gestures),timetag&hz=None"
+                       e.g. "tuio:///tmp/test.osc.bz2?req=(diff,.*,gestures),timetag"
 """)
         """  
- MTDEV device node URL      open device using libmtdev
-                            (e.g. mtdev:///dev/input/event5)
-
   Sources can be setup using a configuration file, which can be defined
   specifying the parameter "conf" in the url path. 
   (e.g. tuio://ipad@localhost:3333?conf=./test/multitouch/tuiopad.conf)

@@ -112,8 +112,8 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
 
     def _checkRef(self):
         SelectiveConsumer._checkRef(self)
-        self.__sources = dict(((k,v) for k,v in self.__sources.items() \
-                                   if k() is not None))
+        self.__sources = dict((k, v) for k, v in self.__sources.items() \
+                                  if k() is not None)
         self.update()
 
     def _consume(self, products, source):
@@ -292,7 +292,7 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
                                    _sum, count, timer.elapsed()))
             if self.oldest is not None:
                 lag = datetime.datetime.now()-self.oldest
-                msecs = lag.seconds*1000+lag.microseconds/1000.
+                msecs = lag.seconds*1000+lag.microseconds/1000
                 painter.drawText(5, 20, "lag: %d msecs"%msecs)
             self.__fps_count += 1
             painter.drawText(5, height-5, "fps: %d Hz"%self.__fps_previous)

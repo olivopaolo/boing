@@ -39,7 +39,7 @@ class BaseFile(object):
     """BaseFile defines a set of common methods that any file should have.""" 
 
     def __init__(self, url):
-        if not isinstance(url, URL): url = URL(url)
+        if not isinstance(url, URL): url = URL(str(url))
         self._fileinfo = QFileInfo(str(url.path))
 
     def absoluteDir(self):
@@ -71,7 +71,7 @@ class CommunicationFile(BaseFile, CommunicationDevice):
                  uncompress=False, parent=None):
         BaseFile.__init__(self, url)
         fd = openFile(self.absoluteFilePath(), mode, uncompress)
-        CommunicationFile.__init__(self, fd, parent)
+        CommunicationDevice.__init__(self, fd, parent)
 
 # -------------------------------------------------------------------------
 

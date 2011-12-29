@@ -114,8 +114,7 @@ class MappingConsumer(SelectiveConsumer):
                 "requests must be set, None or OnDemandProducer.ANY_PRODUCT, not %s"%
                 restrictions.__class__.__name__)
         SelectiveConsumer.__init__(self, requests, hz)'''
-
-
+                
 # -------------------------------------------------------------------
 
 def parseRequests(requests):

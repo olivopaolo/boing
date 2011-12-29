@@ -11,13 +11,14 @@ from datetime import datetime
 
 from PyQt4.QtCore import QObject
 
-from boing import osc, tuio
+from boing import osc
 from boing.eventloop.OnDemandProduction import SelectiveConsumer
 from boing.eventloop.StateMachine import StateMachine
 from boing.eventloop.MappingEconomy import MappingProducer
 from boing.osc.LogPlayer import LogPlayer
 from boing.slip.SlipDataIO import SlipDataReader
 from boing.tcp.TcpServer import TcpServer
+from boing.tuio import TuioDescriptor
 from boing.udp.UdpSocket import UdpListener
 from boing.utils.ExtensibleTree import ExtensibleTree
 from boing.utils.DataIO import DataReader
@@ -34,7 +35,7 @@ class TuioToState(StateMachine, SelectiveConsumer):
     def __init__(self, parent=None):
         StateMachine.__init__(self, 
                               productoffer={("diff",".*","gestures"),
-                                            "osc", "data"},
+                                            "timetag", "osc", "data"},
                               parent=parent)
         SelectiveConsumer.__init__(self, requests={"osc", "data"})
         """Alive TUIO items."""
@@ -95,10 +96,10 @@ class TuioToState(StateMachine, SelectiveConsumer):
                 elif command=="alive":
                     alive = set(msg.arguments[1:])
                 elif command=="set":
-                    tobj = tuio.TuioDescriptor(msg.source, 
-                                               profile, packet.timetag,
-                                               source, fseq,
-                                               *msg.arguments[1:])
+                    tobj = TuioDescriptor(msg.source, 
+                                          profile, packet.timetag,
+                                          source, fseq,
+                                          *msg.arguments[1:])
                     desc[tobj.s] = tobj
         # TODO: old bundles rejection based on fseq
         # Update the gestures with the bundle information
@@ -111,8 +112,10 @@ class TuioToState(StateMachine, SelectiveConsumer):
                 source_ids[s_id] = gid
             if profile=="2Dcur":
                 node = ExtensibleTree()
-                node.rel_pos = (tobj.x, tobj.y)
-                node.rel_speed = (tobj.X, tobj.Y)
+                if TuioDescriptor.undef_value not in (tobj.x, tobj.y):
+                    node.rel_pos = (tobj.x, tobj.y)
+                if TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
+                    node.rel_speed = (tobj.X, tobj.Y)
                 diff.updated.gestures[gid] = node
             elif profile in ("25Dcur", "3Dcur"):
                 node = ExtensibleTree()
@@ -121,8 +124,10 @@ class TuioToState(StateMachine, SelectiveConsumer):
                 diff.updated.gestures[gid] = node
             elif profile=="2Dblb":
                 node = ExtensibleTree()
-                node.rel_pos = (tobj.x, tobj.y)
-                node.rel_speed = (tobj.X, tobj.Y)
+                if TuioDescriptor.undef_value not in (tobj.x, tobj.y):
+                    node.rel_pos = (tobj.x, tobj.y)
+                if TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
+                    node.rel_speed = (tobj.X, tobj.Y)
                 node.si_angle = (tobj.a, )
                 node.rel_size = (tobj.w, tobj.h)
                 diff.updated.gestures[gid].boundingbox = node
@@ -142,8 +147,10 @@ class TuioToState(StateMachine, SelectiveConsumer):
                 diff.updated.gestures[gid].boundingbox = node
             elif profile=="2Dobj":
                 node = ExtensibleTree()
-                node.rel_pos = (tobj.x, tobj.y)
-                node.rel_speed = (tobj.X, tobj.Y)
+                if TuioDescriptor.undef_value not in (tobj.x, tobj.y):
+                    node.rel_pos = (tobj.x, tobj.y)
+                if TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
+                    node.rel_speed = (tobj.X, tobj.Y)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, )
                 diff.updated.gestures[gid] = node
@@ -178,8 +185,7 @@ class TuioToState(StateMachine, SelectiveConsumer):
                 if gid is not None:
                     diff.removed.gestures[gid] = None
         src_profiles[profile] = alive
-        additional = {"timetag": timetag}
-        self.setState(diff=diff, additional=additional)
+        self.setState(diff=diff, additional={"timetag": timetag})
         if self._postosc or self._postdata:
             product = {}
             if self._postosc: product["osc"] = packet

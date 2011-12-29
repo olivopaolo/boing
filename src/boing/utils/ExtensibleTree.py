@@ -294,11 +294,13 @@ class ExtensibleTree(collections.MutableMapping):
     #  Customizing attribute access
 
     def __getattr__(self, key):
-        value = self.__info.get(key)
-        if value is None:
-            value = ExtensibleTree()
-            self[key] = value
-        return value
+        rvalue = None
+        if key in self.__info:
+            rvalue = self.__info[key]
+        else:
+            rvalue = ExtensibleTree()
+            self[key] = rvalue
+        return rvalue
 
     def __setattr__(self, key, value):
         if key in self.__info:
@@ -341,14 +343,16 @@ class ExtensibleTree(collections.MutableMapping):
         return iter(self.__info)
 
     def __getitem__(self, key):
+        rvalue = None
         if isinstance(key, str) and key.isidentifier() or isinstance(key, int):
-            value = self.__info.get(key)
-            if value is None:
-                value = ExtensibleTree()
-                self[key] = value
-            return value
+            if key in self.__info:
+                rvalue = self.__info[key]
+            else:
+                rvalue = ExtensibleTree()
+                self[key] = rvalue
         else:
-            return self.values(key)
+            rvalue = self.values(key)
+        return rvalue
         
     def __setitem__(self, key, value):
         if isinstance(key, str) and key.isidentifier() or isinstance(key, int):

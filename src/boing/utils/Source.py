@@ -7,11 +7,14 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import sys
+import traceback
+
 from boing.tuio.TuioToState import TuioSource
 from boing.url import URL
 
-#if sys.platform=='linux2':
-#    from boing.multitouch.MtDevDevice import MtDevDevice
+if sys.platform=='linux2':
+    from boing.multitouch.MtDevDevice import MtDevDevice
 
 def Source(url):
     """Create a new event source instance using the argument "url"."""
@@ -20,21 +23,14 @@ def Source(url):
     if url.kind in (URL.ABSPATH, URL.RELPATH) \
             or url.scheme.startswith("tuio"): 
         source = TuioSource(url)
-        """elif url.scheme.startswith("mtdev"):
+    elif url.scheme.startswith("mtdev"):
         if sys.platform == "linux2":
-            if url.kind==URL.GENERIC \
-               and url.scheme=="mtdev" and str(url.site)=="":
-                lock = url.query.data.get('lock')
-                try:
-                    if lock is not None:
-                        source = MtDevDevice(str(url.path), 
-                                             lock= lock.lower!="false")
-                    else:
-                        source = MtDevDevice(str(url.path))
-                except Exception:
-                    traceback.print_exc()
+            try:
+                source = MtDevDevice(str(url.path))
+            except Exception:
+                traceback.print_exc()
         else:
-            print("mtdev device not supported on ", sys.platform)"""
+            print("mtdev devices are not supported on ", sys.platform)
     else:
         print("Unrecognized source URL:", str(url))
     """if source is not None:
