@@ -11,8 +11,6 @@ import collections
 import datetime
 import weakref
 
-from PyQt4.QtCore import QCoreApplication
-
 from boing import osc
 from boing.eventloop.MappingEconomy import MappingProducer, parseRequests
 from boing.eventloop.OnDemandProduction import OnDemandProducer, SelectiveConsumer
@@ -322,7 +320,7 @@ def TuioOutput(url):
     kwargs = {}
     req = url.query.data.get('req')
     if req is not None: kwargs["requests"] = parseRequests(req)
-    output =  StateToTuio(**kwargs)
+    output = StateToTuio(**kwargs)
     if not isinstance(url, URL): url = URL(str(url))
     if url.kind in (URL.ABSPATH, URL.RELPATH) \
             or url.scheme=="tuio.file" \
@@ -337,5 +335,6 @@ def TuioOutput(url):
         consumer.outputDevice().setOption("nodelay")
         consumer.subscribeTo(output)
     else:
-        raise Exception("Unrecognized TUIO output: %s"%str(url))
+        output = None
+        print("Unrecognized TUIO output: %s"%str(url))
     return output

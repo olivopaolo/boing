@@ -9,7 +9,7 @@
 
 from datetime import datetime
 
-from PyQt4.QtCore import QObject
+from PyQt4 import QtCore 
 
 from boing import osc
 from boing.eventloop.OnDemandProduction import SelectiveConsumer
@@ -223,9 +223,9 @@ def TuioSource(url):
         socket = DataReader(UdpListener(url), parent=source)
         source.subscribeTo(socket)
     elif url.scheme=="tuio.tcp":
-        class ClientWaiter(QObject):
+        class ClientWaiter(QtCore.QObject):
             def __init__(self, parent):
-                QObject.__init__(self, parent)
+                QtCore.QObject.__init__(self, parent)
                 self.socket = None
             def newConnection(self): 
                 server = self.sender()

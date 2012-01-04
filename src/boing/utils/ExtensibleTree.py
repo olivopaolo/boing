@@ -330,8 +330,8 @@ class ExtensibleTree(collections.MutableMapping):
     # ---------------------------------------------------------------------
     #  Basic customization
     def __repr__(self):
-        output = ", ".join(("%s:%s"%(k,v) for k, v in self.items()))
-        return "{%s}"%output
+        output = ", ".join(("%s: %s"%(repr(k),repr(v)) for k, v in self.items()))
+        return "tree({%s})"%output
 
     # ---------------------------------------------------------------------
     #  Emulating container type

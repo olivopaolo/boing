@@ -68,7 +68,7 @@
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><url>slip.tcp://[&lt;host&gt;]:&lt;port&gt;</url></td>
-  <td>SLIP encoding/decoding over TCP socket</td></tr>
+  <td>SLIP data encoding/decoding over TCP socket</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><url>slip.file://&lt;absolute-filepath&gt;</url></td>
@@ -78,21 +78,33 @@
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><url>osc[.udp|tcp]://[&lt;host&gt;]:&lt;port&gt;</url></td>
-  <td>OSC through a socket (SLIP decoding for TCP connections)</td></tr>
+  <td>OSC through a socket (SLIP encoding for TCP connections)</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><url>osc://&lt;absolute-filepath&gt;</url></td>
-  <td>OSC from file (SLIP decoding)</td></tr>
+  <td>OSC from file (SLIP encoding)</td></tr>
 <!-- TUIO -->
 <tr><th colspan="2">TUIO</th></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><url>tuio[.udp|tcp]://[&lt;host&gt;]:&lt;port&gt;</url></td>
-  <td>TUIO/OSC through a socket (SLIP decoding for TCP connections)</td></tr>
+  <td>TUIO/OSC through a socket (SLIP encoding for TCP connections)</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><url>tuio://&lt;absolute-filepath&gt;</url></td>
-  <td>TUIO/OSC from file (SLIP decoding)</td></tr>
+  <td>TUIO/OSC from file (SLIP encoding)</td></tr>
+<!-- JSON -->
+<tr><th colspan="2">JSON</th></tr>
+<tr>
+  <td><ossupport>LW</ossupport></td>
+  <td><url>json[.udp|tcp]://[&lt;host&gt;]:&lt;port&gt;</url></td>
+  <td>JSON through a socket (SLIP encoding for TCP connections)</td></tr>
+<!-- mtdev -->
+<tr><th colspan="2">mtdev</th></tr>
+<tr>
+  <td><ossupport>L</ossupport></td>
+  <td><url>mtdev://&lt;absolute-filepath&gt;</url></td>
+  <td>open input device using libmtdev</td></tr>
 </table>
 
 <p><sup>1</sup>On Windows, in order to define a file using the scheme

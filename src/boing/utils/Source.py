@@ -10,6 +10,7 @@
 import sys
 import traceback
 
+from boing.json.JSONTunnel import JSONReader
 from boing.tuio.TuioToState import TuioSource
 from boing.url import URL
 
@@ -23,6 +24,8 @@ def Source(url):
     if url.kind in (URL.ABSPATH, URL.RELPATH) \
             or url.scheme.startswith("tuio"): 
         source = TuioSource(url)
+    elif url.scheme.startswith("json"):
+        source = JSONReader(url)
     elif url.scheme.startswith("mtdev"):
         if sys.platform == "linux2":
             try:
@@ -54,16 +57,3 @@ def Source(url):
                 traceback.print_exc()
                 print("Cannot load config file", filepath)"""
     return source
-"""
-def UrlToSourceClass(url):
-    if not isinstance(url, URL): url = URL(str(url))
-    sourceclass = None
-    if url.scheme.startswith("tuio"):
-        sourceclass = TuioSourceClass(url)
-    elif url.scheme.startswith("mtdev"):
-        if sys.platform == "linux2":
-            sourceclass = MtDevDevice
-        else:
-            print("mtdev device not supported on ", sys.platform)
-    return sourceclass
-"""

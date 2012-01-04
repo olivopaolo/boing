@@ -265,12 +265,14 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
                         i = 1 ;
                         painter.drawText(
                             x+1.5*o, y+o+i*10, 
-                            "%.3f,%.3f (rel_pos)"%(stateN.rel_pos[:2]))
+                            "%.3f,%.3f (rel_pos)"%(
+                                stateN.rel_pos[0], stateN.rel_pos[1]))
                         if "rel_speed" in stateN:
                             i += 1 ;
                             painter.drawText(
                                 x+1.5*o, y+o+i*10, 
-                                "%+.3f,%+.3f (rel_speed)"%(stateN.rel_speed[:2]))
+                                "%+.3f,%+.3f (rel_speed)"%(
+                                    stateN.rel_speed[0], stateN.rel_speed[1]))
                         if "si_angle" in stateN:
                             i += 1 ;
                             painter.drawText(

@@ -45,9 +45,11 @@ Options:
  -h, --help           display this help and exit
 
 Sources: 
- TUIO socket URL      grab a TUIO stream over a socket
+ JSON socket URL      read JSON stream from socket
+                       e.g. "json://localhost:7777"
+ TUIO socket URL      read TUIO stream from socket
                        e.g. "tuio://localhost:3333?rt=False"
- TUIO log URL         play a TUIO log from a file
+ TUIO log URL         play a TUIO log from file
                        e.g. "tuio:///tmp/test.osc.bz2?speed=1&loop=False&rt=False"
 
  If "rt" (i.e. reception time) is true, the event's timetag is the
@@ -64,6 +66,8 @@ Outputs:
                        e.g. "stat:?req=.*&clear=False&hz=1"
  viz:                 display gestures (DEFAULT)
                        e.g. "viz:?req=(diff,.*,gestures),timetag&hz=60&x=320&y=240"
+ JSON socket URL      encode events and send JSON stream to socket
+                       e.g. "json://[::1]:7777?req=diff,timetag"
  TUIO socket URL      redirect gesture events as a TUIO stream to a socket
                        e.g. "tuio://[::1]:3333?req=(diff,.*,gestures),timetag"
  TUIO log URL         log gesture events as a TUIO log file

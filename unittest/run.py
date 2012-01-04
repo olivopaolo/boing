@@ -29,7 +29,7 @@ If no module is specified, all modules are tested; otherwise only the
 specified modules will be executed. 
  
 Available modules: 
- dns_sd, display, eventloop, osc, slip, tcp, udp, utils
+ dns_sd, display, eventloop, json, osc, slip, tcp, udp, utils
 """)
         sys.exit(0)
 
@@ -46,6 +46,9 @@ if len(sys.argv)==1 or 'eventloop' in sys.argv:
     list += test_StateMachine.suite()
     list += test_ReactiveObject.suite()
     list += test_ProducerConsumer.suite()
+if len(sys.argv)==1 or 'json' in sys.argv:
+    from json_ import test__init__
+    list += test__init__.suite()
 if len(sys.argv)==1 or 'osc' in sys.argv:
     from osc import test_osc, test_LogPlayer
     list += test_osc.suite()

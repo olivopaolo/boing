@@ -14,6 +14,7 @@ from boing.eventloop.OnDemandProduction import DumpConsumer
 #from boing.multitouch.GestureBuffer import GestureBuffer
 from boing.multitouch.GestureViz import GestureViz
 from boing.eventloop.MappingEconomy import parseRequests
+from boing.json.JSONTunnel import JSONWriter
 from boing.tuio.StateToTuio import TuioOutput
 from boing.utils.IODevice import IODevice
 from boing.utils.StatProducer import StatProducer
@@ -27,6 +28,8 @@ def Output(url):
     if url.kind in (URL.ABSPATH, URL.RELPATH) \
             or url.scheme.startswith("tuio"):        
         output = TuioOutput(url)
+    if url.scheme.startswith("json"):
+        output = JSONWriter(url)
     elif url.scheme=="dump":
         req = url.query.data.get('req')
         if req is not None: kwargs["requests"] = parseRequests(req)
