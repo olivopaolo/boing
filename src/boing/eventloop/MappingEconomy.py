@@ -50,7 +50,7 @@ class MappingProducer(OnDemandProducer):
         elif self._overalldemand is OnDemandProducer.ANY_PRODUCT: 
             rvalue = True
         else:
-            rvalue = matching.matchPaths(path, request)
+            rvalue = matching.matchPaths(path, self._overalldemand)
         return rvalue
 
     def _updateOverallDemand(self):

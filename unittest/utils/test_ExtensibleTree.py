@@ -16,7 +16,8 @@ from boing.utils.ExtensibleTree import ExtensibleTree
 class TestExtensibleTree(unittest.TestCase):
 
     def setUp(self):
-        self.dict = {"i":1,
+        self.dict = {1:1,
+                     "i":1,
                      "t":"boing", 
                      "l":[1,2,3,"text"], 
                      "d":{"x":0, "i":1, 1:"iid", 2:"iid"}}
@@ -52,20 +53,19 @@ class TestExtensibleTree(unittest.TestCase):
     def test__delattr__(self):
         e = ExtensibleTree(self.dict)
         del e.i
-        self.assertEqual(set(e.keys()), {"t", "l", "d"})
+        self.assertEqual(set(e.keys()), {1, "t", "l", "d"})
         self.assertRaises(AttributeError, delattr, e, "noattr")
         self.assertRaises(AttributeError, delattr, e, "update")
         self.assertRaises(AttributeError, delattr, e, "clear")
         self.assertRaises(AttributeError, delattr, e, "_ExtensibleTree__info")
 
-    def test_items(self):
+    def test_keys(self):
         self.e[1] = 6
         self.dict[1] = 6
-        self.assertEqual(dict(self.e.items()), self.dict)
-        d = {}
-        for key, value in self.e.items():
-            d[key] = value
-        self.assertEqual(d, self.dict)
+        keys = set()
+        for k in self.e.keys():
+            keys.add(k)
+        self.assertEqual(keys, self.dict.keys())
 
     def test_values(self):
         self.e[1] = 6
@@ -80,14 +80,44 @@ class TestExtensibleTree(unittest.TestCase):
         self.assertTrue(self.dict["d"] in values)
         self.assertTrue(self.dict[1] in values)
 
-    def test_keys(self):
+    def test_items(self):
         self.e[1] = 6
         self.dict[1] = 6
-        keys = set()
-        for k in self.e.keys():
-            keys.add(k)
-        self.assertEqual(keys, self.dict.keys())
+        self.assertEqual(dict(self.e.items()), self.dict)
+        d = {}
+        for key, value in self.e.items():
+            d[key] = value
+        self.assertEqual(d, self.dict)
 
+    def test_match(self):
+        self.e.e = ExtensibleTree(self.dict)
+        self.assertTrue(self.e.match("i"))
+        self.assertFalse(self.e.match("j"))
+        self.assertTrue(self.e.match(1))
+        self.assertFalse(self.e.match(2))
+        self.assertTrue(self.e.match("."))
+        self.assertTrue(self.e.match("i*"))
+        self.assertTrue(self.e.match(".*"))
+        self.assertFalse(self.e.match("j*"))
+        self.assertTrue(self.e.match(("i",)))
+        self.assertTrue(self.e.match((".",)))
+        self.assertTrue(self.e.match(("i*",)))
+        self.assertFalse(self.e.match(("j*",)))
+        self.assertTrue(self.e.match(("e","i")))
+        self.assertTrue(self.e.match(("e",1)))
+        self.assertTrue(self.e.match(("e",".")))
+        self.assertTrue(self.e.match(("e","i*",)))
+        self.assertFalse(self.e.match(("e","j*")))
+        self.assertTrue(self.e.match((".","i")))
+        self.assertTrue(self.e.match((".",1)))
+        self.assertTrue(self.e.match((".",".")))
+        self.assertTrue(self.e.match((".","i*",)))
+        self.assertFalse(self.e.match((".","j*")))
+        self.assertFalse(self.e.match((".","i","j")))
+        self.assertFalse(self.e.match((".",".","j")))
+        self.assertFalse(self.e.match((".","i*","j")))
+        self.assertFalse(self.e.match((".","j*","j")))
+        
     def test_discard(self):
         e = ExtensibleTree()
         e.a.a = 1
@@ -229,7 +259,7 @@ class TestExtensibleTree(unittest.TestCase):
         #  TODO: add other tests like test__setitem__
         e = ExtensibleTree()
         del self.e["i"]
-        self.assertEqual(set(self.e), {"t", "l", "d"})
+        self.assertEqual(set(self.e), {1, "t", "l", "d"})
         self.assertRaises(ValueError, e.__delitem__, slice(1))
         self.assertRaises(ValueError, e.__delitem__, slice(1, None))
         self.assertRaises(ValueError, e.__delitem__, slice(None, None, 1))

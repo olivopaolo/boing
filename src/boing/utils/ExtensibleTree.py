@@ -158,6 +158,26 @@ class ExtensibleTree(collections.MutableMapping):
                 del prefix[-1]
         return accumulate
 
+    def match(self, path, index=0):
+        """Return True if 'path' matches the tree, False otherwise."""
+        rvalue = False
+        if isinstance(path, str):
+            rvalue = path in self.__info if path.isidentifier() \
+                else bool(self.keys(path))
+        elif isinstance(path, int):
+            rvalue = path in self.__info
+        elif isinstance(path, collections.Sequence):
+            for value in self.values(path[index]):
+                if index==len(path)-1:
+                    rvalue = True
+                elif isinstance(value, ExtensibleTree):
+                    rvalue = value.match(path, index+1)
+                if rvalue: break
+        else:
+            raise TypeError("path must be string, int or Sequence, not %s"%
+                            path.__class__.__name__)
+        return rvalue
+
     def filter(self, path, reuse=False, index=0):
         """Return the filtered subtree or None if 'path' does not
         matches."""
