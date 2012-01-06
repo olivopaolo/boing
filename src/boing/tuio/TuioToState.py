@@ -65,8 +65,8 @@ class TuioToState(StateMachine, SelectiveConsumer):
 
     def _updateOverallDemand(self):
         StateMachine._updateOverallDemand(self)
-        self._postosc = MappingProducer.match("osc", self._overalldemand)
-        self._postdata = MappingProducer.match("data", self._overalldemand)
+        self._postosc = self.matchDemand("osc")
+        self._postdata = self.matchDemand("data")
 
     def _consume(self, products, producer):
         for p in products:

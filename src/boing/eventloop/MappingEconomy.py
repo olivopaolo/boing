@@ -40,6 +40,19 @@ class MappingProducer(OnDemandProducer):
     def overallDemand(self):
         return self._overalldemand
 
+    def matchDemand(self, path):
+        """Return True if 'path' matches the current product demand."""
+        rvalue = False
+        if isinstance(self._overalldemand, collections.Set):
+            for item in self._overalldemand:
+                if matching.matchPaths(path, item):
+                    rvalue = True ; break
+        elif self._overalldemand is OnDemandProducer.ANY_PRODUCT: 
+            rvalue = True
+        else:
+            rvalue = matching.matchPaths(path, request)
+        return rvalue
+
     def _updateOverallDemand(self):
         self._overalldemand = set()
         for record in self._consumers.values():
@@ -64,10 +77,10 @@ class MappingProducer(OnDemandProducer):
         if isinstance(requests, collections.Set):
             if isinstance(product, ExtensibleTree):
                 for key in requests:
-                    matches = product.filter(key, reuse=True)
-                    if matches is not None:
-                        if subset is None: subset = matches
-                        else: subset.update(matches, reuse=True)
+                    subtree = product.filter(key, reuse=True)
+                    if subtree is not None:
+                        if subset is None: subset = subtree
+                        else: subset.update(subtree, reuse=True)
             elif isinstance(product, collections.MutableMapping):
                 for key in requests:
                     if subset is None: 
@@ -88,20 +101,6 @@ class MappingProducer(OnDemandProducer):
         elif isinstance(product, collections.Mapping):
             raise NotImplementedError("Unmutable mapping case.")    
         return subset
-    
-    @staticmethod
-    def match(path, requests):
-        """Return True if 'path' matches 'requests'."""
-        rvalue = False
-        if isinstance(requests, collections.Set):
-            for item in requests:
-                if matching.matchPaths(path, item):
-                    rvalue = True ; break
-        elif requests is OnDemandProducer.ANY_PRODUCT: 
-            rvalue = True
-        else:
-            rvalue = matching.matchPaths(path, request)
-        return rvalue
 
 '''
 class MappingConsumer(SelectiveConsumer):

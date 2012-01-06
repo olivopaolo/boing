@@ -52,8 +52,8 @@ class StatProducer(SelectiveConsumer, MappingProducer):
 
     def _updateOverallDemand(self):
         MappingProducer._updateOverallDemand(self)
-        self._postdata = MappingProducer.match("data", self._overalldemand)
-        self._poststr = MappingProducer.match("str", self._overalldemand)
+        self._postdata = self.matchDemand("data")
+        self._poststr = self.matchDemand("str")
 
     def _consume(self, products, producer):
         self.update = True

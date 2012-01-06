@@ -64,7 +64,7 @@ class StateMachine(MappingProducer):
 
     def _updateOverallDemand(self):
         MappingProducer._updateOverallDemand(self)
-        self._postdiff = MappingProducer.match("diff", self._overalldemand)
+        self._postdiff = self.matchDemand("diff")
 
 # -------------------------------------------------------------------
 
