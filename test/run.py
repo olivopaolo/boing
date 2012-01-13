@@ -48,16 +48,19 @@ Sources:
  JSON socket URL      read JSON stream from socket
                        e.g. "json://localhost:7777"
  TUIO socket URL      read TUIO stream from socket
-                       e.g. "tuio://localhost:3333?rt=False"
+                       e.g. "tuio://localhost:3333?rt=False&func=None"
  TUIO log URL         play a TUIO log from file
                        e.g. "tuio:///tmp/test.osc.bz2?speed=1&loop=False&rt=False"
+ MTDEV device URL     open input device using libmtdev (LINUX ONLY)
+                       e.g. "mtdev:///dev/input/event5?func=None"
 
  If "rt" (i.e. reception time) is true, the event's timetag is the
- time when the event is received, otherwise the OSC bundle timestamp
- is considered.
+ time when the event is received, otherwise the OSC bundle
+ timestamp is considered.
 
- MTDEV device URL     open input device using libmtdev (LINUX ONLY)
-                       e.g. "mtdev:///dev/input/event5"
+ The parameter "func" can be used to add a function for calculating 
+ specific gesture attributes. 
+  Available functions: rel_speed
 
 Outputs: 
  dump:                dump received events to standard output.

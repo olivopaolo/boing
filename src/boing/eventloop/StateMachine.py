@@ -10,13 +10,13 @@
 import collections
 
 from boing.eventloop.MappingEconomy import MappingProducer
+from boing.eventloop.OnDemandProduction import OnDemandProducer
 from boing.utils.ExtensibleTree import ExtensibleTree
 
 class StateMachine(MappingProducer):
     """The StateMachine has a state defined by an ExtensibleTree.
     Everytime the state changes, it produces a diff ExtensibleTree if
     anyone registered for it."""
-
     def __init__(self, initial=None, productoffer="diff", parent=None, **kwargs):
         MappingProducer.__init__(self, productoffer, parent=parent)
         self._state = ExtensibleTree(initial)
@@ -25,46 +25,63 @@ class StateMachine(MappingProducer):
     def state(self):
         return self._state
 
-    def setState(self, update=None, remove=None, 
-                 diff=None, additional=None):
-        """Modify the internal state applying 'update', 'remove',
-        (which must be mapping types), and 'diff' (an
-        ExtensibleTree). The value of diff is consumed. The diff tree
-        is then posted as a product after having being updated with
-        'additional'."""
-        update_tree = remove_tree = real_diff = None
-        if update is not None: update_tree = ExtensibleTree(update)
-        if remove is not None: remove_tree = ExtensibleTree(remove)
-        if diff is not None:
-            if "added" in diff: 
-                if update_tree is None: update_tree = diff.added
-                else: update_tree.update(diff.added, reuse=True)
-            if "updated" in diff:
-                if update_tree is None: update_tree = diff.updated
-                else: update_tree.update(diff.updated, reuse=True)
-            if "removed" in diff:
-                if remove_tree is None: remove_tree = diff.removed
-                else: remove_tree.update(diff.removed, reuse=True)
+    def setState(self, update=None, remove=None, diff=None, 
+                 additional=None):
+        """Modify the internal state applying 'update' (a dict),
+        'remove' (a set), and 'diff' (an ExtensibleTree). The value of
+        diff is consumed. The diff tree is then posted as a product
+        after having being updated with 'additional'."""
+        if diff is None:
+            diff = ExtensibleTree()
+            if update is not None: 
+                diff.updated = ExtensibleTree(update)
+            if remove is not None: 
+                diff.removed = ExtensibleTree(dict((k, None) for k in remove))
+        elif update is not None or remove is not None:
+            raise ValueError("Cannot set both diff and update/remove parameters")
         # Apply diff
-        if update_tree is not None:
-            real_diff = self._state.update(update_tree, reuse=True, 
-                                           getdiff=self._postdiff)
-        if remove_tree is not None:
-            remove_diff = self._state.remove_update(remove_tree, 
-                                                    getdiff=self._postdiff)
-            if real_diff is None:
-                real_diff = remove_diff
-            else:
-                real_diff.update(remove_diff, reuse=True)
-        if self._postdiff and real_diff: 
-            product = ExtensibleTree()
-            product.diff = real_diff
+        diff = self._applyDiff(diff, self._postdiff)
+        if diff:
+            product = ExtensibleTree({"diff":diff})
             if additional is not None: product.update(additional)
             self._postProduct(product)
 
+    def _applyDiff(self, diff, getdiff=True):
+        """Apply the argument diff to the current state. Return the
+        real diff if getdiff is True, otherwise None."""
+        rvalue = updatetree = None
+        if "added" in diff:                                                         
+            updatetree = diff.added                        
+        if "updated" in diff:                                                       
+            if updatetree is None: 
+                updatetree = diff.updated                      
+            else: 
+                updatetree.update(diff.updated, reuse=True)                      
+        if updatetree is not None:
+            rvalue = self._state.update(updatetree, reuse=True, getdiff=getdiff)
+        if "removed" in diff:
+            removed = self._state.remove_update(diff.removed, getdiff)
+            if removed:
+                if rvalue is None:
+                    rvalue = removed
+                else:
+                    rvalue.update(removed, reuse=True)
+        return rvalue
+
+    def _postProduct(self, product):
+        if not isinstance(product, collections.Mapping):
+            raise TypeError("product must be collections.Mapping, not %s"%
+                            product.__class__.__name__)
+        fresult = self._applyFunctions(product, self._state)
+        if fresult:
+            if "diff" in fresult: 
+                fresult.diff = self._applyDiff(fresult.diff)
+            product.update(fresult, reuse=True)
+        OnDemandProducer._postProduct(self, product)
+
     def _updateOverallDemand(self):
         MappingProducer._updateOverallDemand(self)
-        self._postdiff = self.matchDemand("diff")
+        self._postdiff = MappingProducer.matchDemand("diff", self._overalldemand)
 
 # -------------------------------------------------------------------
 
@@ -109,12 +126,10 @@ if __name__ == '__main__':
                             ("gestures",1,"pos"):(3,5)})
     EventLoop.after(6, setState, update={("gestures",0,"pos"):(1,3)})
     EventLoop.after(7, setState, 
-                    remove={("gestures",0):None,})
+                    remove={("gestures",0)})
     EventLoop.after(9, setState, 
-                    remove={("gestures",1):None,})
+                    remove={("gestures",1)})
     # Run
     print("Initial state:", stateMachine.state().flatten())
     EventLoop.runFor(10)
     print("Final state:", stateMachine.state().flatten())
-    
-

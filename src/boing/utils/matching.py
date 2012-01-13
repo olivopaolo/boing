@@ -97,3 +97,68 @@ def _yieldItems(mapping, pattern):
             result = regexp.match(key)
             if result is not None and result.end()==len(key):
                 yield key, value
+
+'''
+def isConcrete(path, index=0):
+    if index>=len(path): return True
+    else:
+        key = path[index]
+        if isinstance(key, str) and key.isidentifier() \
+                or isinstance(key, int):
+            return isConcrete(path, index+1)
+        else:
+            return False
+        
+def concretize(pattern, reference, index=0):
+    rvalue = None
+    if index>=len(pattern): rvalue = list()        
+    elif index>=len(reference):
+        if isConcrete(pattern, index): rvalue = list(pattern)[index:]
+    else:
+        key = pattern[index]
+        if isinstance(key, str) and key.isidentifier() \
+                or isinstance(key, int):
+            if key==reference[index]:
+                rvalue = concretize(pattern, reference, index+1)
+                if rvalue is not None: rvalue.insert(0, key)
+            elif isConcrete(pattern, index+1):
+                rvalue = list(pattern)[index:]
+            else:
+                rvalue = None
+        elif isinstance(key, str) and matchKeys(key, reference[index]):
+            rvalue = concretize(pattern, reference, index+1)
+            if rvalue is not None: rvalue.insert(0, reference[index])
+        else:
+            rvalue = None
+    return rvalue
+        
+def concretize(path, tree, index=0):
+    rvalue = None
+    key = path[index]
+    if isinstance(key, str) and key.isidentifier() \
+            or isinstance(key, int):
+        if index==len(path)-1:
+            rvalue = [[key]]
+        elif key in tree:
+            rvalue = concretize(path, tree[key], index+1)
+            for inner in rvalue:
+                inner.insert(0,key)
+        else:
+            rvalue = list()
+    elif isinstance(key, str):
+        rvalue = list()
+        for concrete, subtree in tree.items(key):
+            if index==len(path)-1:
+                rvalue.append([concrete])
+            else:
+                subresult = concretize(path, subtree, index+1)
+                for inner in subresult:
+                    inner.insert(0, concrete)
+                rvalue.extend(subresult)
+    else:
+        raise TypeError("path can only be composed by string or int, not %s"%
+                        key.__class__.__name__)
+    return rvalue
+'''
+        
+            

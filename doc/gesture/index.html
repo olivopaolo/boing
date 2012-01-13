@@ -29,19 +29,24 @@ Options:
 Sources:
   TUIO socket URL
      Grab a TUIO stream over a socket 
-      e.g. tuio://sim@localhost:3333?rt=False
+      e.g. tuio://sim@localhost:3333?rt=False&func=None
 
   TUIO log URL
      Play a TUIO stream logged in a file 
       e.g. tuio:///tmp/test.osc.bz2?speed=1&amploop=False&amprt=False
 
-     If "rt" (i.e. reception time) is true, the event's timetag is the
-     time when the event is received, otherwise the OSC bundle
-     timestamp is considered.
-
   MTDEV device URL  
      Open input device using libmtdev (LINUX ONLY)
-      e.g. mtdev:///dev/input/event5
+      e.g. mtdev:///dev/input/event5?func=None
+
+   If "rt" (i.e. reception time) is true, the event's timetag is the
+   time when the event is received, otherwise the OSC bundle
+   timestamp is considered.
+
+   The parameter "func" can be used to add a function for calculating 
+   specific gesture attributes. 
+    Available functions: rel_speed
+
 
 Outputs:
   viz:

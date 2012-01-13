@@ -1,42 +1,56 @@
-<html><head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<link rel="stylesheet" type="text/css" href="style.css" />
+<html><head> <meta http-equiv="Content-Type" content="text/html;
+charset=utf-8" /> <link rel="stylesheet" type="text/css"
+href="style.css" />
 <title>Boing: things to do</title>
 </head>
 <body><div class="title">Boing: things to do</div>
 
 <h1>Today or tomorrow</h1>
 <ul>
-  <li>DataReader and DataWriter should consider MappingEconomy.</li>
-  <li>Fix TerminalWriter.</li>
-  <li>Sources should also have hz selection.</li>
-  <li>Rename product "data" to product "bytes".</li> 
+  <li>DataReader and DataWriter should consider MappingEconomy and fix
+  TerminalWriter.</li>
+  <li>Rename product "data" to product "bytes".</li>
 </ul>
 <h1>This week</h1>
 <ul>
-  <li>ReactiveObject's subscribeTo method should have mode argument.</li>
-  <li>Modify the EventLoop so that it handles only timer utils.</li>
-  <li>Add unit testing for <code>IODevice</code> class
-    hierarchy, <code>netcat</code> and <code>recplay</code>.</li>
+  <li>Use base64 to encode bytestrings so that it is possible to send
+  them over JSON.  http://docs.python.org/library/base64.html </li>
+  <li>ReactiveObject's subscribeTo method should have mode
+  argument.</li>
 </ul>
 <h1>Next week</h1>
 <ul>
-  <li>Improve unit testing for ExtensibleTree, StateMachine and
-  OnDemandProduction.</li>
+  <li>Setup the new URI scheme.</li>
 </ul>
 <h1>Someday</h1>
-<ul>  
+<ul>
+  <li>Add unit testing for <code>IODevice</code> class
+    hierarchy, <code>netcat</code> and <code>recplay</code>.</li>
+  <li>Modify the EventLoop so that it handles only timer utils.</li>
+  <li>Improve unit testing for ExtensibleTree, StateMachine and
+  OnDemandProduction.</li>
+  <li>Sources should also have hz selection.</li>
+  <li>Create an OSCTunnel like a the JSONTunnel.</li>
   <li>Merge TuioToState and StateToTuio into TUIOTunnel, so that it
   has the same structure as JSONTunnel.</li>
-  <li>Handle the fact that gesture events does not have a source tag.</li>
+  <li>Handle the fact that gesture events does not have a source tag
+  nor an id tag.</li>
+  <li>Develop a gesture simulator that permits touch pression and
+  orientation.</li>
   <li>Develop a log producer that redirect logging to products.</li>
   <li>Add OSC services.</li>
-  <li>Add to <code>ExtensibleStruct</code>'s unit testing methods assignment tests.</li>
-  <li>Resolve the UDP socket reuse port issue on Windows.
-  <li>Handle lib pointing runtime exceptions in pylibpointing.
-  <li>Develop lib filtering cython bindings.
-  <li>Develop lib tIO cython bindings.
-  <li>When Qt4.8 will be available, add multicast support to UdpSocket.
+  <li>Add to <code>ExtensibleStruct</code>'s unit testing methods
+  assignment tests.</li>
+  <li>Resolve the UDP socket reuse port issue on Windows.</li>
+  <li>Handle lib pointing runtime exceptions in pylibpointing.</li>
+  <li>Develop lib filtering cython bindings.</li>
+  <li>Develop lib tIO cython bindings.</li>
+  <li>When Qt4.8 will be available, add multicast support to
+    UdpSocket.</li>
+  <li>Use Distutils and setuptools to install boing.</li>
+  <li>MappingProducer functions can only set a single value. Handle
+  the fact that a function's dependences may be the result of a
+  function that no one is interested to.</li>
 </ul>
 <p><a href="index.html">&lt;&lt; home</a></p>
 </body></html>

@@ -187,8 +187,15 @@ class TestExtensibleTree(unittest.TestCase):
         res = e[".11"]["i"]
         self.assertEqual(len(res), 1)
         self.assertEqual(list(res), [self.dict["i"]])
+        res = e[".11"].i
+        self.assertEqual(len(res), 1)
+        self.assertEqual(list(res), [self.dict["i"]])
         # regexp multiple result
         res = list(e[".2."]["i"])
+        self.assertEqual(len(res), 2)
+        self.assertIn(1, res)
+        self.assertIn(2, res)
+        res = list(e[".2."].i)
         self.assertEqual(len(res), 2)
         self.assertIn(1, res)
         self.assertIn(2, res)
@@ -223,6 +230,8 @@ class TestExtensibleTree(unittest.TestCase):
         self.assertEqual(e.e11.i, self.dict["i"])
         # regexp single result
         e[".11"]["i"] = 2
+        self.assertEqual(e.e11.i, 2)
+        e[".11"].i = 2
         self.assertEqual(e.e11.i, 2)
         # regexp multiple result
         e["e21"] = None

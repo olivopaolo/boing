@@ -8,6 +8,7 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import collections
+import itertools
 
 from boing.eventloop.OnDemandProduction import OnDemandProducer
 from boing.utils import matching
@@ -17,11 +18,11 @@ class MappingProducer(OnDemandProducer):
     """A MappingProducer always produces collections.Mapping objects,
     so that products can be mapped using keys. Production requests is
     also handled using keys."""
-
     def __init__(self, productoffer=None, cumulate=None, parent=None):
         OnDemandProducer.__init__(self, productoffer, cumulate, 
                                   MappingProducer.filter, parent)
         self._overalldemand = set()
+        self._functions = list()
 
     def addObserver(self, *args, **kwargs):
         rvalue = OnDemandProducer.addObserver(self, *args, **kwargs)
@@ -39,19 +40,18 @@ class MappingProducer(OnDemandProducer):
 
     def overallDemand(self):
         return self._overalldemand
-
-    def matchDemand(self, path):
-        """Return True if 'path' matches the current product demand."""
-        rvalue = False
-        if isinstance(self._overalldemand, collections.Set):
-            for item in self._overalldemand:
-                if matching.matchPaths(path, item):
-                    rvalue = True ; break
-        elif self._overalldemand is OnDemandProducer.ANY_PRODUCT: 
-            rvalue = True
-        else:
-            rvalue = matching.matchPaths(path, self._overalldemand)
-        return rvalue
+    
+    def addFunction(self, target, callback, dependences, *args, **kwargs):
+        """Add a function that will be invoked any time a product is
+        posted if all dendences (i.e. a list of paths) are satisfied,
+        which means if the product contains all the paths in
+        dependences. 'target' can be a function that returns a path or
+        even a path and it will be used to store the result of the
+        function into the current product. To 'callback' and 'target',
+        if it is a function, it will be passed as argument the list of
+        dependences concretized (no more regexp) and associated to the
+        value found in the current product, i.e. ((k,v),(k,v),...) """
+        self._functions.append((target, callback, dependences, args, kwargs))
 
     def _updateOverallDemand(self):
         self._overalldemand = set()
@@ -68,7 +68,52 @@ class MappingProducer(OnDemandProducer):
         if not isinstance(product, collections.Mapping):
             raise TypeError("product must be collections.Mapping, not %s"%
                             product.__class__.__name__)
+        fresult = self._applyFunctions(product)
+        if fresult: product.update(fresult, reuse=True)
         OnDemandProducer._postProduct(self, product)
+
+    def _applyFunctions(self, product, repository=None):
+        """Apply all the registered functions to the current
+        product. 'repository' is used as an alternative is the
+        function's dependences cannot be found inside the product, but
+        at least one dependence must be found in the product. (See
+        StateMachine)"""
+        rvalue = None
+        # 'cases' is the list of dependences concretized using product
+        # and repository. Each dependences can have more than one
+        # concretizations.
+        cases = list()
+        for target, callback, dependences, args, kwargs in self._functions:
+            del cases[:]
+            for path in dependences:
+                subtree = product.filter(path, reuse=True)
+                if subtree is not None:
+                    cases.append(subtree.flatten().items())
+                elif repository is not None:
+                    cases.append(None)
+                else: del cases[:] ; break
+            if any(cases):
+                for i, case in enumerate(cases):
+                    if not case:
+                        subtree = repository.filter(dependences[i], 
+                                                    reuse=True)
+                        if subtree is not None:
+                            cases[i] = subtree.flatten().items()
+                        else: break
+                else:
+                    # If all dependences have been solved
+                    for case in itertools.product(*cases):
+                        targetcase = target(case) \
+                            if isinstance(target, collections.Callable) \
+                            else target
+                        for record in self._consumers.values():
+                            if MappingProducer.matchDemand(targetcase, 
+                                                           record.requests):
+                                if rvalue is None: rvalue = ExtensibleTree()
+                                rvalue.set(targetcase, 
+                                           callback(case, *args, **kwargs))
+                                break
+        return rvalue
 
     @staticmethod
     def filter(product, requests):
@@ -101,6 +146,20 @@ class MappingProducer(OnDemandProducer):
         elif isinstance(product, collections.Mapping):
             raise NotImplementedError("Unmutable mapping case.")    
         return subset
+
+    @staticmethod
+    def matchDemand(path, demand):
+        """Return True if 'path' matches the current product demand."""
+        rvalue = False
+        if isinstance(demand, collections.Set):
+            for item in demand:
+                if matching.matchPaths(path, item):
+                    rvalue = True ; break
+        elif demand is OnDemandProducer.ANY_PRODUCT: 
+            rvalue = True
+        else:
+            rvalue = matching.matchPaths(path, demand)
+        return rvalue
 
 '''
 class MappingConsumer(SelectiveConsumer):

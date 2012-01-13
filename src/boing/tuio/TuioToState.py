@@ -15,6 +15,7 @@ from boing import osc
 from boing.eventloop.OnDemandProduction import SelectiveConsumer
 from boing.eventloop.StateMachine import StateMachine
 from boing.eventloop.MappingEconomy import MappingProducer
+from boing.multitouch import functions
 from boing.osc.LogPlayer import LogPlayer
 from boing.slip.SlipDataIO import SlipDataReader
 from boing.tcp.TcpServer import TcpServer
@@ -65,8 +66,8 @@ class TuioToState(StateMachine, SelectiveConsumer):
 
     def _updateOverallDemand(self):
         StateMachine._updateOverallDemand(self)
-        self._postosc = self.matchDemand("osc")
-        self._postdata = self.matchDemand("data")
+        self._postosc = MappingProducer.matchDemand("osc", self._overalldemand)
+        self._postdata = MappingProducer.matchDemand("data", self._overalldemand)
 
     def _consume(self, products, producer):
         for p in products:
@@ -202,10 +203,16 @@ class TuioToState(StateMachine, SelectiveConsumer):
 
 def TuioSource(url):
     """Return a TuioSource from URL."""
-    source = TuioToState()
     if not isinstance(url, URL): url = URL(str(url))
+    source = TuioToState()
+    # Reception time
     rt = url.query.data.get("rt")
     source.rt = rt.lower()!="false" if rt is not None else False
+    # Functions
+    func = url.query.data.get("func")
+    if func is not None:
+        functions.addFunctions(source, tuple(s.strip() for s in func.split(",")))
+    # Endpoint
     if url.kind in (URL.ABSPATH, URL.RELPATH) \
             or url.scheme=="tuio.file" \
             or (url.scheme=="tuio" and not str(url.site)):
@@ -247,4 +254,5 @@ def TuioSource(url):
         server.newConnection.connect(waiter.newConnection)
     else:
         print("WARNING: cannot create TUIO source:", url)
+        source = None
     return source

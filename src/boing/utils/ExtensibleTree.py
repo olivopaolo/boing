@@ -44,11 +44,21 @@ class tree_iterable(collections.Iterable, collections.Sized):
 class tree_keys(tree_iterable):
 
     def __repr__(self):
-        output = ", ".join(("%s"%i for i in self)) if self else ""
+        output = ", ".join(("%s"%repr(i) for i in self)) if self else ""
         return "tree_keys([%s])"%output
 
 
 class tree_values(tree_iterable):
+
+    def __getattr__(self, key):
+        return tree_values(self._recursive_get(key))
+
+    def __setattr__(self, key, value):
+        if key=="_tree_iterable__iter":
+            super().__setattr__(key, value)
+        else:
+            for i in self:
+                i[key] = value
 
     def __getitem__(self, key):
         return tree_values(self._recursive_get(key))
@@ -67,14 +77,15 @@ class tree_values(tree_iterable):
                 yield item
 
     def __repr__(self):
-        output = ", ".join(("%s"%i for i in self)) if self else ""
+        
+        output = ", ".join(("%s"%repr(i) for i in self)) if self else ""
         return "tree_values([%s])"%output
 
 
 class tree_items(tree_iterable):
 
     def __repr__(self):
-        output = ", ".join(("(%s, %s)"%(k,v) for k,v in self)) if self else ""
+        output = ", ".join(("(%s, %s)"%(repr(k),repr(v)) for k,v in self)) if self else ""
         return "tree_items([%s])"%output
 
 
