@@ -44,11 +44,21 @@ class tree_iterable(collections.Iterable, collections.Sized):
 class tree_keys(tree_iterable):
 
     def __repr__(self):
-        output = ", ".join(("%s"%i for i in self)) if self else ""
+        output = ", ".join(("%s"%repr(i) for i in self)) if self else ""
         return "tree_keys([%s])"%output
 
 
 class tree_values(tree_iterable):
+
+    def __getattr__(self, key):
+        return tree_values(self._recursive_get(key))
+
+    def __setattr__(self, key, value):
+        if key=="_tree_iterable__iter":
+            super().__setattr__(key, value)
+        else:
+            for i in self:
+                i[key] = value
 
     def __getitem__(self, key):
         return tree_values(self._recursive_get(key))
@@ -67,14 +77,15 @@ class tree_values(tree_iterable):
                 yield item
 
     def __repr__(self):
-        output = ", ".join(("%s"%i for i in self)) if self else ""
+        
+        output = ", ".join(("%s"%repr(i) for i in self)) if self else ""
         return "tree_values([%s])"%output
 
 
 class tree_items(tree_iterable):
 
     def __repr__(self):
-        output = ", ".join(("(%s, %s)"%(k,v) for k,v in self)) if self else ""
+        output = ", ".join(("(%s, %s)"%(repr(k),repr(v)) for k,v in self)) if self else ""
         return "tree_items([%s])"%output
 
 
@@ -157,6 +168,26 @@ class ExtensibleTree(collections.MutableMapping):
                     accumulate[tuple(prefix)] = value
                 del prefix[-1]
         return accumulate
+
+    def match(self, path, index=0):
+        """Return True if 'path' matches the tree, False otherwise."""
+        rvalue = False
+        if isinstance(path, str):
+            rvalue = path in self.__info if path.isidentifier() \
+                else bool(self.keys(path))
+        elif isinstance(path, int):
+            rvalue = path in self.__info
+        elif isinstance(path, collections.Sequence):
+            for value in self.values(path[index]):
+                if index==len(path)-1:
+                    rvalue = True
+                elif isinstance(value, ExtensibleTree):
+                    rvalue = value.match(path, index+1)
+                if rvalue: break
+        else:
+            raise TypeError("path must be string, int or Sequence, not %s"%
+                            path.__class__.__name__)
+        return rvalue
 
     def filter(self, path, reuse=False, index=0):
         """Return the filtered subtree or None if 'path' does not

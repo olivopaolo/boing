@@ -11,6 +11,7 @@ import sys
 import traceback
 
 from boing.json.JSONTunnel import JSONReader
+from boing.multitouch import functions
 from boing.tuio.TuioToState import TuioSource
 from boing.url import URL
 
@@ -32,6 +33,12 @@ def Source(url):
                 source = MtDevDevice(str(url.path))
             except Exception:
                 traceback.print_exc()
+            else:
+                # Functions
+                func = url.query.data.get("func")
+                if func is not None:
+                    functions.addFunctions(
+                        source, tuple(s.strip() for s in func.split(",")))
         else:
             print("mtdev devices are not supported on ", sys.platform)
     else:

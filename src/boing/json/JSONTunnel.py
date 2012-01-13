@@ -41,8 +41,8 @@ class JSONEncoder(MappingProducer, SelectiveConsumer):
     
     def _updateOverallDemand(self):
         MappingProducer._updateOverallDemand(self)
-        self._postdata = MappingProducer.match("data", self._overalldemand)
-        self._poststr = MappingProducer.match("str", self._overalldemand)
+        self._postdata = MappingProducer.matchDemand("data", self._overalldemand)
+        self._poststr = MappingProducer.matchDemand("str", self._overalldemand)
 
     def _consume(self, products, producer):
         for p in products:
