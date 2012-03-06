@@ -8,6 +8,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import itertools
 import unittest
 import socket
 import sys
@@ -596,15 +597,13 @@ class TestUdpSender(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    sockettests = list(t for t in TestUdpSocket.__dict__ \
-                         if t.startswith("test_"))
-    sendertests = list(t for t in TestUdpSender.__dict__ \
-                         if t.startswith("test_"))
-    listenertests = list(t for t in TestUdpListener.__dict__ \
-                           if t.startswith("test_"))
-    return unittest.TestSuite(list(map(TestUdpSocket, sockettests))+
-                              list(map(TestUdpSender, sendertests))+
-                              list(map(TestUdpListener, listenertests)))
+    sockettests = (t for t in TestUdpSocket.__dict__ if t.startswith("test_"))
+    sendertests = (t for t in TestUdpSender.__dict__ if t.startswith("test_"))
+    listenertests = (t for t in TestUdpListener.__dict__ if t.startswith("test_"))
+    return unittest.TestSuite(itertools.chain(
+            map(TestUdpSocket, sockettests),
+            map(TestUdpSender, sendertests),
+            map(TestUdpListener, listenertests)))
 
 # -------------------------------------------------------------------
 

@@ -61,7 +61,7 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
         if isinstance(observable, OnDemandProducer):
             if "requests" in kwargs:
                 rvalue = observable.addObserver(self, requests=kwargs["requests"])
-            elif "osc" in self._requests:
+            elif "osc" in self.request():
                 # Optimize OSC forwarding, excluding gesture event translation
                 offer = observable.productOffer()
                 if isinstance(offer, collections.Container) and "osc" in offer:
@@ -70,9 +70,9 @@ class StateToTuio(MappingProducer, SelectiveConsumer):
                 elif offer=="osc":
                     rvalue = observable.addObserver(self, requests=offer)
                 else:
-                    rvalue = observable.addObserver(self, requests=self._requests)
+                    rvalue = observable.addObserver(self, requests=self.request())
             else:
-                rvalue = observable.addObserver(self, requests=self._requests)
+                rvalue = observable.addObserver(self, requests=self.request())
         else:
             rvalue = Consumer.subscribeTo(self, observable) 
         return rvalue

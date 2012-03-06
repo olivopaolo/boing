@@ -11,12 +11,12 @@
 import unittest
 import socket as _socket
 import weakref
+import sys
 
 from PyQt4 import QtCore
 from PyQt4.QtNetwork import QAbstractSocket, QHostAddress
 
 from boing import ip
-from boing.eventloop.EventLoop import EventLoop
 from boing.tcp.TcpSocket import TcpSocket
 from boing.tcp.TcpServer import TcpServer
 from boing.url import URL
@@ -31,16 +31,16 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
         self.connections = []
         self.data = b"boing-unittest"
         self.result = None
-        self.timeout = False
+        self.app = QtCore.QCoreApplication(sys.argv)
 
-    def __timeout(self, tid):
-        self.timeout = True
-        EventLoop.stop()
+    def tearDown(self):
+        self.app.exit()
+        self.app = None
 
     def __readdata(self):
         conn = self.sender() 
         self.result = conn.receive()
-        EventLoop.stop()
+        self.app.quit()
 
     def __newconnection(self):
         server = self.sender()
@@ -57,14 +57,12 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
             addr = "::1"
         s.connect((addr, port))
         s.send(self.data)
-        tid_timeout = EventLoop.after(1, self.__timeout)
-        EventLoop.run()
+        QtCore.QTimer.singleShot(1000, self.app.quit)
+        self.app.exec_()
         sockname = s.getsockname()[:2]
         if(server.family()==ip.PF_INET6):
             sockname = (sockname[0].partition("%")[0], sockname[1])
         s.close()
-        EventLoop.cancel_timer(tid_timeout)
-        self.assertFalse(self.timeout)
         self.assertEqual(len(self.connections), 1)        
         conn = self.connections[0]
         self.assertIsInstance(conn, TcpSocket)
@@ -328,8 +326,7 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    tests = list(t for t in TestTcpServer.__dict__ \
-                   if t.startswith("test_"))
+    tests = (t for t in TestTcpServer.__dict__ if t.startswith("test_"))
     return unittest.TestSuite(map(TestTcpServer, tests))    
 
 # -------------------------------------------------------------------

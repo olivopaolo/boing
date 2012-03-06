@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# unittest/json_/__init__.py -
+# unittest/json/__init__.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

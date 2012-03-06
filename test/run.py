@@ -8,42 +8,84 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import itertools
 import getopt
 import signal
 import sys
 
-from PyQt4.QtGui import QApplication, QStyleFactory
+from PyQt4 import QtGui
 
-# Init application
-QApplication.setStyle(QStyleFactory.create("plastique"))
-app = QApplication(sys.argv)
-
-from boing.eventloop.OnDemandProduction import DumpConsumer
-from boing.utils.Source import Source
-from boing.utils.Output import Output
-from boing.tuio.TuioToState import TuioToState
+from boing.url import URL
+import boing.utils.NodeLoader as loader
 
 # configuration parameters
-sources = []
-outputs = []
+inurl = []
+outurl = []
 try:
     opts, args = getopt.getopt(sys.argv[1:], "i:o:h", ['help'])
 except getopt.GetoptError as err:
     print(str(err)) # will print something like "option -a not recognized"
-    print("usage: %s [-i <source>]... [-o <output>]..."%sys.argv[0])
-    print("       %s [-h, --help]"%(" "*len(sys.argv[0])))
+    name = "boing"
+    print("usage: %s [-i <input>]... [-o <output>]..."%name)
+    print("       %s [-h, --help]"%(" "*len(name)))
     sys.exit(2)
 for o, a in opts:
     if o in ("-h", "--help"):
-        print("usage: %s [-i <source>]... [-o <output>]..."%sys.argv[0])
-        print("       %s [-h, --help]"%(" "*len(sys.argv[0])))
-        print("""Redirect input streams to different outputs.
+        name = "boing"
+        print("usage: %s [-i <input>]... [-o <output>]..."%name)
+        print("       %s [-h, --help]"%(" "*len(name)))
+        print()
+        print("""Redirects many input sources to many outputs.
 
 Options:
- -i <source>          define an input source
+ -i <input>           define an input
  -o <output>          define an output
  -h, --help           display this help and exit
+""")
+        sys.exit(0)
+    elif o=="-i": inurl.append(URL(a))
+    elif o=="-o": outurl.append(URL(a))
 
+# Init application
+QtGui.QApplication.setStyle(QtGui.QStyleFactory.create("plastique"))
+app = QtGui.QApplication(sys.argv)
+signal.signal(signal.SIGINT, lambda *args: app.quit())
+
+# Check minimal resources
+if not inurl: 
+    default = "stdin:"
+    print("Using default input:", default)    
+    inurl.append(URL(default))
+if not outurl:
+    default = "stdout:"
+    print("Using default output:", default)
+    outurl.append(URL(default))
+
+inputs = []
+for url in inurl:
+    url.scheme = ".".join(("in", url.scheme))
+    i = loader.NodeLoader(url)
+    if i is not None: inputs.append(i)
+outputs = []
+for url in outurl:
+    url.scheme = ".".join(("out", url.scheme))
+    o = loader.NodeLoader(url)
+    if o is not None: outputs.append(o)
+
+rvalue = 0
+if outputs and inputs:
+    # Connect inputs to outputs
+    for input_, output in itertools.product(inputs, outputs):
+        input_.addObserver(output)
+    # Run
+    rvalue = app.exec_()
+print("Exiting...")
+sys.exit(rvalue)
+
+
+
+
+'''
 Sources: 
  JSON socket URL      read JSON stream from socket
                        e.g. "json://localhost:7777"
@@ -76,38 +118,9 @@ Outputs:
  TUIO log URL         log gesture events as a TUIO log file
                        e.g. "tuio:///tmp/test.osc.bz2?req=(diff,.*,gestures),timetag"
 """)
-        """  
+         
   Sources can be setup using a configuration file, which can be defined
   specifying the parameter "conf" in the url path. 
   (e.g. tuio://ipad@localhost:3333?conf=./test/multitouch/tuiopad.conf)
 
-"""
-        sys.exit(0)
-    elif o=="-i": sources.append(a)
-    elif o=="-o": outputs.append(a)
-
-# Check minimal resources
-if not sources:
-    print("No input source.")
-    sys.exit(0)
-# Init outputs
-if not outputs: outputs.append("viz:")
-outs = []
-for url in outputs:
-    o = Output(url)
-    if o is not None: outs.append(o)
-# Init sources
-srcs = []
-for url in sources:
-    s = Source(url)
-    if s is not None: srcs.append(s)
-# Connect sources to outputs
-for s in srcs:
-    for o in outs:
-        o.subscribeTo(s)
-# Run
-signal.signal(signal.SIGINT, lambda *args: app.quit())
-rvalue = app.exec_()
-print("Exiting...")
-# Close all
-sys.exit(rvalue)
+'''

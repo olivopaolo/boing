@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
 # unittest/dns_sd/test_dns_sd.py -
@@ -8,34 +9,32 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import socket
+import sys
 import unittest
+import weakref
+
+from PyQt4 import QtCore
 
 from boing.dns_sd.DNSServiceAnnouncer import DNSServiceAnnouncer
 from boing.dns_sd.DNSServiceBrowser import DNSServiceBrowser
-from boing.eventloop.EventLoop import EventLoop
 
 class Testdns_sd(unittest.TestCase):
 
     def setUp(self):
+        self.announcers = []
         self.regtype = "_boing_unittest._tcp."
         self.domain = "local."
         self.host = socket.gethostname()+'.'+self.domain[:-1]
         self.port = 8123
         self.txtrec = {"module":"unittest/dns_sd/", "file":"test_dns_sd.py"}
-        self.timeout = False
         self.result = {}
         self.alive = []
-        self.tid = EventLoop.after(10, self.timeoutEvent)
+        self.complete = False
+        self.app = QtCore.QCoreApplication(sys.argv)
 
     def tearDown(self):
-        EventLoop.cancel_timer(self.tid)        
-
-    def timeoutEvent(self, *args, **kwargs):
-        self.timeout = True
-        EventLoop.stop()
-
-    def unallocate(self, tid, announcer, *args, **kwargs):
-        announcer.__del__()
+        self.app.exit()
+        self.app = None
 
     def browserEvent(self, event, service):
         if service.name!=self.name: return
@@ -59,7 +58,8 @@ class Testdns_sd(unittest.TestCase):
             if service.key() in self.alive: 
                 self.alive.remove(service.key())
             if len(self.alive)==0:
-                EventLoop.stop()
+                self.complete = True
+                self.app.quit()
 
     def test_DNSServiceAnnouncer(self):
         def callback(a, *args, **kwargs):             
@@ -69,23 +69,26 @@ class Testdns_sd(unittest.TestCase):
             d['status'] = a.status()
             a.__del__()
             if len(self.result)==2:
-                EventLoop.stop()
+                self.app.quit()
 
         name_1 = 'test_1_1'
-        announcer_1 = DNSServiceAnnouncer(name=name_1,
-                                          regtype=self.regtype,
-                                          port=self.port,
-                                          callback=callback)
+        self.announcers.append(
+            DNSServiceAnnouncer(name=name_1,
+                                regtype=self.regtype,
+                                port=self.port,
+                                callback=callback))
         name_2 = 'test_1_2'
-        announcer_2 = DNSServiceAnnouncer(name=name_2,
-                                          regtype=self.regtype,
-                                          port=self.port,
-                                          txtrec=self.txtrec,
-                                          host=self.host,
-                                          domain=self.domain, 
-                                          callback=callback)
-        EventLoop.run()
-        self.assertFalse(self.timeout)
+        self.announcers.append(
+            DNSServiceAnnouncer(name=name_2,
+                                regtype=self.regtype,
+                                port=self.port,
+                                txtrec=self.txtrec,
+                                host=self.host,
+                                domain=self.domain, 
+                                callback=callback))
+        QtCore.QTimer.singleShot(2000, self.app.quit)
+        self.app.exec_()
+        self.assertEqual(len(self.result), 2)
         d = self.result.get(name_1, None)
         self.assertIsNotNone(d)
         self.assertEqual(d['type'], self.regtype)
@@ -94,20 +97,22 @@ class Testdns_sd(unittest.TestCase):
         self.assertIsNotNone(d)
         self.assertEqual(d['type'], self.regtype)
         self.assertEqual(d['domain'], self.domain)
-        self.assertEqual(d['status'], "noerror")
+        self.assertEqual(d['status'], "noerror")        
 
     def test_announce_browse_resolve_remove_1(self):
         self.name = 'test_2'
-        announcer = DNSServiceAnnouncer(name=self.name, 
-                                        regtype=self.regtype,
-                                        port=self.port)
+        self.announcers.append(
+            DNSServiceAnnouncer(name=self.name, 
+                                regtype=self.regtype,
+                                port=self.port))
+        self.announcers[0].updatetxt(self.txtrec)
         browser = DNSServiceBrowser(self.regtype)
         browser.addListener(self.browserEvent)
-        tid_2 = EventLoop.after(3, self.unallocate, announcer)
-        announcer.updatetxt(self.txtrec)
-        EventLoop.run()
-        EventLoop.cancel_timer(tid_2)
-        self.assertFalse(self.timeout)
+        bref = weakref.ref(browser)
+        setter = lambda obj, key, value: obj.__setitem__(key, value)
+        QtCore.QTimer.singleShot(2000, lambda : setter(self.announcers, 0, None))
+        QtCore.QTimer.singleShot(7000, self.app.quit)
+        self.app.exec_()
         fullname = self.name+'.'+self.regtype+self.domain
         found = False
         for r in self.result.values():
@@ -119,21 +124,25 @@ class Testdns_sd(unittest.TestCase):
                 self.assertEqual(r.get('fullname'), fullname)                
                 self.assertEqual(r.get('srv', {}).get('port'), self.port)
         self.assertTrue(found)
+        self.assertTrue(self.complete)
+        del browser
+        self.assertIsNone(bref())
 
     def test_announce_browse_resolve_remove_2(self):
         self.name = 'test_3'
-        announcer = DNSServiceAnnouncer(name=self.name,
-                                        regtype=self.regtype,
-                                        port=self.port,
-                                        txtrec=self.txtrec,
-                                        host=self.host,
-                                        domain=self.domain)
+        self.announcers.append(
+            DNSServiceAnnouncer(name=self.name,
+                                regtype=self.regtype,
+                                port=self.port,
+                                txtrec=self.txtrec,
+                                host=self.host,
+                                domain=self.domain))
         browser = DNSServiceBrowser(self.regtype)
         browser.addListener(self.browserEvent)
-        tid_2 = EventLoop.after(3, self.unallocate, announcer)
-        EventLoop.run()
-        EventLoop.cancel_timer(tid_2)        
-        self.assertFalse(self.timeout)
+        setter = lambda obj, key, value: obj.__setitem__(key, value)
+        QtCore.QTimer.singleShot(2000, lambda : setter(self.announcers, 0, None))
+        QtCore.QTimer.singleShot(7000, self.app.quit)
+        self.app.exec_()
         fullname = self.name+'.'+self.regtype+self.domain
         found = False
         for r in self.result.values():
@@ -147,12 +156,13 @@ class Testdns_sd(unittest.TestCase):
                 self.assertEqual(r.get('srv', {}).get('port'), self.port)
                 self.assertEqual(r.get('srv', {}).get('target'), self.host)
         self.assertTrue(found)
+        self.assertTrue(self.complete)
 
 # -------------------------------------------------------------------
 
 def suite():
-    tests = list(t for t in Testdns_sd.__dict__ if t.startswith("test_"))
-    return unittest.TestSuite(list(map(Testdns_sd, tests)))
+    tests = (t for t in Testdns_sd.__dict__ if t.startswith("test_"))
+    return unittest.TestSuite(map(Testdns_sd, tests))
 
 # -------------------------------------------------------------------
 

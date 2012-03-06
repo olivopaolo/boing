@@ -12,22 +12,47 @@
 import collections
 import logging
 import traceback
+import weakref
+
+from PyQt4 import QtCore
 
 from boing.dns_sd.dns_sd import *
 from boing.dns_sd.DNSService import DNSService
-from boing.eventloop.EventLoop import EventLoop
 
 # ---------------------------------------------------------------------------
 
 class DNSServiceBrowser(object):
 
+    __browser_refs = []
+
+    @staticmethod
+    def __add_browser(sdRef, browser):
+        DNSServiceBrowser.__browser_refs.append((sdRef, weakref.ref(browser)))
+
+    @staticmethod
+    def __remove_browser(sdRef):
+        for i, (sd, ref) in enumerate(DNSServiceBrowser.__browser_refs):
+            if sd==sdRef:
+                del DNSServiceBrowser.__browser_refs[i] ; break
+
+    @staticmethod   
+    def __browse_reply(sdRef, flags, interface, errorCode,
+                       name, regtype, domain, context):
+        for sd, ref in DNSServiceBrowser.__browser_refs:
+            if sd.value==sdRef:
+                ref()._browseReply(sdRef, flags, interface, errorCode,
+                                   name, regtype, domain, context)
+                break
+
+
     def __init__(self, regtype, domain=None, 
                  interface=kDNSServiceInterfaceIndexAny):
         self.logger = logging.getLogger("DNSServiceBrowser.%d"%id(self))
-        self.__browsereply = DNSServiceBrowseReply(self.__browsereply)
+        self.__browsereply = DNSServiceBrowseReply(DNSServiceBrowser.__browse_reply)
         self.services = {}
         self.__resolving = {}
         self.__sdRef = DNSServiceRef()
+        DNSServiceBrowser.__add_browser(self.__sdRef, self)
         flags, context = 0, None
         self.__lock = global_lock
         self.__lock.acquire()
@@ -43,14 +68,18 @@ class DNSServiceBrowser(object):
         self.__lock.acquire()
         obj = dns_sd.DNSServiceRefSockFD(self.__sdRef)
         self.__lock.release()
-        self.__did = EventLoop.if_readable(obj, self.__readable)        
+        self.__fd = QtCore.QSocketNotifier(obj, QtCore.QSocketNotifier.Read,
+                                           activated=self.__readable)
         self.__listeners = []
 
     def __del__(self):
-        EventLoop.cancel_fdhandler(self.__did)
-        self.__lock.acquire()
-        dns_sd.DNSServiceRefDeallocate(self.__sdRef)
-        self.__lock.release()
+        self.__fd.setEnabled(False)
+        if self.__sdRef is not None:
+            DNSServiceBrowser.__remove_browser(self.__sdRef)
+            self.__lock.acquire()
+            dns_sd.DNSServiceRefDeallocate(self.__sdRef)
+            self.__lock.release()
+        self.__sdRef = None
 
     def __readable(self, did):
         """If the reference is readable, demand to call the handler."""
@@ -59,8 +88,8 @@ class DNSServiceBrowser(object):
         self.__lock.release()
         if result!=kDNSServiceErr_NoError:
             self.logger.warning("DNSServiceProcessResult failed (__readable)")
-
-    def __browsereply(self, sdRef, flags, interface, errorCode,
+    
+    def _browseReply(self, sdRef, flags, interface, errorCode,
                       name, regtype, domain, context):
         """Handler method of the browse answer."""
         if errorCode!=kDNSServiceErr_NoError: return  
@@ -79,7 +108,7 @@ class DNSServiceBrowser(object):
             del self.services[key]
             event = "lost"
         if event: self.__notify(event, service)
-    
+
     def __notify(self, event, service):
         """Invoke registered listeners to notify browse event."""
         for (callback, args, kwargs) in self.__listeners:
@@ -96,8 +125,8 @@ class DNSServiceBrowser(object):
 
 if __name__=="__main__":
     import sys
-    from boing.eventloop.EventLoop import EventLoop
-    
+    from PyQt4 import QtCore
+    app = QtCore.QCoreApplication(sys.argv)
     def browserevent(event, service):
         if event=="found":
             print('Service found:')
@@ -121,4 +150,4 @@ if __name__=="__main__":
     browser = DNSServiceBrowser(servicetype)
     browser.addListener(browserevent)
     print("Listening for %s services:"%servicetype)
-    EventLoop.run()
+    sys.exit(app.exec_())

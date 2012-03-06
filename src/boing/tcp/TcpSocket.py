@@ -97,25 +97,3 @@ def TcpConnection(url, family=None):
     socket.connect(url.site.host, url.site.port, family)
     return socket
 
-# -------------------------------------------------------------------------
-
-if __name__=="__main__":
-    import sys
-    import traceback
-    from boing.eventloop.EventLoop import EventLoop
-    try: url = URL(sys.argv[1])
-    except: 
-        traceback.print_exc()
-        url = URL("http://127.0.0.1:80")
-    def dumpdata():
-        print(c.receive())
-    def send_data(tid):
-        data = "HEAD %s HTTP/1.0\n\n"%url.path
-        c.send(data.encode())
-    c = TcpConnection(url)
-    c.readyRead.connect(dumpdata)
-    c.disconnected.connect(EventLoop.stop)
-    EventLoop.after(.1, send_data)
-    EventLoop.run()
-    c.close()
-

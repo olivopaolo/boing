@@ -2,43 +2,33 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <link rel="stylesheet" type="text/css" href="../style.css">
-  <title>Boing: OSC tools</title>
+  <title>Boing: OSC examples</title>
 </head>
 
 <body>
 
-<div class="title">Boing: OSC tools</div>
-
-<h1>Documentation</h1>
+<div class="title">Boing: OSC examples</div>
 
 <p>General documentation on OSC can be found
 at <a href="http://opensoundcontrol.org/">http://opensoundcontrol.org/</a></p>
 
-<ul><li><p>Record an OSC stream received at an UDP/TCP socket or send
-      a recorded stream to a target UDP/TCP socket.</p></li>
-<pre>
-&gt; python3 test/osc/recplay.py record &lt;host&gt; &lt;file&gt;
-                              play|loop &lt;file&gt; &lt;host&gt;
-                              [-h, --help]
-   
-Options:
-  -h, --help   
-     Display help and exit
-</pre>
-</ul>
+<h2>Examples:</h2>
+<p>Record to a file an OSC stream received on a UDP socket:</p>
+<pre>&gt; python3 test/run.py -i udp://:7777 -o log.osc:///tmp/log.osc.bz2</pre>
 
-<ul><li><p>Dump to <code>stdout</code> any OSC packet received from an UDP/TCP
-      socket or read from an OSC log file:</p></li>
-<pre>
-&gt; python3 test/osc/oscdump.py &lt;url&gt;
-                              [-h, --help]
-   
-Options:
-  -h, --help   
-     Display help and exit
-</pre>
-</ul>
-<p><b>Note:</b> OSC packets read/written to TCP sockets or files
+<p>Record to a file an OSC stream received on a TCP socket<sup>1</sup>:</p>
+<pre>&gt; python3 test/run.py -i slip.tcp://:7777 -o log.osc:///tmp/log.osc.bz2</pre>
+
+<p>Replay an OSC log to an UDP socket:</p>
+<pre>&gt; python3 test/run.py -i play.osc:///tmp.log.osc.bz2 -o udp://[::1]:7777</pre>
+
+<p>Replay an OSC log (at double speed and loop enabled) to a TCP socket:</p>
+<pre>&gt; python3 test/run.py -i play.osc:///tmp.log.osc.bz2?speed=2&amp;loop -o slip.tcp://[::1]:7777</pre>
+
+<p>Print the raw content of an OSC log:</p>
+<pre>&gt; python3 test/run.py -i osc:///tmp.log.osc.bz2</pre>
+
+<p><sup>1</sup>OSC packets read/written on TCP sockets or files
   are supposed to be SLIP encoded/decoded.</p>
-<p><a href="../networking.html">&lt;&lt; home</a></p>
+<p><a href="../networking.html">&lt;&lt; back</a></p>
 </body></html>

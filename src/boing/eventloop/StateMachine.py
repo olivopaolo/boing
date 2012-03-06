@@ -91,7 +91,7 @@ if __name__ == '__main__':
     from boing.eventloop.OnDemandProduction import SelectiveConsumer
     class DebugConsumer(SelectiveConsumer):
         def _consume(self, products, producer):
-            print(self.requests(), ": ", 
+            print(self.request(), ": ", 
                   ", ".join(str(p) for p in products))
     def setState(tid, **kwargs):
         stateMachine.setState(**kwargs)

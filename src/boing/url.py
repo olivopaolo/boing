@@ -251,35 +251,35 @@ class URL(object):
         return result
 
     def debug(self):
-           kind = {
-               3:'ABSOLUTE',
-               1:'OPAQUE',
-               2:'GENERIC',
-               28:'RELATIVE',
-               4:'NETPATH',
-               8:'ABSPATH',
-               16:'RELPATH'
-               }
-           print('KIND       :', kind[self.kind], end=' ')
-           if self.kind&URL.ABSOLUTE: print ('(absolute)')
-           elif self.kind&URL.RELATIVE: print ('(relative)')
-           print()
-           if self.kind&URL.ABSOLUTE:
-               print('SCHEME     :', self.scheme)
-               print()
-           if self.kind&URL.OPAQUE:
-               print('OPAQUE     :', self.opaque)
-           else:
-               print('SITE       :', self.site)
-               print('  user     :', self.site.user)
-               print('  password :', self.site.password)
-               print('  host     :', self.site.host)
-               print('  port     :', self.site.port)
-               print('PATH       :', self.path)
-               print('  data     :', self.path.data)
-               print('QUERY      :', self.query)
-               print('  data     :', self.query.data)
-               print('FRAGMENT   :', self.fragment)
+        kind = {
+            3:'ABSOLUTE',
+            1:'OPAQUE',
+            2:'GENERIC',
+            28:'RELATIVE',
+            4:'NETPATH',
+            8:'ABSPATH',
+            16:'RELPATH'
+            }
+        print('KIND       :', kind[self.kind], end=' ')
+        if self.kind&URL.ABSOLUTE: print ('(absolute)')
+        elif self.kind&URL.RELATIVE: print ('(relative)')
+        print()
+        if self.kind&URL.ABSOLUTE:
+            print('SCHEME     :', self.scheme)
+            print()
+        if self.kind&URL.OPAQUE:
+            print('OPAQUE     :', self.opaque)
+        else:
+            print('SITE       :', self.site)
+            print('  user     :', self.site.user)
+            print('  password :', self.site.password)
+            print('  host     :', self.site.host)
+            print('  port     :', self.site.port)
+            print('PATH       :', self.path)
+            print('  data     :', self.path.data)
+            print('QUERY      :', self.query)
+            print('  data     :', self.query.data)
+            print('FRAGMENT   :', self.fragment)
 
 # ---------------------------------------------------------------------
 
@@ -315,9 +315,25 @@ if __name__=="__main__":
         # --------------------------
         'xmpp-component://plays@shakespeare.lit',
         ]
+
+    boing_tests = [
+        # "bridge:tuio://localhost:9999",
+        # "bridge://localhost:9999?fmt=tuio",
+        # "tuio.tcp://localhost:9999",
+        # "tuio.file:/tmp/toto.osc",
+        # "in.tuio.tcp://localhost:9999",
+        # "out.tuio.tcp://localhost:9999",
+        # "bridge[.tuio|osc|json|file|stdout|service]://",
+
+        "out.tuio.service:name",
+        "out.tuio.tcp://host:9898",
+        "out:/tmp/toto.osc",
+        "out:stdout",
+        "in.tuio.tcp://:9898", # empty host or localhost or 127.0.0.1 or ::1
+        ]
     
     if len(sys.argv)>1: tests = sys.argv[1:]
-    else: tests = misc_tests+xmpp_tests
+    else: tests = misc_tests + boing_tests  # +xmpp_tests
     for u in tests:
         print('-'*40)
         print(u)

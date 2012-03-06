@@ -10,9 +10,8 @@
 import os
 import weakref
 
-from PyQt4.QtCore import Qt, QObject, QFileInfo, pyqtSignal
+from PyQt4 import QtCore
 
-from boing.eventloop.EventLoop import EventLoop
 from boing.utils.IODevice import IODevice, CommunicationDevice
 from boing.url import URL
 
@@ -40,7 +39,7 @@ class BaseFile(object):
 
     def __init__(self, url):
         if not isinstance(url, URL): url = URL(str(url))
-        self._fileinfo = QFileInfo(str(url.path))
+        self._fileinfo = QtCore.QFileInfo(str(url.path))
 
     def absoluteDir(self):
         return str(self._fileinfo.absoluteDir())
@@ -77,25 +76,25 @@ class CommunicationFile(BaseFile, CommunicationDevice):
 
 class FileReader(File):
     """The FileReader can be used to read regular files along the
-    EventLoop. When the 'start' method is invoked, the FileReader will
+    event loop. When the 'start' method is invoked, the FileReader will
     trigger the readyRead signal and it will repeat it every time the
     read method is invoked."""
 
-    readyRead = pyqtSignal()
-    completed = pyqtSignal()
-    __read = pyqtSignal()
+    readyRead = QtCore.pyqtSignal()
+    completed = QtCore.pyqtSignal()
+    __read = QtCore.pyqtSignal()
 
     def __init__(self, url, mode=IODevice.ReadOnly, 
                  uncompress=False, parent=None):
         File.__init__(self, url, mode, uncompress, parent)
         self._atend = False
-        self.__read.connect(self._emitReadyRead, Qt.QueuedConnection)
+        self.__read.connect(self.readyRead, QtCore.Qt.QueuedConnection)
         
     def atEnd(self):
         return self._atend
 
     def start(self):
-        self.__read.emit()        
+        self.__read.emit()
 
     def read(self, *args, **kwargs):
         data = File.read(self, *args, **kwargs) 
@@ -107,21 +106,18 @@ class FileReader(File):
 
     def readLine(self, *args, **kwargs):
         data = File.readLine(self, *args, **kwargs)
-        if not data: 
+        if not data:
             self._atend = True
             self.completed.emit()
         else: self.__read.emit()
         return data
-
-    def _emitReadyRead(self):
-        self.readyRead.emit()
 
 # -------------------------------------------------------------------------
 
 if __name__=="__main__":
     import sys
     import traceback
-    from boing.eventloop.EventLoop import EventLoop
+    app = QtCore.QCoreApplication(sys.argv)    
     filepath = "filetest.dat"
     writer = File(filepath, IODevice.WriteOnly)
     print("Writing file:", writer.fileName())
@@ -133,15 +129,13 @@ if __name__=="__main__":
     print("Reading entire file:", reader.fileName())
     print(reader.readAll().decode())
     reader.close()
-    del reader
     print()
     def dump():
         data = reader.read()
-        if not data: EventLoop.stop()
+        if not data: app.quit()
         else: print(data.decode())
     reader = FileReader(filepath, IODevice.ReadOnly)
     reader.readyRead.connect(dump)
-    print("Reading file along EventLoop:", reader.fileName())
-    EventLoop.run()
-    print()
-    del reader
+    print("Reading file along event loop:", reader.fileName())
+    reader.start()
+    sys.exit(app.exec_())

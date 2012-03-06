@@ -11,10 +11,11 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import getopt
-import sys
 import logging ; logging.basicConfig(level=logging.DEBUG)
+import sys
 
-from boing.eventloop.EventLoop import EventLoop
+from PyQt4 import QtCore
+
 from boing.dns_sd.DNSServiceBrowser import DNSServiceBrowser
 
 try:
@@ -42,6 +43,8 @@ if len(args) < 1:
     print("usage: %s [options] <type>"%sys.argv[0])
     sys.exit(1)
     
+app = QtCore.QCoreApplication(sys.argv)
+
 def browserEvent(event, service):
     if event=="found":
         print('Service found:')
@@ -66,4 +69,4 @@ def browserEvent(event, service):
 regtype = args[0]
 browser = DNSServiceBrowser(regtype, domain)
 browser.addListener(browserEvent)
-EventLoop.run()
+sys.exit(app.exec_())

@@ -8,19 +8,19 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import itertools
+import sys
 import unittest
 import weakref
 
-from boing.eventloop.EventLoop import EventLoop
+from PyQt4 import QtCore
+
 from boing.eventloop.ReactiveObject import Observable, ReactiveObject, \
                                            DelayedReactive
 
-def notify(tid, obs, *args, **kwargs):
-    obs.notifyObservers()
-
 class TestReactiveObject(ReactiveObject):
     def __init__(self):
-        super().__init__()
+        ReactiveObject.__init__(self)
         self.reaction = 0
 
     def _react(self):
@@ -29,7 +29,7 @@ class TestReactiveObject(ReactiveObject):
 
 class TestDelayedReactive(DelayedReactive):
     def __init__(self, hz=None):
-        super().__init__(hz)
+        DelayedReactive.__init__(self, hz)
         self.refresh = 0
 
     def _refresh(self):
@@ -38,6 +38,13 @@ class TestDelayedReactive(DelayedReactive):
 # -------------------------------------------------------------------
 
 class testReactiveObject(unittest.TestCase):
+
+    def setUp(self):
+        self.app = QtCore.QCoreApplication(sys.argv)
+
+    def tearDown(self):
+        self.app.exit()
+        self.app = None
 
     def test_observer_creation(self):
         o = Observable()
@@ -145,54 +152,40 @@ class testReactiveObject(unittest.TestCase):
         self.assertFalse(set(o.observers()))
     
     def test_trigger(self):
-        def del_reactiveobject(tid, target, test_instance, *args, **kwargs):
-            test_instance.assertGreater(target.reaction, 0)
-            del target
-        def del_observable(tid, target, timer, *args, **kwargs):
-            EventLoop.cancel_timer(timer)
-            del target
-        # Init objects
-        o1 = Observable()
-        o2 = Observable()
-        o3 = Observable()
-        ref_o1 = weakref.ref(o1)
-        ref_o2 = weakref.ref(o2)
-        ref_o3 = weakref.ref(o3)
-        r1 = TestReactiveObject()
-        r2 = TestReactiveObject()
-        ref_r1 = weakref.ref(r1)
-        ref_r2 = weakref.ref(r2)
-        o1.addObserver(r1)
-        o1.addObserver(r2)
-        o2.addObserver(r1)
-        o2.addObserver(r2)
-        o3.addObserver(r1)
-        o3.addObserver(r2)
-        # test observation
-        t_o1 = EventLoop.repeat_every(.1, notify, o1)
-        t_o2 = EventLoop.repeat_every(.2, notify, o2)        
-        t_o3 = EventLoop.repeat_every(.15, notify, o3)
-        t_del_r2 = EventLoop.after(.4, del_reactiveobject, r2, self)
-        t_del_o3 = EventLoop.after(.5, del_observable, o3, t_o3)
-        del r2, o3
-        EventLoop.runFor(.6)
-        EventLoop.cancel_timer(t_o1)
-        EventLoop.cancel_timer(t_o2)
-        EventLoop.cancel_timer(t_del_o3)
-        EventLoop.cancel_timer(t_del_r2)
-        self.assertEqual(set(o1.observers()), {r1})
-        self.assertEqual(set(o2.observers()), {r1})
-        self.assertEqual(set(r1.observed()), {o1, o2})
-        self.assertGreater(r1.reaction, 0)
-        del o1, o2, r1
-        self.assertIsNone(ref_o1())
-        self.assertIsNone(ref_o2())
-        self.assertIsNone(ref_o3())
-        self.assertIsNone(ref_r1())
-        self.assertIsNone(ref_r2())
-
+        obs = []
+        for period in (100,150,200):
+            o = Observable()
+            tid = QtCore.QTimer(o)
+            tid.timeout.connect(o.notifyObservers)
+            tid.start(period)
+            obs.append(o)
+        obsrefs = [weakref.ref(o) for o in obs]
+        reacts = [TestReactiveObject() for i in range(2)]
+        reactsrefs = [weakref.ref(r) for r in reacts]
+        for o, r in itertools.product(obs, reacts): 
+            r.subscribeTo(o)
+        del o, r
+        setter = lambda obj, key, value: obj.__setitem__(key, value)
+        QtCore.QTimer.singleShot(400, lambda : setter(obs, 2, None))
+        QtCore.QTimer.singleShot(500, lambda : setter(reacts, 1, None))
+        QtCore.QTimer.singleShot(600, self.app.quit)
+        self.app.exec_()
+        self.assertEqual(set(obs[0].observers()), set(reacts[:1]))
+        self.assertEqual(set(obs[1].observers()), set(reacts[:1]))
+        self.assertEqual(set(reacts[0].observed()), set(obs[:2]))
+        self.assertGreater(reacts[0].reaction, 0)
+        del obs, reacts
+        for ref in itertools.chain(obsrefs, reactsrefs):            
+            self.assertIsNone(ref())
 
 class test_DelayedReactive(unittest.TestCase):
+
+    def setUp(self):
+        self.app = QtCore.QCoreApplication(sys.argv)
+
+    def tearDown(self):
+        self.app.exit()
+        self.app = None
 
     def test_creation_empty(self):
         r = DelayedReactive()
@@ -262,70 +255,45 @@ class test_DelayedReactive(unittest.TestCase):
         self.assertFalse(set(r.observed()))
 
     def test_trigger(self):
-        def del_reactiveobject(tid, target, test_instance, *args, **kwargs):
-            test_instance.assertGreater(target.refresh, 0)
-            del target
-        def del_observable(tid, target, timer, *args, **kwargs):
-            EventLoop.cancel_timer(timer)
-            del target
-        # Init objects
-        o1 = Observable()
-        o2 = Observable()
-        ref_o1 = weakref.ref(o1)
-        ref_o2 = weakref.ref(o2)
-        r1 = TestDelayedReactive(None)
-        r2 = TestDelayedReactive(8)
-        r3 = TestDelayedReactive(None)
-        r4 = TestDelayedReactive(8)
-        ref_r1 = weakref.ref(r1)
-        ref_r2 = weakref.ref(r2)
-        ref_r3 = weakref.ref(r3)
-        ref_r4 = weakref.ref(r4)
-        o1.addObserver(r1)
-        o1.addObserver(r2)
-        o1.addObserver(r3)
-        o1.addObserver(r4)
-        o2.addObserver(r1)
-        o2.addObserver(r2)
-        o2.addObserver(r3)
-        o2.addObserver(r4)
-        # test observation
-        t_o1 = EventLoop.repeat_every(.1, notify, o1)
-        t_o2 = EventLoop.repeat_every(.2, notify, o2)        
-        t_del_o2 = EventLoop.after(.3, del_observable, o2, t_o2)
-        t_del_r2 = EventLoop.after(.4, del_reactiveobject, r2, self)
-        t_del_r3 = EventLoop.after(.5, del_reactiveobject, r3, self)
-        del o2, r2, r3
-        EventLoop.runFor(.6)
-        EventLoop.cancel_timer(t_o1)
-        EventLoop.cancel_timer(t_o2)
-        EventLoop.cancel_timer(t_del_o2)
-        EventLoop.cancel_timer(t_del_r2)
-        EventLoop.cancel_timer(t_del_r3)
-        self.assertEqual(set(o1.observers()), {r1, r4})
-        self.assertEqual(set(r1.observed()), {o1})
-        self.assertEqual(set(r4.observed()), {o1})
-        self.assertGreater(r1.refresh, 0)
-        self.assertGreater(r4.refresh, 0)
-        del o1, r1, r4
-        self.assertIsNone(ref_o1())
-        self.assertIsNone(ref_o2())
-        self.assertIsNone(ref_r1())
-        self.assertIsNone(ref_r2())
-        self.assertIsNone(ref_r3())
-        self.assertIsNone(ref_r4())
+        obs = []
+        for period in (100,150,200):
+            o = Observable()
+            tid = QtCore.QTimer(o)
+            tid.timeout.connect(o.notifyObservers)
+            tid.start(period)
+            obs.append(o)
+        obsrefs = [weakref.ref(o) for o in obs]
+        reacts = [TestDelayedReactive(hz) for hz in (None, 9, None, 9)]
+        reactsrefs = [weakref.ref(r) for r in reacts]
+        for o, r in itertools.product(obs, reacts): 
+            r.subscribeTo(o)
+        del o, r
+        setter = lambda obj, key, value: obj.__setitem__(key, value)
+        QtCore.QTimer.singleShot(300, lambda : setter(obs, 2, None))
+        QtCore.QTimer.singleShot(400, lambda : setter(reacts, 2, None))
+        QtCore.QTimer.singleShot(500, lambda : setter(reacts, 3, None))
+        QtCore.QTimer.singleShot(600, self.app.quit)
+        self.app.exec_()
+        self.assertEqual(set(obs[0].observers()), set(reacts[:2]))
+        self.assertEqual(set(obs[1].observers()), set(reacts[:2]))
+        self.assertEqual(set(reacts[0].observed()), set(obs[:2]))
+        self.assertEqual(set(reacts[1].observed()), set(obs[:2]))
+        self.assertGreater(reacts[0].refresh, 0)
+        self.assertGreater(reacts[1].refresh, 0)
+        del obs, reacts
+        for ref in itertools.chain(obsrefs, reactsrefs):            
+            self.assertIsNone(ref())
 
 # -------------------------------------------------------------------
 
 def suite():    
-    reactiveobject_tests = list(t for t in testReactiveObject.__dict__ \
+    reactiveobject_tests = (t for t in testReactiveObject.__dict__ \
                                   if t.startswith("test_"))
-    delayedreactive_tests = list(t for t in test_DelayedReactive.__dict__ \
+    delayedreactive_tests = (t for t in test_DelayedReactive.__dict__ \
                                    if t.startswith("test_"))
-    return unittest.TestSuite(list(map(testReactiveObject, 
-                                       reactiveobject_tests))+
-                              list(map(test_DelayedReactive, 
-                                       delayedreactive_tests)))
+    return unittest.TestSuite(itertools.chain(
+            map(testReactiveObject, reactiveobject_tests),
+            map(test_DelayedReactive, delayedreactive_tests)))
 
 # -------------------------------------------------------------------
 

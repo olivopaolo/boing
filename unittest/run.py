@@ -41,18 +41,16 @@ if len(sys.argv)==1 or 'display' in sys.argv:
     from display import test_DisplayDevice
     list += test_DisplayDevice.suite()
 if len(sys.argv)==1 or 'eventloop' in sys.argv:
-    from eventloop import test_ReactiveObject, test_ProducerConsumer, \
-        test_StateMachine
-    list += test_StateMachine.suite()
+    from eventloop import test_ReactiveObject #, test_StateMachine
     list += test_ReactiveObject.suite()
-    list += test_ProducerConsumer.suite()
+    # list += test_StateMachine.suite()
 if len(sys.argv)==1 or 'json' in sys.argv:
-    from json_ import test__init__
+    from _json import test__init__
     list += test__init__.suite()
 if len(sys.argv)==1 or 'osc' in sys.argv:
-    from osc import test_osc, test_LogPlayer
+    from osc import test_osc
     list += test_osc.suite()
-    list += test_LogPlayer.suite()
+    # list += test_LogPlayer.suite()
 if len(sys.argv)==1 or 'slip' in sys.argv:
     from slip import test__slip__
     list += test__slip__.suite()
@@ -64,11 +62,13 @@ if len(sys.argv)==1 or 'udp' in sys.argv:
     from udp import test_UdpSocket
     list += test_UdpSocket.suite()
 if len(sys.argv)==1 or 'utils' in sys.argv:
-    from utils import test_ExtensibleStruct, test_ExtensibleTree, \
-        test_matching
-    list += test_ExtensibleStruct.suite()
-    list += test_ExtensibleTree.suite()
-    list += test_matching.suite()
+    from utils import test_QPath
+    list += test_QPath.suite()
+#     from utils import test_ExtensibleStruct, test_ExtensibleTree, \
+#         test_matching
+#     list += test_ExtensibleStruct.suite()
+#     list += test_ExtensibleTree.suite()
+#     list += test_matching.suite()
 alltests = unittest.TestSuite(list)
 runner = unittest.TextTestRunner()
 runner.run(alltests)

@@ -12,7 +12,8 @@ import getopt
 import logging ; logging.basicConfig(level=logging.DEBUG)
 import sys
 
-from boing.eventloop.EventLoop import EventLoop
+from PyQt4 import QtCore
+
 from boing.dns_sd.DNSServiceAnnouncer import DNSServiceAnnouncer
 
 try:
@@ -52,6 +53,8 @@ Options:
 if len(args) < 3:
     print("usage: %s [options] <name> <type> <port>"%sys.argv[0])
     sys.exit(2)
+    
+app = QtCore.QCoreApplication(sys.argv)
 
 def callback(announcer):
     print("Registered service:")
@@ -67,4 +70,4 @@ s1 = DNSServiceAnnouncer(name, regtype, port,
 			 txtrec,
 			 host, domain,
 			 callback=callback)
-EventLoop.run()
+sys.exit(app.exec_())

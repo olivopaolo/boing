@@ -140,8 +140,7 @@ class TestDisplayDevice(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    tests = list(t for t in TestDisplayDevice.__dict__ \
-                     if t.startswith("test_"))
+    tests = (t for t in TestDisplayDevice.__dict__ if t.startswith("test_"))
     return unittest.TestSuite(map(TestDisplayDevice, tests))    
 
 # -------------------------------------------------------------------

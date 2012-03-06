@@ -22,11 +22,15 @@ class Observable(QtCore.QObject):
         self.__observers = set()
 
     def __del__(self):
-        for reactiveobject in self.observers():
+        for ref in self.__observers:
             # Notify of the subscribed ReactiveObjects that they have a None 
             # reference
-            self.trigger.disconnect(reactiveobject._react)
-            reactiveobject._checkRef()            
+            reactiveobject = ref()
+            if reactiveobject is not None:
+                try:
+                    self.trigger.disconnect(reactiveobject._react)
+                except TypeError: pass
+                reactiveobject._checkRef()
 
     def observers(self):
         """Return an iterator over the current observing ReactiveObject."""
@@ -62,6 +66,7 @@ class Observable(QtCore.QObject):
             reactiveobject._removeObservable(self)
         self.__observers.clear()
 
+    @QtCore.pyqtSlot()
     def notifyObservers(self):
         """Invoke the method "_react" of all the registered ReactiveObjects."""
         self.trigger.emit(self)
@@ -92,9 +97,9 @@ class ReactiveObject(object):
         """Return an iterator over the current observed Observables."""
         return (ref() for ref in self.__observed)
 
-    def subscribeTo(self, observable):
+    def subscribeTo(self, observable, mode=QtCore.Qt.QueuedConnection):
         if isinstance(observable, Observable):            
-            return observable.addObserver(self)
+            return observable.addObserver(self, mode)
         else: return False
 
     def unsubscribeFrom(self, observable):
@@ -185,9 +190,10 @@ class DelayedReactive(ReactiveObject):
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
+    import itertools
+    import signal
     import sys
-    from boing.eventloop.EventLoop import EventLoop
-    if len(sys.argv)<2:
+    if len(sys.argv)<2 or not sys.argv[1].isdecimal():
         print("usage: %s <seconds>"%sys.argv[0])
         sys.exit(1)
     class DebugReactive(ReactiveObject):
@@ -199,27 +205,30 @@ if __name__ == '__main__':
             for i in self.queue():
                 names.append(i.name)
             print("%s refresh to"%self.name, names)
-    def notify(tid, obs, *args, **kwargs):
-        obs.notifyObservers()
+    # Init app
+    app = QtCore.QCoreApplication(sys.argv)
+    signal.signal(signal.SIGINT, lambda *args: app.quit())
+    QtCore.QTimer.singleShot(int(sys.argv[1])*1000, app.quit)
     # Init observables
-    o1 = Observable()
-    o2 = Observable()
-    o1.name = "o1"
-    o2.name = "o2"
+    obs = []
+    for i, period in enumerate((300,700)):
+        o = Observable()
+        o.name = "o%d"%(i+1)
+        tid = QtCore.QTimer(o)
+        tid.timeout.connect(o.notifyObservers)
+        tid.start(period)
+        obs.append(o)
     # Init ReactiveObjects
-    r1 = DebugReactive()
-    r2 = DebugDelayedReactive(1)
-    r3 = DebugDelayedReactive(None)
-    r1.name = "r1"
-    r2.name = "r2"
-    r3.name = "r3"
-    r1.subscribeTo(o1)
-    r1.subscribeTo(o2)
-    r2.subscribeTo(o1)
-    r2.subscribeTo(o2) 
-    r3.subscribeTo(o1)
-    r3.subscribeTo(o2)
-    # run
-    t_o1 = EventLoop.repeat_every(0.4, notify, o1)
-    t_o2 = EventLoop.repeat_every(0.7, notify, o2)
-    EventLoop.runFor(int(sys.argv[1]))
+    reacts = list()
+    reacts.append(DebugReactive())
+    reacts.append(DebugDelayedReactive(1))
+    reacts.append(DebugDelayedReactive(None))
+    for i, r in enumerate(reacts):
+        r.name = "r%d"%(i+1)
+    # Full subscription
+    for o, r in itertools.product(obs, reacts): 
+        r.subscribeTo(o)
+    del o, r
+    # Run
+    sys.exit(app.exec_())
+

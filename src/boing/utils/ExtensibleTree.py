@@ -444,3 +444,14 @@ class ExtensibleTree(collections.MutableMapping):
         for key, value in self.items():
             copy[key] = _copy.deepcopy(value, memo)
         return copy
+
+e = ExtensibleTree()
+e.timetag.removed = 100
+e.source = "mao"
+e.diff.added[1].pos = (1,2)
+e.diff.added[1].rel_pos = (0,0)
+e.diff.updated[2].pos = (1,2)
+e.diff.updated[2].rel_pos = (0,0)
+e.diff.removed[3] = None
+e.diff.removed[4] = None
+print(e.filter(("diff|timetag","updated|removed",".*",".*pos")).flatten())

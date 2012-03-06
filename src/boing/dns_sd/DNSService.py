@@ -14,8 +14,9 @@ import logging
 import struct
 import traceback
 
+from PyQt4 import QtCore
+
 from boing.dns_sd.dns_sd import *
-from boing.eventloop.EventLoop import EventLoop
 
 # -------------------------------------------------------------------------------
 
@@ -89,8 +90,8 @@ class DNSService(object):
         if name is None: name = ""
         else: self.name = name.decode("utf-8")
         self.__parseRecord = DNSServiceQueryRecordReply(self.__parseRecord)
-        self.__txtdid = self.__txtref = None
-        self.__srvdid = self.__srvref = None
+        self.__txtfd = self.__txtref = None
+        self.__srvfd = self.__srvref = None
         """ When True, __listeners are invoked. """
         self.__txtnotify = self.__srvnotify = False
         self.info = {}
@@ -99,7 +100,7 @@ class DNSService(object):
 
     def __del__(self):
         if self.__txtref:
-            EventLoop.cancel_fdhandler(self.__txtdid)
+            self.__txtfd.setEnabled(False)
             self.__lock.acquire()
             dns_sd.DNSServiceRefDeallocate(self.__txtref)
             self.__lock.release()
@@ -122,7 +123,7 @@ class DNSService(object):
             self.__srvnotify = True
             # After the response has been read it is possible to
             # deallocate the resource
-            EventLoop.cancel_fdhandler(self.__srvdid)        
+            self.__srvfd.setEnabled(False)
             self.__lock.acquire()
             dns_sd.DNSServiceRefDeallocate(self.__srvref)
             self.__lock.release()
@@ -222,7 +223,8 @@ class DNSService(object):
             self.__lock.acquire()
             obj = dns_sd.DNSServiceRefSockFD(self.__srvref)
             self.__lock.release()
-            self.__srvdid = EventLoop.if_readable(obj, self.__srvreadable)
+            self.__srvfd = QtCore.QSocketNotifier(obj, QtCore.QSocketNotifier.Read,
+                                                  activated=self.__srvreadable)
                 
     def queryTXTrecord(self, clearcache=True):
         if self.__txtref: return
@@ -244,6 +246,7 @@ class DNSService(object):
             self.logger.warning("DNSServiceQueryRecord failed (resolve, TXT)")
         else:
             self.__lock.acquire()
-            fd = dns_sd.DNSServiceRefSockFD(self.__txtref)
+            obj = dns_sd.DNSServiceRefSockFD(self.__txtref)
             self.__lock.release()
-            self.__txtdid = EventLoop.if_readable(fd, self.__txtreadable)
+            self.__txtfd = QtCore.QSocketNotifier(obj, QtCore.QSocketNotifier.Read,
+                                                  activated=self.__txtreadable)

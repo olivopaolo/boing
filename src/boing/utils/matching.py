@@ -58,10 +58,10 @@ def _yieldKeys(mapping, pattern):
         if pattern in mapping: yield pattern
     elif isinstance(pattern, str): 
         regexp = re.compile(pattern)
-        for key in mapping.keys():
-            if isinstance(key, int): key = str(key)
-            result = regexp.match(key)
-            if result is not None and result.end()==len(key):
+        for key in tuple(mapping.keys()):
+            keystr = str(key) if isinstance(key, int) else key
+            result = regexp.match(keystr)
+            if result is not None and result.end()==len(keystr):
                 yield key
 
 def filterValues(mapping, pattern):

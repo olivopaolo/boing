@@ -10,13 +10,12 @@
 
 import unittest
 import socket as _socket
-import weakref
+import sys
 
 from PyQt4 import QtCore
 
 from boing import ip
-from boing.eventloop.EventLoop import EventLoop
-from boing.tcp.EchoServer import EchoServer
+from boing.tcp.TcpServer import EchoServer
 from boing.tcp.TcpSocket import TcpSocket, TcpConnection
 from boing.url import URL
 
@@ -29,29 +28,27 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
     def setUp(self):
         self.data = b"boing-unittest"
         self.result = None
-        self.timeout = False
+        self.app = QtCore.QCoreApplication(sys.argv)
+
+    def tearDown(self):
+        self.app.exit()
+        self.app = None
     
-    def __send_data(self, tid, sock):
+    def __send_data(self, sock):
         sock.send(self.data)
 
     def __readdata(self):
         conn = self.sender() 
         self.result = conn.receive()
-        EventLoop.stop()
-
-    def __timeout(self, tid):
-        self.timeout = True
-        EventLoop.stop()
+        self.app.quit()
 
     def test_tcpconnection_loopback_ip4(self):
         serv = EchoServer(host="0.0.0.0")
         conn = TcpConnection("tcp://127.0.0.1:%d"%serv.name()[1])
         conn.readyRead.connect(self.__readdata)
-        tid_send = EventLoop.after(.1, self.__send_data, conn)
-        tid_timeout = EventLoop.after(1, self.__timeout)
-        EventLoop.run()
-        EventLoop.cancel_timer(tid_send)
-        EventLoop.cancel_timer(tid_timeout)
+        QtCore.QTimer.singleShot(100, lambda:self.__send_data(conn))
+        QtCore.QTimer.singleShot(1000, self.app.quit)
+        self.app.exec_()
         url = conn.url()
         peerurl = conn.peerUrl()
         self.assertIsInstance(url, URL)
@@ -60,7 +57,6 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
         self.assertEqual(conn.peerName(), (peerurl.site.host, peerurl.site.port))
         self.assertEqual(peerurl.site.host, "127.0.0.1")
         self.assertEqual(peerurl.site.port, serv.name()[1])
-        self.assertFalse(self.timeout)
         self.assertEqual(self.data, self.result)
         conn.close()
 
@@ -68,11 +64,9 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
         serv = EchoServer(host="::")
         conn = TcpConnection("tcp://[::1]:%d"%serv.name()[1])
         conn.readyRead.connect(self.__readdata)
-        tid_send = EventLoop.after(.1, self.__send_data, conn)
-        tid_timeout = EventLoop.after(1, self.__timeout)
-        EventLoop.run()
-        EventLoop.cancel_timer(tid_send)
-        EventLoop.cancel_timer(tid_timeout)
+        QtCore.QTimer.singleShot(100, lambda:self.__send_data(conn))
+        QtCore.QTimer.singleShot(1000, self.app.quit)
+        self.app.exec_()
         url = conn.url()
         peerurl = conn.peerUrl()
         self.assertIsInstance(url, URL)
@@ -81,7 +75,6 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
         self.assertEqual(conn.peerName(), (peerurl.site.host, peerurl.site.port))
         self.assertEqual(peerurl.site.host, "::1")
         self.assertEqual(peerurl.site.port, serv.name()[1])
-        self.assertFalse(self.timeout)
         self.assertEqual(self.data, self.result)
         conn.close()
 
@@ -89,11 +82,9 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
         serv = EchoServer(host="0.0.0.0")
         conn = TcpConnection("tcp://localhost:%d"%serv.name()[1], ip.PF_INET)
         conn.readyRead.connect(self.__readdata)
-        tid_send = EventLoop.after(.1, self.__send_data, conn)
-        tid_timeout = EventLoop.after(1, self.__timeout)
-        EventLoop.run()
-        EventLoop.cancel_timer(tid_send)
-        EventLoop.cancel_timer(tid_timeout)
+        QtCore.QTimer.singleShot(100, lambda:self.__send_data(conn))
+        QtCore.QTimer.singleShot(1000, self.app.quit)
+        self.app.exec_()
         url = conn.url()
         peerurl = conn.peerUrl()
         self.assertIsInstance(url, URL)
@@ -102,7 +93,6 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
         self.assertEqual(conn.peerName(), (peerurl.site.host, peerurl.site.port))
         self.assertEqual(peerurl.site.host, "127.0.0.1")
         self.assertEqual(peerurl.site.port, serv.name()[1])
-        self.assertFalse(self.timeout)
         self.assertEqual(self.data, self.result)
         conn.close()
 
@@ -115,11 +105,9 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
             serv = EchoServer(host="::")
             conn = TcpConnection("tcp://localhost:%d"%serv.name()[1], ip.PF_INET6)
             conn.readyRead.connect(self.__readdata)
-            tid_send = EventLoop.after(.1, self.__send_data, conn)
-            tid_timeout = EventLoop.after(1, self.__timeout)
-            EventLoop.run()
-            EventLoop.cancel_timer(tid_send)
-            EventLoop.cancel_timer(tid_timeout)
+            QtCore.QTimer.singleShot(100, lambda:self.__send_data(conn))
+            QtCore.QTimer.singleShot(1000, self.app.quit)
+            self.app.exec_()
             url = conn.url()
             peerurl = conn.peerUrl()
             self.assertIsInstance(url, URL)
@@ -128,7 +116,6 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
             self.assertEqual(conn.peerName(), (peerurl.site.host, peerurl.site.port))
             self.assertEqual(peerurl.site.host, "::1")
             self.assertEqual(peerurl.site.port, serv.name()[1])
-            self.assertFalse(self.timeout)
             self.assertEqual(self.data, self.result)
             conn.close()
 
@@ -143,11 +130,9 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
             conn = TcpConnection("tcp://%s:%d"%(hostname, serv.name()[1]), 
                                  ip.PF_INET)
             conn.readyRead.connect(self.__readdata)
-            tid_send = EventLoop.after(.1, self.__send_data, conn)
-            tid_timeout = EventLoop.after(1, self.__timeout)
-            EventLoop.run()
-            EventLoop.cancel_timer(tid_send)
-            EventLoop.cancel_timer(tid_timeout)
+            QtCore.QTimer.singleShot(100, lambda:self.__send_data(conn))
+            QtCore.QTimer.singleShot(1000, self.app.quit)
+            self.app.exec_()
             url = conn.url()
             peerurl = conn.peerUrl()
             self.assertIsInstance(url, URL)
@@ -157,7 +142,6 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
                                                peerurl.site.port))
             self.assertEqual(peerurl.site.host, hostaddress)
             self.assertEqual(peerurl.site.port, serv.name()[1])
-            self.assertFalse(self.timeout)
             self.assertEqual(self.data, self.result)
             conn.close()
 
@@ -172,11 +156,9 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
             conn = TcpConnection("tcp://%s:%d"%(hostname, serv.name()[1]), 
                                  ip.PF_INET6)
             conn.readyRead.connect(self.__readdata)
-            tid_send = EventLoop.after(.1, self.__send_data, conn)
-            tid_timeout = EventLoop.after(1, self.__timeout)
-            EventLoop.run()
-            EventLoop.cancel_timer(tid_send)
-            EventLoop.cancel_timer(tid_timeout)
+            QtCore.QTimer.singleShot(100, lambda:self.__send_data(conn))
+            QtCore.QTimer.singleShot(1000, self.app.quit)
+            self.app.exec_()
             url = conn.url()
             peerurl = conn.peerUrl()
             self.assertIsInstance(url, URL)
@@ -186,15 +168,13 @@ class TestTcpSocket(QtCore.QObject, unittest.TestCase):
                                                peerurl.site.port))
             self.assertEqual(peerurl.site.host, "::1")
             self.assertEqual(peerurl.site.port, serv.name()[1])
-            self.assertFalse(self.timeout)
             self.assertEqual(self.data, self.result)
             conn.close()
 
 # -------------------------------------------------------------------
 
 def suite():
-    tests = list(t for t in TestTcpSocket.__dict__ \
-                     if t.startswith("test_"))
+    tests = (t for t in TestTcpSocket.__dict__ if t.startswith("test_"))
     return unittest.TestSuite(map(TestTcpSocket, tests))    
 
 # -------------------------------------------------------------------

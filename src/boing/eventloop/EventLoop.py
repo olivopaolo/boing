@@ -9,9 +9,6 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import collections
-import signal
-import sys
-import time
 import traceback
 import uuid
 
@@ -38,7 +35,7 @@ class __metaclass(type):
 
 class EventLoop(metaclass=__metaclass):
         
-    @staticmethod
+    '''@staticmethod
     def runFor(seconds, returnAfterSourceHandled=False):
         EventLoop.mainloop.runFor(seconds, returnAfterSourceHandled)
     @staticmethod
@@ -46,7 +43,7 @@ class EventLoop(metaclass=__metaclass):
         return EventLoop.mainloop.run()
     @staticmethod
     def stop():
-        EventLoop.mainloop.stop()
+        EventLoop.mainloop.stop()'''
 
     @staticmethod
     def after(seconds, callback, *args, **kwargs):
@@ -88,15 +85,14 @@ class EventLoop_PyQt(EventLoop):
     IDLE_TIMEOUT = 0.2
     
     def __init__(self):
-        self.__app = QtCore.QCoreApplication.instance()
-        if self.__app==None: self.__app = QtCore.QCoreApplication(sys.argv)
-        self.__loop = QtCore.QEventLoop()
+        #self.__app = QtCore.QCoreApplication.instance()
+        #if self.__app==None: self.__app = QtCore.QCoreApplication(sys.argv)
+        #self.__loop = QtCore.QEventLoop()
         self.__t = {}
         self.__d = {}
-        self.__qObservables = {}
-        signal.signal(signal.SIGINT, lambda *args, **kwargs: self.stop())
+        #signal.signal(signal.SIGINT, lambda *args, **kwargs: self.stop())
         
-    def runFor(self, seconds, returnAfterSourceHandled=False):
+    '''def runFor(self, seconds, returnAfterSourceHandled=False):
         """
         @type seconds: number
         @param seconds: the time to run the event loop, greater or equal to 0
@@ -121,7 +117,7 @@ class EventLoop_PyQt(EventLoop):
         return self.__app.exec_()
     
     def stop(self):
-        self.__app.quit()
+        self.__app.quit()'''
         
     def __del__(self):
         self.stop()
@@ -280,4 +276,4 @@ class EventLoop_PyQt(EventLoop):
         self.cancel_timer(iid)
 
 #FIXME: auto initializer
-EventLoop.mainloop
+#EventLoop.mainloop

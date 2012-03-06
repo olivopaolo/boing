@@ -8,6 +8,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import logging
 import socket as _socket
 
 from PyQt4.QtNetwork import QAbstractSocket, QHostAddress, QTcpServer
@@ -65,31 +66,39 @@ class TcpServer(QTcpServer):
 
 # -------------------------------------------------------------------
 
+class EchoSocket(TcpSocket):
+    
+    def __init__(self, parent=None):
+        TcpSocket.__init__(self, parent)
+        self.logger = logging.getLogger("EchoSocket.%d"%id(self))
+        self.readyRead.connect(self.__echoData)
+        self.disconnected.connect(self.__disconnected)
+
+    def setSocketDescriptor(self, descriptor):
+        TcpSocket.setSocketDescriptor(self, descriptor)
+        if self.state()==QAbstractSocket.ConnectedState:
+            self.logger.debug("New client: %s"%str(self.peerName()))
+
+    def __disconnected(self):
+        self.logger.debug("Lost client: %s"%str(self.peerName()))
+        
+    def __echoData(self):
+        data, peer = self.receiveFrom()
+        self.logger.debug("%s: %s"%(peer, data))
+        self.send(data)
+    
+def EchoServer(host=None, port=0, family=None, maxconnections=30):
+    return TcpServer(host, port, family, maxconnections, EchoSocket)
+
+# -------------------------------------------------------------------
+
 if __name__=="__main__":
-    import datetime
-    import traceback
-    from boing.eventloop.EventLoop import EventLoop
-    def newClient():
-        connection = server.nextPendingConnection()
-        client = connection.name()
-        peer = connection.peerName()
-        try:
-            identd = TcpSocket().connect((peer[0],113))
-            identd.send("%d, %d\n"%(peer[1], client[1]))
-            identity = identd.receive()
-            identd.close()
-        except:
-            #traceback.print_exc()
-            identity = "[Unknown]"
-        connection.send(b"HTTP/1.0 200 OK\n\n")
-        connection.send(b"<html><body><pre>")
-        connection.send(("Timestamp: %s\n"%datetime.datetime.now().isoformat()).encode())
-        connection.send(("Identity: %s\n"%identity).encode())
-        connection.send(b"</pre></body></html>")
-        connection.close()
-    server = TcpServer() 
-    server.newConnection.connect(newClient)
-    #options=("nodelay","fastack","reuse","nosigpipe"), 
+    import logging
+    import sys
+    from PyQt4 import QtCore
+    app = QtCore.QCoreApplication(sys.argv)
+    logging.basicConfig(level=logging.getLevelName("DEBUG"))
+    server = EchoServer()
     print("EchoServer listening at", server.url())
-    EventLoop.run()
-    del server
+    sys.exit(app.exec_())
+

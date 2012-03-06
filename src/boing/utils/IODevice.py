@@ -10,11 +10,9 @@
 import io
 import weakref
 
-from PyQt4.QtCore import QObject, pyqtSignal
+from PyQt4 import QtCore
 
-from boing.eventloop.EventLoop import EventLoop
-
-class IODevice(QObject):
+class IODevice(QtCore.QObject):
     """Class for wrapping a generic file descriptor, like a file,
     the stdin or the stdout."""
     
@@ -25,19 +23,23 @@ class IODevice(QObject):
     Append = 0x04
 
     # Signals
-    bytesWritten = pyqtSignal(int)
-    aboutToClose = pyqtSignal()
+    bytesWritten = QtCore.pyqtSignal(int)
+    aboutToClose = QtCore.pyqtSignal()
 
     def __init__(self, fd, parent=None):
-        QObject.__init__(self, parent)
+        QtCore.QObject.__init__(self, parent)
         self.__fd = fd
         self.__isatty = fd.isatty() if hasattr(fd, "isatty") else False
+        self.__textModeEnabled = isinstance(self.__fd, io.TextIOBase)
 
     def fd(self):
         return self.__fd
 
     def isOpen(self):
         return not self.__fd.closed
+
+    def isTextModeEnabled(self):
+        return self.__textModeEnabled
 
     def bytesToWrite(self):
         return 0
@@ -74,18 +76,14 @@ class CommunicationDevice(IODevice):
     UdpSocket do not inherit this class because they inherit specific
     Qt classes."""
     
-    readyRead = pyqtSignal()
+    readyRead = QtCore.pyqtSignal()
 
     def __init__(self, fd, parent=None):
         IODevice.__init__(self, fd, parent)
-        EventLoop.if_readable(self.fd(), CommunicationDevice._emitReadyRead,
-                              weakref.ref(self))
-        
-    def _emitReadyRead(did, ref):
-        device = ref()
-        if device is None: EventLoop.cancel_fdhandler(did)
-        else: device.readyRead.emit()
-
-        
-
+        self.__notifier = QtCore.QSocketNotifier(fd if type(fd)==int else fd.fileno(),
+                                                 QtCore.QSocketNotifier.Read,
+                                                 activated=self.readyRead)
     
+    def __del__(self):
+        self.__notifier.setEnabled(False)
+

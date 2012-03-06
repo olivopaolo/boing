@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# test/urldebug.py -
+# test/url.py -
 #
 # Authors: Paolo Olivo (paolo.olivo@inria.fr)
 #
@@ -26,7 +26,7 @@ for o, a in opts:
         print("usage: %s <urls>"%sys.argv[0])
         print("       %s [-h, --help]"%(" "*len(sys.argv[0])))
         print("""
-Print urls' debug details.
+Print debug details for argument URLs.
 
 Options:
  -h, --help                  display this help and exit

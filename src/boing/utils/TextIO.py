@@ -9,10 +9,10 @@
 
 import collections
 
-from boing.utils.ExtensibleStruct import ExtensibleStruct
-from boing.utils.DataIO import DataWriter, DataReader
+from boing.eventloop.MappingEconomy import Node
 
-class TextReader(DataReader):
+
+'''class TextReader(DataReader):
 
     def __init__(self, inputdevice, encoding="utf-8", parent=None):
         DataReader.__init__(self, inputdevice, parent)
@@ -37,4 +37,36 @@ class TextWriter(DataWriter):
                 if data: 
                     out = self.outputDevice()
                     out.write(data.decode(self.encoding, self.errors))
-                    out.flush()
+                    out.flush()'''
+
+class TextEncoder(Node):
+    
+    def __init__(self, encoding="utf-8", hz=None, parent=None):
+        # FIXME: set productoffer
+        Node.__init__(self, request="str", hz=hz, parent=parent)
+        self.encoding = encoding
+
+    def _consume(self, products, producer):
+        for p in products:
+            if "str" in p: 
+                text = p["str"]
+                if text is not None: 
+                    self._postProduct({"data":text.encode(self.encoding)})
+
+
+class TextDecoder(Node):
+    
+    def __init__(self, encoding="utf-8", hz=None, parent=None):
+        # FIXME: set productoffer
+        Node.__init__(self, request="data", hz=hz, parent=parent)
+        self.encoding = encoding
+        self.errors = "replace"
+
+    def _consume(self, products, producer):
+        for p in products:
+            if "data" in p:
+                data = p["data"]
+                if data is not None: 
+                    text = data.decode(self.encoding, self.errors)
+                    product = {"str": text}
+                    self._postProduct(product)
