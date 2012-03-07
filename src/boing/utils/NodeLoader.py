@@ -12,6 +12,7 @@ import sys
 
 from PyQt4 import QtCore
 
+import boing.tuio as tuio
 from boing.eventloop.MappingEconomy import DumpConsumer, IdentityNode
 from boing.multitouch.ContactViz import ContactViz
 from boing.slip.SlipDataIO import SlipEncoder, SlipDecoder
@@ -19,7 +20,6 @@ from boing.osc.logging import LogFile, LogPlayer
 from boing.osc.encoding import OscEncoder, OscDecoder, OscDebug
 from boing.tcp.TcpServer import TcpServer
 from boing.tcp.TcpSocket import TcpConnection
-from boing.tuio.TuioToState import TuioToState
 from boing.udp.UdpSocket import UdpSender, UdpListener
 from boing.utils.IODevice import IODevice, CommunicationDevice
 from boing.utils.DataIO import DataReader, DataWriter, DataIO
@@ -171,10 +171,31 @@ def NodeLoader(url):
         print("No transport protocol specified in URL, assuming: %s"%_url.scheme)
         node = NodeLoader(_url)
 
+    elif _url.scheme=="out.tuio":
+        _url = URL(str(_url))
+        if _url.site.host=="" and _url.site.port==0:
+            _url.scheme += ".stdout"
+        else:
+            _url.scheme += ".udp"
+            if _url.site.host=="": _url.site.host = "::1"
+            if _url.site.port==0: _url.site.port = 3333
+        print("No transport protocol specified in URL, assuming: %s"%_url.scheme)
+        node = NodeLoader(_url)
+
     elif _url.scheme=="in.tuio.udp":
         kwargs = _urlquery2kwargs(url, "rt")                
         node = DataReader(UdpListener(_url)).addPost(
-            OscDecoder().addPost(OscDebug()).addPost(TuioToState(**kwargs)))
+            OscDecoder().addPost(OscDebug()).addPost(tuio.TuioDecoder(**kwargs)))
+
+    elif _url.scheme=="out.tuio.udp":
+        node = tuio.TuioEncoder()
+        node.addObserver(
+            OscEncoder(parent=node).addPost(DataWriter(UdpSender(_url))))
+
+    elif _url.scheme=="out.tuio.stdout":
+        node = tuio.TuioEncoder()
+        node.addObserver(
+            OscDebug(parent=node).addPost(DataWriter(IODevice(sys.stdout))))
 
     elif _url.scheme in ("in.play.osc", "play.osc"):
         filepath = str(_url.path)
@@ -194,7 +215,8 @@ def NodeLoader(url):
         if os.path.isfile(filepath):
             file_ = File(_url, File.ReadOnly, uncompress=True)
             kwargs = _urlquery2kwargs(_url, "rt")
-            node = LogPlayer(file_).addPost(OscDebug()).addPost(TuioToState(**kwargs))
+            node = LogPlayer(file_).addPost(OscDebug())
+            node.addPost(tuio.TuioDecoder(**kwargs))
             kwargs = _urlquery2kwargs(_url, "loop", "speed")
             if "speed" in kwargs: node.setSpeed(kwargs["speed"])
             # FIXME: start should be triggered at outputs ready
@@ -340,19 +362,6 @@ def JSONWriter(url):
                 traceback.print_exc()
                 print("Cannot load config file", filepath)'''
 
-
-
-
-'''from boing.eventloop.OnDemandProduction import DumpConsumer
-from boing.multitouch.GestureBuffer import GestureBuffer
-from boing.multitouch.ContactViz import ContactViz
-from boing.eventloop.MappingEconomy import parseRequests
-from boing.json.JSONTunnel import JSONWriter
-from boing.tuio.StateToTuio import TuioOutput
-from boing.utils.IODevice import IODevice
-from boing.utils.StatProducer import StatProducer
-from boing.utils.TextIO import TextWriter'''
-
     
 '''if url.kind in (URL.ABSPATH, URL.RELPATH) \
             or url.scheme.startswith("tuio"):        
@@ -435,3 +444,61 @@ from boing.utils.TextIO import TextWriter'''
         output = GestureBuffer(**kwargs)'''
 
 # -------------------------------------------------------------------
+
+
+'''def TuioSource(url):
+    """Return a TuioSource from URL."""
+    if not isinstance(url, URL): url = URL(str(url))
+    source = TuioToState()
+    # Reception time
+    rt = url.query.data.get("rt")
+    source.rt = rt.lower()!="false" if rt is not None else False
+    # Functions
+    func = url.query.data.get("func")
+    if func is not None:
+        functions.addFunctions(source, tuple(s.strip() for s in func.split(",")))
+    # Endpoint
+    if url.kind in (URL.ABSPATH, URL.RELPATH) \
+            or url.scheme=="tuio.file" \
+            or (url.scheme=="tuio" and not str(url.site)):
+        loop = url.query.data.get("loop")
+        speed = url.query.data.get("speed")
+        file_ = File(url, File.ReadOnly, uncompress=True)
+        player = LogPlayer(file_, parent=source)
+        source.subscribeTo(player)
+        if speed:
+            try: player.setSpeed(float(speed))
+            except: print("Cannot set speed:", speed)
+        if loop is not None: player.start(loop.lower!="false")
+        else: player.start()
+    elif url.scheme in ("tuio", "tuio.udp"):
+        socket = DataReader(UdpListener(url), parent=source)
+        source.subscribeTo(socket)
+    elif url.scheme=="tuio.tcp":
+        class ClientWaiter(QtCore.QObject):
+            def __init__(self, parent):
+                QtCore.QObject.__init__(self, parent)
+                self.socket = None
+            def newConnection(self): 
+                server = self.sender()
+                conn = server.nextPendingConnection()
+                if not self.socket:
+                    reader = SlipDataReader(conn, parent=source)
+                    self.parent().subscribeTo(reader)
+                    self.socket = conn
+                    self.socket.disconnected.connect(self.disconnected)
+                else:
+                    conn.close()
+            def disconnected(self):
+                source = self.parent()
+                for o in source.observed():
+                    source.unsubscribeFrom(o)
+                self.socket = None
+        waiter = ClientWaiter(parent=source)
+        server = TcpServer(url.site.host, url.site.port, parent=source)
+        server.newConnection.connect(waiter.newConnection)
+    else:
+        print("WARNING: cannot create TUIO source:", url)
+        source = None
+    return source
+'''

@@ -10,21 +10,21 @@
 import collections
 import copy
 
+import boing.utils as utils
 from boing.eventloop.MappingEconomy import Node
-from boing.utils import quickdict
 
 class StateMachine(object):
     """It has a dictionary as state."""
     def __init__(self, initial=None):
-        self._state = quickdict(initial) \
+        self._state = utils.quickdict(initial) \
             if isinstance(initial, collections.Mapping) \
-            else quickdict()
+            else utils.quickdict()
         
     def state(self):
         return self._state
 
     def setState(self, add=None, update=None, remove=None):
-        diff = quickdict()
+        diff = utils.quickdict()
         if add is not None: diff.added = add
         if update is not None: diff.updated = update
         if remove is not None: diff.removed = remove
@@ -33,74 +33,21 @@ class StateMachine(object):
     def applyDiff(self, diff, feedback=False):
         rvalue = None
         if feedback:
-            rvalue = quickdict()
+            rvalue = utils.quickdict()
             if "added" in diff:
-                added = StateMachine.add(self._state, diff["added"], True)
+                added = utils.deepadd(self._state, diff["added"], True)
                 if added is not None: rvalue.added = added
             if "updated" in diff:
-                updated = StateMachine.update(self._state, diff["updated"], True)
+                updated = utils.deepupdate(self._state, diff["updated"], True)
                 if updated is not None: rvalue.updated = updated
             if "removed" in diff:
-                removed = StateMachine.remove(self._state, diff["removed"], True)
+                removed = utils.deepremove(self._state, diff["removed"], True)
                 if removed is not None: rvalue.removed = removed
         else:
-            if "added" in diff: StateMachine.add(self._state, diff["added"])
-            if "updated" in diff: StateMachine.update(self._state, diff["updated"])
-            if "removed" in diff: StateMachine.remove(self._state, diff["removed"])
+            if "added" in diff: utils.deepadd(self._state, diff["added"])
+            if "updated" in diff: utils.deepupdate(self._state, diff["updated"])
+            if "removed" in diff: utils.deepremove(self._state, diff["removed"])
         return rvalue
-
-
-    @staticmethod
-    def add(obj, other, diff=False):
-        rvalue = dict() if diff else None
-        for key, value in other.items():
-            if key in obj:
-                # Inner case
-                objvalue = obj[key]
-                if isinstance(value, collections.Mapping) \
-                        and isinstance(objvalue, collections.Mapping):
-                    inner = StateMachine.add(objvalue, value, diff)                  
-                    if inner: rvalue[key] = inner
-            else:
-                obj[key] = copy.deepcopy(value)
-                if diff: rvalue[key] = value
-        return rvalue
-
-    @staticmethod
-    def update(obj, other, diff=False):
-        rvalue = dict() if diff else None
-        for key, value in other.items():
-            if key in obj:
-                # Inner case
-                objvalue = obj[key]
-                if isinstance(value, collections.Mapping) \
-                        and isinstance(objvalue, collections.Mapping):
-                    inner = StateMachine.update(objvalue, value, diff)
-                    if inner: rvalue[key] = inner
-                elif objvalue!=value:
-                    obj[key] = copy.deepcopy(value)
-                    if diff: rvalue[key] = value
-            else:
-                obj[key] = copy.deepcopy(value)
-                if diff: rvalue[key] = value
-        return rvalue
-
-    @staticmethod
-    def remove(obj, other, diff=False):
-        rvalue = dict() if diff else None
-        for key, value in other.items():
-            if key in obj:
-                # Inner case
-                objvalue = obj[key]
-                if isinstance(value, collections.Mapping) \
-                        and isinstance(objvalue, collections.Mapping):
-                    inner = StateMachine.remove(objvalue, value, diff)
-                    if inner: rvalue[key] = inner
-                else:
-                    del obj[key]
-                    if diff: rvalue[key] = None
-        return rvalue
-
     
 
 class StateNode(Node, StateMachine):
@@ -116,7 +63,7 @@ class StateNode(Node, StateMachine):
     def applyDiff(self, diff, additional=None):
         realdiff = StateMachine.applyDiff(self, diff, self._tag("diff"))
         if realdiff:
-            product = quickdict({"diff":diff})
+            product = utils.quickdict({"diff":diff})
             if additional is not None: product.update(additional)
             self._postProduct(product)
 

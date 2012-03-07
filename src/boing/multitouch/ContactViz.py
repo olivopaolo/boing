@@ -98,8 +98,7 @@ class ContactViz(QtGui.QWidget, HierarchicalConsumer):
     def __record(self, observable):
         """Return the record associated to observable."""
         for ref, record in self.__sources.items():
-            if ref() is observable: 
-                rvalue = record ; break
+            if ref() is observable: rvalue = record ; break
         else:
             rvalue = quickdict({"state":StateMachine()})
             self.__sources[weakref.ref(observable)] = rvalue
@@ -108,18 +107,19 @@ class ContactViz(QtGui.QWidget, HierarchicalConsumer):
     def _consume(self, products, source):
         record = self.__record(source)
         for product in products:
-            diff = product.diff
-            record.state.applyDiff(diff)
-            # Update history
-            history = record.history
-            for action in ("added", "updated"):
-                changes = diff[action].contacts
-                for key, value in changes.items():
-                    track = history.setdefault(key, [])                        
-                    if track or "rel_pos" in value: track.append(value)
-            for key, value in diff.removed.items():
-                if value is None: history.pop(key, None)
-        self.update()
+            if "diff" in product:
+                diff = product["diff"]
+                record.state.applyDiff(diff)
+                # Update history
+                history = record.history
+                for action in ("added", "updated"):
+                    changes = diff[action].contacts
+                    for key, value in changes.items():
+                        track = history.setdefault(key, [])                        
+                        if track or "rel_pos" in value: track.append(value)
+                for key, value in diff.removed.items():
+                    if value is None: history.pop(key, None)
+                self.update()
 
     def paintEvent(self, event):
         width, height = self.width(), self.height()

@@ -7,6 +7,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import collections
 import copy
 
 class quickdict(dict):
@@ -55,3 +56,55 @@ class quickdict(dict):
 
     def __repr__(self):
         return "quickdict(%s)"%dict.__repr__(self)
+
+# -------------------------------------------------------------------
+
+def deepadd(obj, other, diff=False):
+    rvalue = dict() if diff else None
+    for key, value in other.items():
+        if key in obj:
+            # Inner case
+            objvalue = obj[key]
+            if isinstance(value, collections.Mapping) \
+                    and isinstance(objvalue, collections.Mapping):
+                inner = deepadd(objvalue, value, diff)                  
+                if inner: rvalue[key] = inner
+        else:
+            obj[key] = copy.deepcopy(value)
+            if diff: rvalue[key] = value
+    return rvalue
+
+
+def deepupdate(obj, other, diff=False):
+    rvalue = dict() if diff else None
+    for key, value in other.items():
+        if key in obj:
+            # Inner case
+            objvalue = obj[key]
+            if isinstance(value, collections.Mapping) \
+                    and isinstance(objvalue, collections.Mapping):
+                inner = deepupdate(objvalue, value, diff)
+                if inner: rvalue[key] = inner
+            elif objvalue!=value:
+                obj[key] = copy.deepcopy(value)
+                if diff: rvalue[key] = value
+        else:
+            obj[key] = copy.deepcopy(value)
+            if diff: rvalue[key] = value
+    return rvalue
+
+
+def deepremove(obj, other, diff=False):
+    rvalue = dict() if diff else None
+    for key, value in other.items():
+        if key in obj:
+            # Inner case
+            objvalue = obj[key]
+            if isinstance(value, collections.Mapping) \
+                    and isinstance(objvalue, collections.Mapping):
+                inner = deepremove(objvalue, value, diff)
+                if inner: rvalue[key] = inner
+            else:
+                del obj[key]
+                if diff: rvalue[key] = None
+    return rvalue
