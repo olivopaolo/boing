@@ -118,7 +118,7 @@ class DumpConsumer(MappingConsumer, QtCore.QObject):
 
     def _consume(self, products, producer):
         if self.dumpsrc: print("from:", str(producer))
-        if self.dumpdest: print("to:  ", str(self))
+        if self.dumpdest: print("DumpConsumer('%s')"%self.request())
         for p in products:
             print(str(p))
         print()

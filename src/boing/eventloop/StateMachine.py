@@ -8,128 +8,149 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import collections
+import copy
 
-from boing.eventloop.MappingEconomy import MappingProducer
-from boing.eventloop.OnDemandProduction import OnDemandProducer
-from boing.utils.ExtensibleTree import ExtensibleTree
+from boing.eventloop.MappingEconomy import Node
+from boing.utils import quickdict
 
-class StateMachine(MappingProducer):
-    """The StateMachine has a state defined by an ExtensibleTree.
-    Everytime the state changes, it produces a diff ExtensibleTree if
-    anyone registered for it."""
-    def __init__(self, initial=None, productoffer="diff", parent=None, **kwargs):
-        MappingProducer.__init__(self, productoffer, parent=parent)
-        self._state = ExtensibleTree(initial)
-        self._postdiff = False
+class StateMachine(object):
+    """It has a dictionary as state."""
+    def __init__(self, initial=None):
+        self._state = quickdict(initial) \
+            if isinstance(initial, collections.Mapping) \
+            else quickdict()
         
     def state(self):
         return self._state
 
-    def setState(self, update=None, remove=None, diff=None, 
-                 additional=None):
-        """Modify the internal state applying 'update' (a dict),
-        'remove' (a set), and 'diff' (an ExtensibleTree). The value of
-        diff is consumed. The diff tree is then posted as a product
-        after having being updated with 'additional'."""
-        if diff is None:
-            diff = ExtensibleTree()
-            if update is not None: 
-                diff.updated = ExtensibleTree(update)
-            if remove is not None: 
-                diff.removed = ExtensibleTree(dict((k, None) for k in remove))
-        elif update is not None or remove is not None:
-            raise ValueError("Cannot set both diff and update/remove parameters")
-        # Apply diff
-        diff = self._applyDiff(diff, self._postdiff)
-        if diff:
-            product = ExtensibleTree({"diff":diff})
+    def setState(self, add=None, update=None, remove=None):
+        diff = quickdict()
+        if add is not None: diff.added = add
+        if update is not None: diff.updated = update
+        if remove is not None: diff.removed = remove
+        self.applyDiff(diff)
+
+    def applyDiff(self, diff, feedback=False):
+        rvalue = None
+        if feedback:
+            rvalue = quickdict()
+            if "added" in diff:
+                added = StateMachine.add(self._state, diff["added"], True)
+                if added is not None: rvalue.added = added
+            if "updated" in diff:
+                updated = StateMachine.update(self._state, diff["updated"], True)
+                if updated is not None: rvalue.updated = updated
+            if "removed" in diff:
+                removed = StateMachine.remove(self._state, diff["removed"], True)
+                if removed is not None: rvalue.removed = removed
+        else:
+            if "added" in diff: StateMachine.add(self._state, diff["added"])
+            if "updated" in diff: StateMachine.update(self._state, diff["updated"])
+            if "removed" in diff: StateMachine.remove(self._state, diff["removed"])
+        return rvalue
+
+
+    @staticmethod
+    def add(obj, other, diff=False):
+        rvalue = dict() if diff else None
+        for key, value in other.items():
+            if key in obj:
+                # Inner case
+                objvalue = obj[key]
+                if isinstance(value, collections.Mapping) \
+                        and isinstance(objvalue, collections.Mapping):
+                    inner = StateMachine.add(objvalue, value, diff)                  
+                    if inner: rvalue[key] = inner
+            else:
+                obj[key] = copy.deepcopy(value)
+                if diff: rvalue[key] = value
+        return rvalue
+
+    @staticmethod
+    def update(obj, other, diff=False):
+        rvalue = dict() if diff else None
+        for key, value in other.items():
+            if key in obj:
+                # Inner case
+                objvalue = obj[key]
+                if isinstance(value, collections.Mapping) \
+                        and isinstance(objvalue, collections.Mapping):
+                    inner = StateMachine.update(objvalue, value, diff)
+                    if inner: rvalue[key] = inner
+                elif objvalue!=value:
+                    obj[key] = copy.deepcopy(value)
+                    if diff: rvalue[key] = value
+            else:
+                obj[key] = copy.deepcopy(value)
+                if diff: rvalue[key] = value
+        return rvalue
+
+    @staticmethod
+    def remove(obj, other, diff=False):
+        rvalue = dict() if diff else None
+        for key, value in other.items():
+            if key in obj:
+                # Inner case
+                objvalue = obj[key]
+                if isinstance(value, collections.Mapping) \
+                        and isinstance(objvalue, collections.Mapping):
+                    inner = StateMachine.remove(objvalue, value, diff)
+                    if inner: rvalue[key] = inner
+                else:
+                    del obj[key]
+                    if diff: rvalue[key] = None
+        return rvalue
+
+    
+
+class StateNode(Node, StateMachine):
+    """Everytime the state changes, the diff is posted as a product."""
+
+    def __init__(self, initial=None, request=None, parent=None):
+        #FIXME: set productoffer
+        Node.__init__(self, request=request, parent=parent)
+        StateMachine.__init__(self, initial)
+        self._addTag("diff", {"diff":{"added":{}, "updated":{}, "removed":{}}}, 
+                     update=False)
+        
+    def applyDiff(self, diff, additional=None):
+        realdiff = StateMachine.applyDiff(self, diff, self._tag("diff"))
+        if realdiff:
+            product = quickdict({"diff":diff})
             if additional is not None: product.update(additional)
             self._postProduct(product)
 
-    def _applyDiff(self, diff, getdiff=True):
-        """Apply the argument diff to the current state. Return the
-        real diff if getdiff is True, otherwise None."""
-        rvalue = updatetree = None
-        if "added" in diff:                                                         
-            updatetree = diff.added                        
-        if "updated" in diff:                                                       
-            if updatetree is None: 
-                updatetree = diff.updated                      
-            else: 
-                updatetree.update(diff.updated, reuse=True)                      
-        if updatetree is not None:
-            rvalue = self._state.update(updatetree, reuse=True, getdiff=getdiff)
-        if "removed" in diff:
-            removed = self._state.remove_update(diff.removed, getdiff)
-            if removed:
-                if rvalue is None:
-                    rvalue = removed
-                else:
-                    rvalue.update(removed, reuse=True)
-        return rvalue
-
-    def _postProduct(self, product):
-        if not isinstance(product, collections.Mapping):
-            raise TypeError("product must be collections.Mapping, not %s"%
-                            product.__class__.__name__)
-        fresult = self._applyFunctions(product, self._state)
-        if fresult:
-            if "diff" in fresult: 
-                fresult.diff = self._applyDiff(fresult.diff)
-            product.update(fresult, reuse=True)
-        OnDemandProducer._postProduct(self, product)
-
-    def _updateOverallDemand(self):
-        MappingProducer._updateOverallDemand(self)
-        self._postdiff = MappingProducer.matchDemand("diff", self._overalldemand)
 
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
     import sys
-    from boing.eventloop.EventLoop import EventLoop
-    from boing.eventloop.OnDemandProduction import SelectiveConsumer
-    class DebugConsumer(SelectiveConsumer):
-        def _consume(self, products, producer):
-            print(self.request(), ": ", 
-                  ", ".join(str(p) for p in products))
-    def setState(tid, **kwargs):
-        stateMachine.setState(**kwargs)
-    def incrementTime(tid):
-        global seconds ; seconds += 1
-        stateMachine._postProduct({"seconds": seconds})
-    # Init objects
-    seconds = 0
-    stateMachine = StateMachine()
-    state = stateMachine.state()
-    state.gestures = ExtensibleTree()
-    o1 = DebugConsumer(requests=".*")
-    o1.subscribeTo(stateMachine)
-    o2 = DebugConsumer(requests={("diff",".*","gestures",1),
-                                 ("diff",".*","gestures",2)})
-    o2.subscribeTo(stateMachine)
-    o3 = DebugConsumer(requests=("diff","removed"))
-    o3.subscribeTo(stateMachine)
-    o4 = DebugConsumer(requests=("diff",".*","gestures",".*", ".*pos.*"))
-    o4.subscribeTo(stateMachine)
-    o5 = DebugConsumer(requests={("diff",".*","gestures", 0),"seconds"},
-                       hz=0.1)
-    o5.subscribeTo(stateMachine)
-    EventLoop.repeat_every(1, incrementTime)
-    EventLoop.after(2, setState, update={("gestures",0,"pos"):(0,0)})
-    EventLoop.after(3, setState, update={("gestures",0,"pos"):(1,2)})
-    EventLoop.after(4, setState, 
-                    update={("gestures",0,"pos"):(1,3),
-                            ("gestures",1):ExtensibleTree({"pos":(3,3)})})
-    EventLoop.after(5, setState, 
-                    update={("gestures",0,"pos"):(1,3),
-                            ("gestures",1,"pos"):(3,5)})
-    EventLoop.after(6, setState, update={("gestures",0,"pos"):(1,3)})
-    EventLoop.after(7, setState, 
-                    remove={("gestures",0)})
-    EventLoop.after(9, setState, 
-                    remove={("gestures",1)})
+    from PyQt4 import QtCore
+    from boing.eventloop.MappingEconomy import DumpConsumer
+    app = QtCore.QCoreApplication(sys.argv)
+    QtCore.QTimer.singleShot(10000, app.quit)
+    m = StateNode({"contacts":{}})
+    obs = []
+    obs.append(DumpConsumer("diff"))
+    obs.append(DumpConsumer(request="diff.*.contacts.1"))
+    obs.append(DumpConsumer(request="diff.removed"))
+    for o in obs:        
+        o.subscribeTo(m)
+        o.dumpdest = True
+    QtCore.QTimer.singleShot(
+        1000, lambda: m.setState(add={"contacts": {"1": {"pos":(0,0)}}}))
+    QtCore.QTimer.singleShot(
+        2000, lambda: m.setState(update={"contacts": {"1": {"pos":(1,2)}}}))
+    QtCore.QTimer.singleShot(
+        3000, lambda: m.setState(add={"contacts": {"3": {"pos":(0,0)}}},
+                                 update={"contacts": {"1": {"pos":(12,1)}}}))
+    QtCore.QTimer.singleShot(
+        5000, lambda: m.setState(update={"contacts": {"3": {"pos":(6,5)}}},
+                                 remove={"contacts": {"1": None}}))
+    QtCore.QTimer.singleShot(
+        7000, lambda: m.setState(remove={"contacts": {"3": None}}))
     # Run
-    print("Initial state:", stateMachine.state().flatten())
-    EventLoop.runFor(10)
-    print("Final state:", stateMachine.state().flatten())
+    print("Initial state:", m.state())
+    rvalue = app.exec_()
+    print("Final state:", m.state())
+    sys.exit(rvalue)

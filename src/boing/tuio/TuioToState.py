@@ -12,33 +12,19 @@ from datetime import datetime
 from PyQt4 import QtCore 
 
 from boing import osc
-from boing.eventloop.OnDemandProduction import SelectiveConsumer
-from boing.eventloop.StateMachine import StateMachine
-from boing.eventloop.MappingEconomy import MappingProducer
-from boing.multitouch import functions
-from boing.osc.LogPlayer import LogPlayer
-from boing.slip.SlipDataIO import SlipDataReader
-from boing.tcp.TcpServer import TcpServer
+from boing.eventloop.StateMachine import StateNode
 from boing.tuio import TuioDescriptor
-from boing.udp.UdpSocket import UdpListener
-from boing.utils.ExtensibleTree import ExtensibleTree
-from boing.utils.DataIO import DataReader
-from boing.utils.File import File
-from boing.url import URL
+from boing.utils import quickdict
 
-class TuioToState(StateMachine, SelectiveConsumer):
+class TuioToState(StateNode):
     """Based on the TUIO 1.1 Protocol Specification
     http://www.tuio.org/?specification
     
     It will not work if inside an OSC bundle there is data from more
     than one source or for more than one TUIO profile."""
 
-    def __init__(self, parent=None):
-        StateMachine.__init__(self, 
-                              productoffer={("diff",".*","gestures"),
-                                            "timetag", "osc", "data"},
-                              parent=parent)
-        SelectiveConsumer.__init__(self, requests={"osc", "data"})
+    def __init__(self, rt=False, parent=None):
+        StateNode.__init__(self, request="osc", parent=parent)
         """Alive TUIO items."""
         # self.__alive[source][profile] = set of session_ids
         self.__alive = {}
@@ -50,38 +36,14 @@ class TuioToState(StateMachine, SelectiveConsumer):
         self.__idcount = 0
         """If rt is True, the event is tagged using the timestamp at
         the event creation instead of using the OSC bundle time tag."""
-        self.rt = False
-        self._postosc = False
-        self._postdata = False
-        # Setup initial state
-        self._state.gestures
-
-    def __del__(self):
-        StateMachine.__del__(self)
-        SelectiveConsumer.__del__(self)
-
-    def _checkRef(self):
-        StateMachine._checkRef(self)
-        SelectiveConsumer._checkRef(self)
-
-    def _updateOverallDemand(self):
-        StateMachine._updateOverallDemand(self)
-        self._postosc = MappingProducer.matchDemand("osc", self._overalldemand)
-        self._postdata = MappingProducer.matchDemand("data", self._overalldemand)
+        self.rt = rt
 
     def _consume(self, products, producer):
         for p in products:
-            packet = None
-            if "osc" in p: 
-                packet = p["osc"]
-                data = p["data"] if "data" in p else None
-            elif "data" in p:
-                data = p["data"]
-                packet = osc.decode(data) if data else None
-            if isinstance(packet, osc.Bundle): 
-                self.__handleOsc(packet, data)
+            packet = p.get("osc")
+            if isinstance(packet, osc.Bundle): self.__handleOsc(packet)
 
-    def __handleOsc(self, packet, data):
+    def __handleOsc(self, packet):
         timetag = datetime.now() if self.rt else packet.timetag
         source = fseq = profile = None
         desc = {}
@@ -103,8 +65,8 @@ class TuioToState(StateMachine, SelectiveConsumer):
                                           *msg.arguments[1:])
                     desc[tobj.s] = tobj
         # TODO: old bundles rejection based on fseq
-        # Update the gestures with the bundle information
-        diff = ExtensibleTree()
+        # Update the contacts with the bundle information
+        diff = quickdict()
         for s_id, tobj in desc.items():
             source_ids = self.__idpairs.setdefault(source, {})
             gid = source_ids.get(s_id)
@@ -112,63 +74,63 @@ class TuioToState(StateMachine, SelectiveConsumer):
                 gid = self.__nextId()
                 source_ids[s_id] = gid
             if profile=="2Dcur":
-                node = ExtensibleTree()
+                node = quickdict()
                 if TuioDescriptor.undef_value not in (tobj.x, tobj.y):
                     node.rel_pos = (tobj.x, tobj.y)
                 if TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
                     node.rel_speed = (tobj.X, tobj.Y)
-                diff.updated.gestures[gid] = node
+                diff.updated.contacts[gid] = node
             elif profile in ("25Dcur", "3Dcur"):
-                node = ExtensibleTree()
+                node = quickdict()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
-                diff.updated.gestures[gid] = node
+                diff.updated.contacts[gid] = node
             elif profile=="2Dblb":
-                node = ExtensibleTree()
+                node = quickdict()
                 if TuioDescriptor.undef_value not in (tobj.x, tobj.y):
                     node.rel_pos = (tobj.x, tobj.y)
                 if TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
                     node.rel_speed = (tobj.X, tobj.Y)
                 node.si_angle = (tobj.a, )
                 node.rel_size = (tobj.w, tobj.h)
-                diff.updated.gestures[gid].boundingbox = node
+                diff.updated.contacts[gid].boundingbox = node
             elif profile=="25Dblb":
-                node = ExtensibleTree()
+                node = quickdict()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
                 node.si_angle = (tobj.a, )
                 node.rel_size = (tobj.w, tobj.h)
-                diff.updated.gestures[gid].boundingbox = node
+                diff.updated.contacts[gid].boundingbox = node
             elif profile=="3Dblb":
                 node = ExtensibleEvent()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
                 node.si_angle = (tobj.a, tobj.b, tobj.c)                
                 node.rel_size = (tobj.w, tobj.h, tobj.d)
-                diff.updated.gestures[gid].boundingbox = node
+                diff.updated.contacts[gid].boundingbox = node
             elif profile=="2Dobj":
-                node = ExtensibleTree()
+                node = quickdict()
                 if TuioDescriptor.undef_value not in (tobj.x, tobj.y):
                     node.rel_pos = (tobj.x, tobj.y)
                 if TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
                     node.rel_speed = (tobj.X, tobj.Y)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, )
-                diff.updated.gestures[gid] = node
+                diff.updated.contacts[gid] = node
             elif profile=="25Dobj":
-                node = ExtensibleTree()
+                node = quickdict()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, )
-                diff.updated.gestures[gid] = node
+                diff.updated.contacts[gid] = node
             elif profile=="3Dobj":
-                node = ExtensibleTree()
+                node = quickdict()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
                 node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, tobj.b, tobj.c)
-                diff.updated.gestures[gid] = node
+                diff.updated.contacts[gid] = node
         # Remove items that are not alive
         src_profiles = self.__alive.setdefault(source, {})
         alive_old = src_profiles.get(profile, set())
@@ -184,24 +146,16 @@ class TuioToState(StateMachine, SelectiveConsumer):
             if not keep:
                 gid = self.__idpairs.get(source, {}).pop(s_id, None)
                 if gid is not None:
-                    diff.removed.gestures[gid] = None
+                    diff.removed.contacts[gid] = None
         src_profiles[profile] = alive
-        self.setState(diff=diff, additional={"timetag": timetag})
-        if self._postosc or self._postdata:
-            product = {}
-            if self._postosc: product["osc"] = packet
-            if self._postdata: 
-                product["data"] = data if data is not None else packet.encode()
-            self._postProduct(product)
+        self.applyDiff(diff, {"timetag": timetag})
 
     def __nextId(self):
         value = self.__idcount
         self.__idcount += 1
         return value
 
-# ---------------------------------------------------------------------
-
-def TuioSource(url):
+'''def TuioSource(url):
     """Return a TuioSource from URL."""
     if not isinstance(url, URL): url = URL(str(url))
     source = TuioToState()
@@ -256,3 +210,4 @@ def TuioSource(url):
         print("WARNING: cannot create TUIO source:", url)
         source = None
     return source
+'''

@@ -13,16 +13,18 @@ import sys
 from PyQt4 import QtCore
 
 from boing.eventloop.MappingEconomy import DumpConsumer, IdentityNode
+from boing.multitouch.ContactViz import ContactViz
 from boing.slip.SlipDataIO import SlipEncoder, SlipDecoder
 from boing.osc.logging import LogFile, LogPlayer
 from boing.osc.encoding import OscEncoder, OscDecoder, OscDebug
 from boing.tcp.TcpServer import TcpServer
 from boing.tcp.TcpSocket import TcpConnection
+from boing.tuio.TuioToState import TuioToState
 from boing.udp.UdpSocket import UdpSender, UdpListener
 from boing.utils.IODevice import IODevice, CommunicationDevice
 from boing.utils.DataIO import DataReader, DataWriter, DataIO
 from boing.utils.File import File, FileReader, CommunicationFile
-from boing.utils.testutils import RenameNode
+from boing.utils.debug import RenameNode, StatProducer
 from boing.utils.TextIO import TextEncoder, TextDecoder
 from boing.url import URL
 
@@ -51,6 +53,15 @@ def NodeLoader(url):
 
     elif _url.scheme in ("stdout", "out.stdout"):
         node = DataWriter(IODevice(sys.stdout))
+
+    elif _url.scheme in ("stat", "out.stat"):
+        kwargs = _urlquery2kwargs(url, "request")
+        node = StatProducer(**kwargs)
+        node.addObserver(DataWriter(IODevice(sys.stdout), parent=node))
+
+    elif _url.scheme in ("viz", "out.viz"):
+        node = ContactViz()
+        node.show()
 
     elif _url.scheme in ("in", "in.file"):
         filepath = str(_url.path)
@@ -149,12 +160,42 @@ def NodeLoader(url):
             print("Cannot write to file:", str(_url.path))
             node = None'''
 
+    elif _url.scheme=="in.tuio":
+        _url = URL(str(_url))
+        if str(_url.path)=="":
+            _url.scheme += ".udp"
+            if _url.site.host=="" and _url.site.port==0: _url.site.port = 3333
+        else: 
+            _url.scheme += ".slip.file"
+            _url.query.data["uncompress"] = ""
+        print("No transport protocol specified in URL, assuming: %s"%_url.scheme)
+        node = NodeLoader(_url)
+
+    elif _url.scheme=="in.tuio.udp":
+        kwargs = _urlquery2kwargs(url, "rt")                
+        node = DataReader(UdpListener(_url)).addPost(
+            OscDecoder().addPost(OscDebug()).addPost(TuioToState(**kwargs)))
+
     elif _url.scheme in ("in.play.osc", "play.osc"):
         filepath = str(_url.path)
         if os.path.isfile(filepath):
             file_ = File(_url, File.ReadOnly, uncompress=True)
             kwargs = _urlquery2kwargs(_url, "loop", "speed")
             node = LogPlayer(file_).addPost(OscDebug())
+            if "speed" in kwargs: node.setSpeed(kwargs["speed"])
+            # FIXME: start should be triggered at outputs ready
+            loop = kwargs.get("loop", False)
+            QtCore.QTimer.singleShot(300, lambda: node.start(loop))
+        else:
+            print("Cannot open file:", filepath)
+
+    elif _url.scheme in ("in.play.tuio", "play.tuio"):
+        filepath = str(_url.path)
+        if os.path.isfile(filepath):
+            file_ = File(_url, File.ReadOnly, uncompress=True)
+            kwargs = _urlquery2kwargs(_url, "rt")
+            node = LogPlayer(file_).addPost(OscDebug()).addPost(TuioToState(**kwargs))
+            kwargs = _urlquery2kwargs(_url, "loop", "speed")
             if "speed" in kwargs: node.setSpeed(kwargs["speed"])
             # FIXME: start should be triggered at outputs ready
             loop = kwargs.get("loop", False)
@@ -304,7 +345,7 @@ def JSONWriter(url):
 
 '''from boing.eventloop.OnDemandProduction import DumpConsumer
 from boing.multitouch.GestureBuffer import GestureBuffer
-from boing.multitouch.GestureViz import GestureViz
+from boing.multitouch.ContactViz import ContactViz
 from boing.eventloop.MappingEconomy import parseRequests
 from boing.json.JSONTunnel import JSONWriter
 from boing.tuio.StateToTuio import TuioOutput
@@ -361,7 +402,7 @@ from boing.utils.TextIO import TextWriter'''
                           hz.__class__.__name__)
         if "antialiasing" in url.query.data:
             kwargs["antialiasing"] = url.query.data["antialiasing"].lower()!="false"
-        output = GestureViz(**kwargs)
+        output = ContactViz(**kwargs)
         hint = output.sizeHint()
         width = hint.width()
         height = hint. height()

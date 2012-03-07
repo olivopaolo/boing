@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# boing/multitouch/GestureViz.py -
+# boing/multitouch/ContactViz.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
@@ -14,13 +14,13 @@ import weakref
 
 from PyQt4 import QtCore, QtGui
 
-from boing.eventloop.OnDemandProduction import SelectiveConsumer
+from boing.eventloop.MappingEconomy import HierarchicalConsumer
 from boing.eventloop.StateMachine import StateMachine
-from boing.utils.ExtensibleTree import ExtensibleTree
+from boing.utils import quickdict
 
 #import uiVizConfig
 
-class GestureViz(QtGui.QWidget, SelectiveConsumer):
+class ContactViz(QtGui.QWidget, HierarchicalConsumer):
 
     """Gestures' position is fit to the widget size"""
     WINSIZE = 1
@@ -30,125 +30,102 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
     SISIZE = 3
     '''
     class ConfigPanel(QtGui.QDialog, uiVizConfig.Ui_ConfigPanel):
-        """Configuration panel for the GestureViz properties."""
+        """Configuration panel for the ContactViz properties."""
         def __init__(self, current):
             QtGui.QDialog.__init__(self)
             self.setupUi(self)
-            if current==GestureViz.WINSIZE:
+            if current==ContactViz.WINSIZE:
                 self.winsize.setChecked(True)
-            elif current==GestureViz.RATIOSIZE:
+            elif current==ContactViz.RATIOSIZE:
                 self.ratiosize.setChecked(True)
-            elif current==GestureViz.SISIZE:
+            elif current==ContactViz.SISIZE:
                 self.sisize.setChecked(True)
 
         def drawmode(self):
             """Return the selected drawmode."""
             if self.winsize.isChecked():
-                return GestureViz.WINSIZE
+                return ContactViz.WINSIZE
             elif self.ratiosize.isChecked():
-                return GestureViz.RATIOSIZE
+                return ContactViz.RATIOSIZE
             elif self.sisize.isChecked():
-                return GestureViz.SISIZE
+                return ContactViz.SISIZE
             else:
-                return GestureViz.SISIZE'''
+                return ContactViz.SISIZE'''
             
-    def __init__(self, 
-                 requests={"diff", "timetag"},
-                 antialiasing=False,
-                 fps=60, parent=None):
+    def __init__(self, antialiasing=False, fps=60, parent=None):
         QtGui.QWidget.__init__(self, parent)
-        SelectiveConsumer.__init__(self, requests, fps)
-        """Records of sources' touch events."""
-        # self.__sources[observable-ref] = tree(state: tree(), gestures: dict())
+        HierarchicalConsumer.__init__(self, "diff..contacts", fps)
         self.__sources = {}
-        self.oldest = None
         '''self.__display = DisplayDevice.create()
         if self.__display.url.scheme=="dummy": 
             print("WARNING: using dummy DisplayDevice")
             self.__display.debug()
-        self.drawmode = GestureViz.SISIZE'''
+        self.drawmode = ContactViz.SISIZE'''
         self.debuglevel = 0
-        self.antialiasing = antialiasing
+        self.oldest = None
         self.__fps_count = 0
         self.__fps_previous = 0
         self.__fps_timer = QtCore.QTimer()
         self.__fps_timer.timeout.connect(self._fpsTimeout)
-        # Setup gui
+        # Setup GUI
+        self.antialiasing = antialiasing
         self.setWhatsThis("Event &Viz")
         self.sizehint = QtCore.QSize(320,240)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         '''self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.connect(self, QtCore.SIGNAL("customContextMenuRequested(const QPoint &)"), self.__contextmenu)
         self.connect(QtGui.QShortcut('Alt+C', self), QtCore.SIGNAL("activated()"), self.__configpanel)'''
-        self.connect(QtGui.QShortcut('Ctrl+Q', self), 
-                     QtCore.SIGNAL("activated()"), self.close)
+        ctrlQ = QtGui.QShortcut('Ctrl+Q', self)
+        ctrlQ.activated.connect(QtGui.QApplication.instance().quit)
+        """position circle size"""
+        self.phi = 4 
+
     
-    def _addObservable(self, observable):
-        SelectiveConsumer._addObservable(self, observable)
-        if isinstance(observable, StateMachine):
-            self.__sources[weakref.ref(observable)] = ExtensibleTree(
-                {"state":observable.state().copy(), "gestures":dict()})
-        else:
-            self.__sources[weakref.ref(observable)] = ExtensibleTree(
-                {"state":ExtensibleTree(), "gestures":dict()})
-        '''
-        if not isinstance(observable, SourceList):
-            self.__sources.setdefault(observable, {})
-            # resize the widget if necessary
-            gesturestate = observable.state.get("gestures", {})
-            pos_si_range = gesturestate.get("pos_si_range")
-            if pos_si_range and self.drawmode==GestureViz.SISIZE:
-                s = self.__display.mm2pixels([i*1000 for i in pos_si_range], trunc=True)
-                self.sizehint = QtCore.QSize(max(s[0], self.width()), max(s[1], self.height()))
-                self.window().adjustSize()
-            self.update()'''
-
-    def _removeObservable(self, observable):
-        SelectiveConsumer._removeObservable(self, observable)
-        for ref in self.__sources.keys():
-            if ref() is observable: 
-                del self.__sources[ref] ; break
-        self.update()
-
     def _checkRef(self):
-        SelectiveConsumer._checkRef(self)
+        HierarchicalConsumer._checkRef(self)
         self.__sources = dict((k, v) for k, v in self.__sources.items() \
                                   if k() is not None)
         self.update()
 
-    def _consume(self, products, source):
+    def _removeObservable(self, observable):
+        HierarchicalConsumer._removeObservable(self, observable)
+        for ref in self.__sources.keys():
+            if ref() is observable: 
+                del self.__sources[ref]
+                self.update()
+                break
+
+    def __record(self, observable):
+        """Return the record associated to observable."""
         for ref, record in self.__sources.items():
-            if ref() is not source: continue
-            for item in products:
-                if isinstance(item, ExtensibleTree) and "diff" in item:
-                    diff = item.diff
-                    if "added" in diff:
-                        record.state.update(diff.added)
-                    if "updated" in diff:
-                        record.state.update(diff.updated)
-                    if "removed" in diff:
-                        record.state.remove_update(diff.removed)
-                        for gid in diff.removed.gestures:
-                            record.gestures.pop(gid, None)
-                    if "timetag" in item:
-                        timetag = item.timetag
-                        if isinstance(timetag, datetime.datetime) \
-                                and (self.oldest is None or timetag<self.oldest):
-                            self.oldest = item.timetag
-            for gid, gstate in record.state.gestures.items():
-                if "rel_pos" in gstate:
-                    history = record.gestures.setdefault(gid, [])
-                    history.append(gstate.rel_pos)
-            self.update()
-            break
+            if ref() is observable: 
+                rvalue = record ; break
+        else:
+            rvalue = quickdict({"state":StateMachine()})
+            self.__sources[weakref.ref(observable)] = rvalue
+        return rvalue
+
+    def _consume(self, products, source):
+        record = self.__record(source)
+        for product in products:
+            diff = product.diff
+            record.state.applyDiff(diff)
+            # Update history
+            history = record.history
+            for action in ("added", "updated"):
+                changes = diff[action].contacts
+                for key, value in changes.items():
+                    track = history.setdefault(key, [])                        
+                    if track or "rel_pos" in value: track.append(value)
+            for key, value in diff.removed.items():
+                if value is None: history.pop(key, None)
+        self.update()
 
     def paintEvent(self, event):
-        if self.debuglevel>3:
-            timer = QtCore.QElapsedTimer()
-            timer.start();
-        count = 0
         width, height = self.width(), self.height()
-        o = 4 # position circle size
+        count = 0
+        if self.debuglevel>3: timer = QtCore.QElapsedTimer() ; timer.start();
+        # Setup painter
         painter = QtGui.QPainter(self)
         if self.antialiasing: painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setFont(QtGui.QFont( "courier", 9))
@@ -159,18 +136,19 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
             y = i*height/100
             painter.drawLine(0, y, width, y)
             painter.drawLine(x, 0, x, height)
+        # Draw contacts
         for source, record in self.__sources.items():
-            fill, outline = (record.state.get("color",
-                                              (QtCore.Qt.gray, QtCore.Qt.black)))
+            fill, outline = record.get("color",
+                                       (QtCore.Qt.gray, QtCore.Qt.black))
             deviceratio = None
-            """gesturestate = source.state.get("gestures", {})
-            pos_si_range = gesturestate.get("pos_si_range")
+            """contactstate = source.contacts.get("contacts", {})
+            pos_si_range = contactstate.get("pos_si_range")
             if pos_si_range is not None:
                 deviceratio = float(pos_si_range[0])/pos_si_range[1] 
             else: deviceratio = None
-            if pos_si_range and self.drawmode!=GestureViz.WINSIZE:
+            if pos_si_range and self.drawmode!=ContactViz.WINSIZE:
                 # Draw device area
-                if self.drawmode==GestureViz.SISIZE:
+                if self.drawmode==ContactViz.SISIZE:
                     pixel_pos_range = self.__display.mm2pixels([i*1000 for i in pos_si_range])
                 else:
                     width, height = self.width(), self.height()
@@ -188,13 +166,15 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
             painter.setPen(outline)
             painter.setBrush(fill)
             # Draw tracks
-            for gid, history in record.gestures.items():
-                stateN = record.state.gestures[gid]
+            for gid, stateN in record.state.state().contacts.items():
+                #gid, history in record.history.items():
+                #stateN = record.contacts.history[gid]
                 posN = self.__tovizpos(stateN.rel_pos, deviceratio)
                 x, y = posN
+                history = record.history.setdefault(gid, [])
                 if len(history)>1:
                     # Draw first point
-                    pos0 = self.__tovizpos(history[0], deviceratio)
+                    pos0 = self.__tovizpos(history[0].rel_pos, deviceratio)
                     painter.save()
                     painter.setBrush(outline)
                     painter.drawEllipse(pos0[0]-3, pos0[1]-3, 6, 6)
@@ -202,10 +182,13 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
                     # Draw path
                     path = QtGui.QPainterPath()
                     path.moveTo(*pos0);
+                    posI = pos0
                     for memento in history[1:]:
-                        posI = self.__tovizpos(memento, deviceratio)
-                        path.lineTo(*posI)
-                        count += 1
+                        if "rel_pos" in memento: 
+                            posI = memento.rel_pos
+                            posI = self.__tovizpos(posI, deviceratio)
+                            path.lineTo(*posI)
+                            count += 1
                     painter.strokePath(path, painter.pen())
                 # Draw boundingbox if defined                
                 if "boundingbox" in stateN \
@@ -231,7 +214,7 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
                 if "objclass" in stateN:
                     painter.drawText(x+1.5*o, y-2*o, "obj: %d"%stateN.objclass)
                 # Draw orientation if defined
-                if "si_angle" in record.state.gestures[gid]:
+                if "si_angle" in stateN:
                     painter.save()
                     pencolor = QtGui.QColor(fill)
                     pencolor.setAlphaF(0.4)
@@ -256,38 +239,46 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
                     painter.restore()
                 # Draw current position
                 count += 1
-                painter.drawEllipse(x-o, y-o, o+o, o+o)
+                painter.drawEllipse(x-self.phi, y-self.phi, 
+                                    2*self.phi, 2*self.phi)
                 # Print additional information
                 if self.debuglevel>0:
                     painter.setPen(QtCore.Qt.black)
-                    painter.drawText(x+1.5*o, y+o, "%s (%s)"%(gid, len(history)))
+                    painter.drawText(x+1.5*self.phi, y+self.phi, 
+                                     "%s (%s)"%(gid, len(history)))
                     if self.debuglevel>1:
                         i = 1 ;
+                        xx = x+1.5*self.phi
+                        yy = y+self.phi+i*10
                         painter.drawText(
-                            x+1.5*o, y+o+i*10, 
+                            xx, yy,
                             "%.3f,%.3f (rel_pos)"%(
                                 stateN.rel_pos[0], stateN.rel_pos[1]))
                         if "rel_speed" in stateN:
                             i += 1 ;
+                            xx = x+1.5*self.phi
+                            yy = y+self.phi+i*10
                             painter.drawText(
-                                x+1.5*o, y+o+i*10, 
+                                xx, yy,
                                 "%+.3f,%+.3f (rel_speed)"%(
                                     stateN.rel_speed[0], stateN.rel_speed[1]))
                         if "si_angle" in stateN:
                             i += 1 ;
+                            xx = x+1.5*self.phi
+                            yy = y+self.phi+i*10
                             painter.drawText(
-                                x+1.5*o, y+o+i*10, 
+                                xx, yy,
                                 "%+.3f (si_angle)"%(stateN.si_angle[0]))
                         if self.debuglevel>2:
                             i += 1
-                            painter.drawText(
-                                x+1.5*o, y+o+i*10, 
-                                "%s (source)"%source())
+                            xx = x+1.5*self.phi
+                            yy = y+self.phi+i*10
+                            painter.drawText(xx, yy, "%s (source)"%source())
         if self.debuglevel>3:
             painter.setPen(QtCore.Qt.black)
             _sum = 0
             for record in self.__sources.values(): 
-                _sum = _sum + len(record.gestures)
+                _sum = _sum + len(record.history)
             painter.drawText(5,10,
                              "%d sources; %d tracks; %d points;  %d ms"\
                                  %(len(self.__sources), 
@@ -319,9 +310,9 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
         """Return the coordinates in pixel for the specified event
         of None if it can't be determined."""
         rvalue = None
-        """if self.drawmode==GestureViz.SISIZE:
+        """if self.drawmode==ContactViz.SISIZE:
             rvalue = event.get("pixel_pos")
-        elif self.drawmode==GestureViz.RATIOSIZE and deviceratio is not None:
+        elif self.drawmode==ContactViz.RATIOSIZE and deviceratio is not None:
             width, height = self.width(), self.height()
             vizratio = float(width) / height
             if vizratio>deviceratio: width = float(height) * deviceratio
@@ -356,7 +347,7 @@ class GestureViz(QtGui.QWidget, SelectiveConsumer):
 
     def __configpanel(self):
         """Show the configuration panel."""
-        config = GestureViz.ConfigPanel(self.drawmode)
+        config = ContactViz.ConfigPanel(self.drawmode)
         if config.exec_():
             self.drawmode = config.drawmode()
             self.update()'''
