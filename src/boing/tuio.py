@@ -87,7 +87,8 @@ class TuioDecoder(Node):
             if "osc" in p and self._tag("diff"): self.__handleOsc(p["osc"])
 
     def __handleOsc(self, packet):
-        timetag = datetime.datetime.now() if self.rt else packet.timetag
+        timetag = datetime.datetime.now() \
+            if self.rt or packet.timetag is None else packet.timetag
         source = fseq = profile = None
         desc = {}
         alive = set()
@@ -121,33 +122,33 @@ class TuioDecoder(Node):
                 if TuioDescriptor.undef_value not in (tobj.x, tobj.y):
                     node.rel_pos = (tobj.x, tobj.y)
                 if TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
-                    node.rel_speed = (tobj.X, tobj.Y)
+                    node.rel_speed = (tobj.X, tobj.Y, 0, 0)
                 diff.updated.contacts[gid] = node
             elif profile in ("25Dcur", "3Dcur"):
                 node = utils.quickdict()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
+                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
                 diff.updated.contacts[gid] = node
             elif profile=="2Dblb":
                 node = utils.quickdict()
                 if TuioDescriptor.undef_value not in (tobj.x, tobj.y):
                     node.rel_pos = (tobj.x, tobj.y)
                 if TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
-                    node.rel_speed = (tobj.X, tobj.Y)
+                    node.rel_speed = (tobj.X, tobj.Y, 0, 0)
                 node.si_angle = (tobj.a, )
                 node.rel_size = (tobj.w, tobj.h)
                 diff.updated.contacts[gid].boundingbox = node
             elif profile=="25Dblb":
                 node = utils.quickdict()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
+                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
                 node.si_angle = (tobj.a, )
                 node.rel_size = (tobj.w, tobj.h)
                 diff.updated.contacts[gid].boundingbox = node
             elif profile=="3Dblb":
                 node = ExtensibleEvent()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
+                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
                 node.si_angle = (tobj.a, tobj.b, tobj.c)                
                 node.rel_size = (tobj.w, tobj.h, tobj.d)
                 diff.updated.contacts[gid].boundingbox = node
@@ -156,21 +157,21 @@ class TuioDecoder(Node):
                 if TuioDescriptor.undef_value not in (tobj.x, tobj.y):
                     node.rel_pos = (tobj.x, tobj.y)
                 if TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
-                    node.rel_speed = (tobj.X, tobj.Y)
+                    node.rel_speed = (tobj.X, tobj.Y, 0, 0)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, )
                 diff.updated.contacts[gid] = node
             elif profile=="25Dobj":
                 node = utils.quickdict()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
+                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, )
                 diff.updated.contacts[gid] = node
             elif profile=="3Dobj":
                 node = utils.quickdict()
                 node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z)
+                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
                 node.objclass = tobj.i
                 node.si_angle = (tobj.a, tobj.b, tobj.c)
                 diff.updated.contacts[gid] = node
@@ -191,20 +192,21 @@ class TuioDecoder(Node):
                 if gid is not None:
                     diff.removed.contacts[gid] = None
         src_profiles[profile] = alive
-        self._postProduct({"diff":diff, "timetag": timetag})
+        product = {"diff":diff, "timetag": timetag, "source":source}
+        if diff: self._postProduct(product)
 
     def __nextId(self):
         value = self.__idcount
         self.__idcount += 1
-        return value
+        return str(value)
 
 # -------------------------------------------------------------------
 
 class TuioEncoder(Node):
     """Convert contact events into OSC/TUIO packets."""
-    def __init__(self, request="diff.*.contacts", hz=None, parent=None):
+    def __init__(self, request="diff.*.contacts|source", hz=None, parent=None):
         Node.__init__(self, request=request, parent=parent)
-        # self._tuiostate[observable-ref][profile] = [fseq, {s_id: TuioDescriptor}]
+        # self._tuiostate[observable-ref][source][profile] = [fseq, {s_id: TuioDescriptor}]
         self._tuiostate = {}
     
     def _checkRef(self):
@@ -218,17 +220,18 @@ class TuioEncoder(Node):
             if ref() is observable:
                 del self._tuiostate[ref] ; break
 
-    def __sourcetuiostate(self, observable):
+    def __sourcetuiostate(self, observable, src):
         """Return the record associated to observable."""
-        for ref, record in self._tuiostate.items():
-            if ref() is observable: rvalue = record ; break
+        for ref, sources in self._tuiostate.items():
+            if ref() is observable: 
+                rvalue = sources.setdefault(src, utils.quickdict())
+                break
         else:
             rvalue = utils.quickdict()
-            self._tuiostate[weakref.ref(observable)] = rvalue
+            self._tuiostate[weakref.ref(observable)] = {src:rvalue}
         return rvalue
 
     def _consume(self, products, producer):
-        sourcetuiostate = self.__sourcetuiostate(producer)
         for product in products:
             if "diff" in product:
                 # Set of s_id that have been updated.  
@@ -237,6 +240,8 @@ class TuioEncoder(Node):
                 # Set of profiles for which a s_id have been removed
                 removed = set() 
                 diff = product["diff"]
+                src = product.get("source", str(producer))
+                sourcetuiostate = self.__sourcetuiostate(producer, src)
                 toupdate = None
                 if "added" in diff: toupdate = diff.added.contacts
                 if "updated" in diff:
@@ -293,7 +298,7 @@ class TuioEncoder(Node):
                                 prev = TuioDescriptor(
                                     None, profile, None, None, None,
                                     *([TuioDescriptor.undef_value]*len_))
-                                prev.s = gid
+                                prev.s = int(gid)
                                 profilestate[1][gid] = prev
                                 update = True
                             if profile=="2Dcur":
@@ -409,8 +414,8 @@ class TuioEncoder(Node):
                     profilestate = sourcetuiostate[profile]
                     sourcemsg = osc.Message("/tuio/%s"%profile, 
                                             "ss", "source", 
-                                            self.__class__.__name__)
-                    alive = list(profilestate[1].keys())
+                                            src)
+                    alive = list(int(gid) for gid in profilestate[1].keys())
                     alivemsg = osc.Message("/tuio/%s"%profile, 
                                            "s"+"i"*len(alive), "alive", 
                                            *alive)

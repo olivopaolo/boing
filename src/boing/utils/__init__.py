@@ -9,6 +9,7 @@
 
 import collections
 import copy
+import io
 
 class quickdict(dict):
 
@@ -50,9 +51,6 @@ class quickdict(dict):
             for k,v in self.items():
                 dup[k] = copy.deepcopy(v, memo)
             return dup
-
-    def __str__(self):
-        return dict.__str__(self)
 
     def __repr__(self):
         return "quickdict(%s)"%dict.__repr__(self)
@@ -108,3 +106,40 @@ def deepremove(obj, other, diff=False):
                 del obj[key]
                 if diff: rvalue[key] = None
     return rvalue
+
+# -------------------------------------------------------------------
+
+def dump(obj, fp, indent=4, level=0):
+    if isinstance(obj, list):
+        fp.write(" "*level)
+        fp.write("[")
+        for i, value in enumerate(obj):
+            if isinstance(value, collections.Mapping) \
+                    or isinstance(value, list):
+                dump(value, fp, indent, level+indent)
+            else:
+                if i>0: fp.write(" "*(level+1))
+                fp.write(repr(value))
+            if i<len(obj)-1:
+                fp.write(",\n")
+            else:
+                fp.write("]")
+    elif isinstance(obj, collections.Mapping):
+        fp.write(" "*level)
+        fp.write("{")
+        for i, (key, value) in enumerate(obj.items()):
+            if i>0: fp.write(" "*(level+1))
+            if isinstance(value, collections.Mapping) \
+                    or isinstance(value, list):
+                fp.write("%s:\n"%repr(key))
+                dump(value, fp, indent, level+indent)
+            else:
+                fp.write("%s: %s"%(repr(key), repr(value)))
+            if i<len(obj)-1:
+                fp.write(",\n")
+            else:
+                fp.write("}")
+    else:
+        fp.write(repr(obj))
+    if level==0: fp.write("\n")
+

@@ -9,6 +9,7 @@
 
 import datetime
 import collections
+import sys
 import weakref
 
 from PyQt4 import QtCore
@@ -16,6 +17,7 @@ from PyQt4 import QtCore
 from boing.eventloop.OnDemandProduction import OnDemandProducer, SelectiveConsumer
 from boing.eventloop.ProducerConsumer import Producer
 import boing.utils.QPath as QPath
+import boing.utils as utils
 
 class MappingProducer(OnDemandProducer):
 
@@ -120,7 +122,7 @@ class DumpConsumer(MappingConsumer, QtCore.QObject):
         if self.dumpsrc: print("from:", str(producer))
         if self.dumpdest: print("DumpConsumer('%s')"%self.request())
         for p in products:
-            print(str(p))
+            utils.dump(p, sys.stdout)
         print()
 
 # -------------------------------------------------------------------
@@ -283,11 +285,3 @@ class Node(HierarchicalProducer, HierarchicalConsumer):
     def _checkRef(self):
         HierarchicalProducer._checkRef(self)
         HierarchicalConsumer._checkRef(self)
-
-
-class IdentityNode(Node):
-    """It forwards everything it receives."""
-    def _consume(self, products, producer):
-        for p in products:
-            self._postProduct(p)
-

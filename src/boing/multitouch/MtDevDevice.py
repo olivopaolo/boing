@@ -15,8 +15,8 @@ import ctypes
 
 from PyQt4 import QtCore
 
-from boing.eventloop.StateMachine import StateMachine
-from boing.utils.ExtensibleTree import ExtensibleTree
+import boing.utils as utils
+from boing.eventloop.StateMachine import StateNode
 from boing.utils.IODevice import CommunicationDevice
 
 '''
@@ -222,7 +222,7 @@ mtdev_close.argtypes = [ctypes.POINTER(mtdev)]
 
 # -------------------------------------------------------------------
 
-class MtDevDevice(StateMachine):
+class MtDevDevice(StateNode):
 
     class Slot(object):
         """A slot describes the caracteristics of a single touch interaction."""
@@ -240,10 +240,10 @@ class MtDevDevice(StateMachine):
             return "(min=%i, max=%i, res=%i)"%(self.min, self.max, self.res)
     
     def __init__(self, filename, parent=None):
-        StateMachine.__init__(self, productoffer={("diff",".*","gestures"),
-                                                  "timetag"},
-                              parent=parent)
-        # Open device node
+        #FIXME: set productoffer
+        StateNode.__init__(self, parent=parent)
+        self.__filename = filename
+        # Open device node        
         self.__file = CommunicationDevice(os.fdopen(
                 os.open(filename, os.O_NONBLOCK | os.O_RDONLY),
                 "rb", 0))
@@ -288,7 +288,7 @@ class MtDevDevice(StateMachine):
         if ABS_MT_POSITION_X in self._eventinfo \
           and ABS_MT_POSITION_Y in self._eventinfo:
             # set position ranges & resolution
-            self._state.gestures.pos_range = (
+            self._state.contacts.pos_range = (
                 (self._eventinfo[ABS_MT_POSITION_X].min, 
                  self._eventinfo[ABS_MT_POSITION_X].max), 
                 (self._eventinfo[ABS_MT_POSITION_Y].min, 
@@ -298,7 +298,7 @@ class MtDevDevice(StateMachine):
             # (units/mm) while boing resolution is units/m
             res = (self._eventinfo[ABS_MT_POSITION_X].res*0.001, 
                    self._eventinfo[ABS_MT_POSITION_Y].res*0.001)
-            if res[0] and res[1]: self._state.gestures["pos_res"] = res
+            if res[0] and res[1]: self._state.contacts["pos_res"] = res
         '''if ABS_MT_TOUCH_MAJOR in self._eventinfo  \
           and ABS_MT_TOUCH_MINOR in self._eventinfo:
             # set position ranges & resolution
@@ -313,20 +313,20 @@ class MtDevDevice(StateMachine):
             #res = (float(majtouch_absinfo.res)* 0.001, 
             #       float(mintouch_absinfo.res)* 0.001)
             #if res[0]!=0 and res[1]!=0: bb.size_res = res
-            #self.state.gestures["boundingbox"] = bb'''
+            #self.state.contacts["boundingbox"] = bb'''
         self.__halfpi = 1.5707963267948966
         # Init timer
-        self._kernel_tid = QtCore.QTimer()
-        self._kernel_tid.timeout.connect(self._fetchEvent, QtCore.Qt.QueuedConnection)
-        self._kernel_tid.setSingleShot(True)
-        self._kernel_tid.start(0)
+        self.__timer = QtCore.QTimer()
+        self.__timer.timeout.connect(self._fetchEvent, QtCore.Qt.QueuedConnection)
+        self.__timer.setSingleShot(True)
+        self.__timer.start(0)
 
     def __del__(self):
         if self.__file.isOpen():
             if self.__device is not None: 
                 mtdev_close(ctypes.byref(self.__device))
             self.__file.close()
-        StateMachine.__del__(self)
+        StateNode.__del__(self)
 
     def _fetchEvent(self):
         ev = input_event()
@@ -334,7 +334,7 @@ class MtDevDevice(StateMachine):
                      self.__file.fd().fileno(), 
                      ctypes.byref(ev), 1):
             self._processEvent(ev)
-        self._kernel_tid.start(0)
+        self.__timer.start(0)
 
     def _processEvent(self, ev):
         """Process single mtdev event."""
@@ -361,26 +361,27 @@ class MtDevDevice(StateMachine):
     def _sendOut(self):
         """Composes received events and notifies observers."""
         self._update = False
-        diff = ExtensibleTree()
+        diff = utils.quickdict()
         for sl in self.__slots:
             if sl is not None and sl.modified:
                 track_id = sl.data[ABS_MT_TRACKING_ID]
                 if sl.id==track_id: # update
-                    if track_id<0: continue
+                    if track_id==-1: continue
                 elif sl.id==-1: # touch press
                     sl.id = track_id
                 elif track_id==-1: # touch release
-                    diff.removed.gestures[sl.id] = None
+                    diff.removed.contacts[str(sl.id)] = None
                     sl.id = -1
                     continue
                 else: raise Exception("Slot changed ABS_MT_TRACKING_ID")
+                track_id = str(track_id)
                 if ABS_MT_POSITION_X in sl.modified  \
                   or ABS_MT_POSITION_Y in sl.modified:
                     # Set position                    
-                    diff.updated.gestures[track_id].pos = (
+                    diff.updated.contacts[track_id].pos = (
                         sl.data[ABS_MT_POSITION_X], 
                         sl.data[ABS_MT_POSITION_Y])
-                    diff.updated.gestures[track_id].rel_pos = (
+                    diff.updated.contacts[track_id].rel_pos = (
                         sl.data[ABS_MT_POSITION_X] \
                             / self._eventinfo[ABS_MT_POSITION_X].max,
                         sl.data[ABS_MT_POSITION_Y] \
@@ -392,12 +393,14 @@ class MtDevDevice(StateMachine):
                     minor = sl.data[ABS_MT_TOUCH_MINOR] \
                             / self._eventinfo[ABS_MT_TOUCH_MAJOR].max 
                     angle = sl.data.get(ABS_MT_ORIENTATION, 0.0)
-                    bb = ExtensibleTree()
+                    bb = utils.quickdict()
                     bb.rel_size = (major, minor)
                     bb.si_angle = (self.__halfpi if angle==0 else 0, )
-                    diff.updated.gestures[track_id].boundingbox = bb
+                    diff.updated.contacts[track_id].boundingbox = bb
                 sl.modified.clear()
-        self.setState(diff=diff, additional={"timetag": datetime.datetime.now()})
+        additional = {"timetag": datetime.datetime.now(),
+                      "source": "mtdev://%s"%self.__filename}
+        self.applyDiff(diff, additional)
 
     def _checkHasEvent(self, code):
          if mtdev_has_mt_event(ctypes.byref(self.__device), code):

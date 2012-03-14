@@ -8,13 +8,15 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import os
+import traceback
 import sys
 
-from PyQt4 import QtCore
+from PyQt4 import QtCore, QtGui
 
 import boing.tuio as tuio
-from boing.eventloop.MappingEconomy import DumpConsumer, IdentityNode
+from boing.eventloop.MappingEconomy import DumpConsumer
 from boing.multitouch.ContactViz import ContactViz
+from boing.multitouch import functions, MtDevDevice
 from boing.slip.SlipDataIO import SlipEncoder, SlipDecoder
 from boing.osc.logging import LogFile, LogPlayer
 from boing.osc.encoding import OscEncoder, OscDecoder, OscDebug
@@ -61,7 +63,6 @@ def NodeLoader(url):
 
     elif _url.scheme in ("viz", "out.viz"):
         node = ContactViz()
-        node.show()
 
     elif _url.scheme in ("in", "in.file"):
         filepath = str(_url.path)
@@ -98,7 +99,7 @@ def NodeLoader(url):
         node.addObserver(DataWriter(UdpSender(_url), parent=node))
 
     elif _url.scheme=="in.tcp":
-        node = IdentityNode().addPost(TextDecoder())
+        node = functions.Filter().addPost(TextDecoder())
         server = NodeServer(_url.site.host, _url.site.port, parent=node)
     elif _url.scheme=="out.tcp":
         node = DataWriter(TcpConnection(_url))
@@ -173,8 +174,7 @@ def NodeLoader(url):
 
     elif _url.scheme=="out.tuio":
         _url = URL(str(_url))
-        if _url.site.host=="" and _url.site.port==0:
-            _url.scheme += ".stdout"
+        if _url.site.host=="" and _url.site.port==0: _url.scheme += ".stdout"
         else:
             _url.scheme += ".udp"
             if _url.site.host=="": _url.site.host = "::1"
@@ -183,9 +183,16 @@ def NodeLoader(url):
         node = NodeLoader(_url)
 
     elif _url.scheme=="in.tuio.udp":
-        kwargs = _urlquery2kwargs(url, "rt")                
+        kwargs = _urlquery2kwargs(url, "rt")
+        decoder = tuio.TuioDecoder(**kwargs)      
         node = DataReader(UdpListener(_url)).addPost(
-            OscDecoder().addPost(OscDebug()).addPost(tuio.TuioDecoder(**kwargs)))
+            OscDecoder().addPost(OscDebug()).addPost(decoder))
+        
+
+    elif _url.scheme=="out.tuio.udp":
+        node = tuio.TuioEncoder()
+        node.addObserver(
+            OscEncoder(parent=node).addPost(DataWriter(UdpSender(_url))))
 
     elif _url.scheme=="out.tuio.udp":
         node = tuio.TuioEncoder()
@@ -232,6 +239,67 @@ def NodeLoader(url):
         except IOError:
             print("Cannot write to file:", str(_url.path))
             node = None
+
+    elif _url.scheme in ("out.log.tuio", "log.tuio"):
+        try:
+            node = tuio.TuioEncoder()
+            node.addObserver(
+                OscEncoder(parent=node).addPost(
+                    LogFile(File(_url, File.WriteOnly))))
+        except IOError:
+            print("Cannot write to file:", str(_url.path))
+            node = None
+
+    elif _url.scheme in ("in.mtdev", "mtdev"):
+        try:
+            node = MtDevDevice.MtDevDevice(str(url.path))
+        except Exception:
+            traceback.print_exc()
+
+        '''elif _url.scheme in ("calib", "out.calib"):
+        matrix = None
+        kwargs = _urlquery2kwargs(url, "matrix", "screen")
+        if "matrix" in kwargs:
+            matrix = QtGui.QMatrix4x4(kwargs["matrix"])
+        elif "screen" in kwargs:
+            value = kwargs["screen"]
+            if value=="normal": matrix = functions.Calibration.Identity
+            if value=="left": matrix = functions.Calibration.Left
+            if value=="inverted": matrix = functions.Calibration.Inverted
+            if value=="right": matrix = functions.Calibration.Right
+        else: matrix = functions.Calibration.Identity
+        kwargs = _urlquery2kwargs(url, "args", "request")
+        if "args" not in kwargs: kwargs["args"] = "$..rel_pos,rel_speed"            
+        if "request" not in kwargs: 
+            kwargs["request"] = "diff.*.contacts|timetag|source"
+        node = functions.Calibration(matrix, **kwargs)
+        kwargs = _urlquery2kwargs(url)
+        for key, value in kwargs.items():
+            first, partition, end = key.partition("out")
+            if first=="" and partition=="out" and (end=="" or end.isdecimal()):
+                post = NodeLoader(value)
+                if post is not None: node.addPost(post)
+
+    elif _url.scheme in ("lag", "out.lag"):
+        kwargs = _urlquery2kwargs(url, "msec", "request")
+        if "msec" not in kwargs: kwargs["msec"] = 200
+        node = functions.Lag(**kwargs)
+        kwargs = _urlquery2kwargs(url)
+        for key, value in kwargs.items():
+            first, partition, end = key.partition("out")
+            if first=="" and partition=="out" and (end=="" or end.isdecimal()):
+                post = NodeLoader(value)
+                if post is not None: node.addPost(post)
+
+    elif _url.scheme in ("sieve", "out.sieve"):
+        kwargs = _urlquery2kwargs(url, "request")
+        node = functions.Filter(**kwargs)
+        kwargs = _urlquery2kwargs(url)
+        for key, value in kwargs.items():
+            first, partition, end = key.partition("out")
+            if first=="" and partition=="out" and (end=="" or end.isdecimal()):
+                post = NodeLoader(value)
+                if post is not None: node.addPost(post)'''
 
     else:
         print("Invalid URL:", url)

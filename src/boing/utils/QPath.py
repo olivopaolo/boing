@@ -23,6 +23,9 @@ def filter(obj, path):
     """Returns the a subset of 'obj' that is matched by 'path'."""
     return QPath(path).filter(obj)
 
+def filterout(obj, path):
+    return QPath(path).filterout(obj)
+
 def test(obj, path):
     """Returns True if at least one item of 'obj' is matched by
     'path'; False otherwise."""
@@ -69,8 +72,18 @@ class QPath(object):
     def paths(self, obj):        
         """Returns the list of paths indexing the matched items of 'obj'."""
         self._target = obj
-        self._resultType = "PATH"
+        self._resultType = "COMPACTPATH"
         self._result = []
+        for path in self._norm:
+            self._trace(path, obj, "$")
+        rvalue = self._result
+        self._tearDown()
+        return rvalue
+
+    def items(self, obj):
+        self._target = obj
+        self._resultType = "ITEMS"
+        self._result = ([], [])
         for path in self._norm:
             self._trace(path, obj, "$")
         rvalue = self._result
@@ -89,6 +102,23 @@ class QPath(object):
             QPath._validate(rvalue)
             if isinstance(rvalue, QPath.ListPlaceholder):
                 rvalue = list(rvalue.values())
+        self._tearDown()
+        return rvalue
+
+    def filterout(self, obj):
+        self._target = obj
+        self._resultType = "COMPACTPATH"
+        self._result = []
+        for path in self._norm:
+            self._trace(path, obj, "$")
+        for path in self._result:
+            split = path.split(";")
+            if not split: self._target = None ; break
+            node = self._target
+            for key in split[1:-1]:
+                node = node[key]
+            del node[split[-1]]          
+        rvalue = self._target
         self._tearDown()
         return rvalue
 
@@ -116,6 +146,11 @@ class QPath(object):
                 self._result.append(value)
             elif self._resultType=="PATH":
                 self._result.append(QPath._asPath(path))
+            elif self._resultType=="COMPACTPATH":
+                self._result.append(path)
+            elif self._resultType=="ITEMS":
+                self._result[0].append(path)
+                self._result[1].append(value)
             elif self._resultType=="FILTER":
                 if path=="$":  self._result = value
                 else:                    

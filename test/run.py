@@ -18,33 +18,48 @@ from PyQt4 import QtGui
 from boing.url import URL
 import boing.utils.NodeLoader as loader
 
+def print_usage():
+    name = "boing"
+    print("usage: %s [-F] [-i <input>]... [-f <function>]... [-o <output>]..."%name)
+    print("       %s [-h, --help]"%(" "*len(name)))
+
 # configuration parameters
 inurl = []
+funcurl = []
 outurl = []
+force = False
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "i:o:h", ['help'])
+    opts, args = getopt.getopt(sys.argv[1:], "i:o:f:Fh", ['help'])
 except getopt.GetoptError as err:
     print(str(err)) # will print something like "option -a not recognized"
-    name = "boing"
-    print("usage: %s [-i <input>]... [-o <output>]..."%name)
-    print("       %s [-h, --help]"%(" "*len(name)))
+    print_usage()
     sys.exit(2)
 for o, a in opts:
     if o in ("-h", "--help"):
-        name = "boing"
-        print("usage: %s [-i <input>]... [-o <output>]..."%name)
-        print("       %s [-h, --help]"%(" "*len(name)))
+        print_usage()
         print()
         print("""Redirects many input sources to many outputs.
 
 Options:
  -i <input>           define an input
  -o <output>          define an output
+ -f <function>        define a function
+
+ -F                   force execution disabling safety checks
  -h, --help           display this help and exit
 """)
         sys.exit(0)
     elif o=="-i": inurl.append(URL(a))
     elif o=="-o": outurl.append(URL(a))
+    elif o=="-f": funcurl.append(URL(a))
+    elif o=="F": force = True
+
+if args and not force:    
+    print("WARNING! Found command line arguments:", " ".join(args))
+    print_usage()
+    print("Maybe you forgot to set them as options.")
+    print("(option -F to disable this warning)")
+    sys.exit(-1)
 
 # Init application
 QtGui.QApplication.setStyle(QtGui.QStyleFactory.create("plastique"))
@@ -71,12 +86,24 @@ for url in outurl:
     url.scheme = ".".join(("out", url.scheme))
     o = loader.NodeLoader(url)
     if o is not None: outputs.append(o)
+functions = []
+for url in funcurl:
+    f = loader.NodeLoader(url)
+    if f is not None: functions.append(f)
 
 rvalue = 0
 if outputs and inputs:
-    # Connect inputs to outputs
-    for input_, output in itertools.product(inputs, outputs):
-        input_.addObserver(output)
+    if not functions:
+        # Connect inputs to outputs
+        for input_, output in itertools.product(inputs, outputs):
+            input_.addObserver(output)
+    else:
+        # Connect inputs to functions
+        for input_, function in itertools.product(inputs, functions):
+            input_.addObserver(function)
+        # Connect functions to outputs
+        for function, output in itertools.product(functions, outputs):
+            function.addObserver(output)
     # Run
     rvalue = app.exec_()
 print("Exiting...")

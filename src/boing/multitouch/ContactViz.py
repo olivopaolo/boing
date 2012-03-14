@@ -14,13 +14,13 @@ import weakref
 
 from PyQt4 import QtCore, QtGui
 
-from boing.eventloop.MappingEconomy import HierarchicalConsumer
+from boing.eventloop.MappingEconomy import Node
 from boing.eventloop.StateMachine import StateMachine
 from boing.utils import quickdict
 
 #import uiVizConfig
 
-class ContactViz(QtGui.QWidget, HierarchicalConsumer):
+class ContactViz(Node):
 
     """Gestures' position is fit to the widget size"""
     WINSIZE = 1
@@ -28,8 +28,69 @@ class ContactViz(QtGui.QWidget, HierarchicalConsumer):
     RATIOSIZE = 2
     """SI device size is respected (if possible)"""
     SISIZE = 3
-    '''
-    class ConfigPanel(QtGui.QDialog, uiVizConfig.Ui_ConfigPanel):
+    
+            
+    def __init__(self, antialiasing=False, fps=60, parent=None):
+        Node.__init__(self, request="diff..contacts|source", hz=fps, parent=parent)
+        self._producers = {}
+        self.__gui = ContactWidget(weakref.proxy(self), antialiasing)
+        self.__gui.show()
+        '''self.__display = DisplayDevice.create()
+        if self.__display.url.scheme=="dummy": 
+            print("WARNING: using dummy DisplayDevice")
+            self.__display.debug()
+        self.drawmode = ContactViz.SISIZE'''
+    
+    def _checkRef(self):
+        Node._checkRef(self)
+        self._producers = dict((k, v) for k, v in self._producers.items() \
+                                   if k() is not None)
+        self.__gui.update()
+
+    def _removeObservable(self, observable):
+        Node._removeObservable(self, observable)
+        for ref in self._producers.keys():
+            if ref() is observable: 
+                del self._producers[ref]
+                self.__gui.update()
+                break
+
+    def __record(self, producer, src):
+        """Return the record associated to source."""
+        record = None
+        for ref, sources in self._producers.items():            
+            if ref() is producer:
+                rvalue = sources.setdefault(src, 
+                                            quickdict({"state":StateMachine()}))
+                break
+        else:
+            rvalue = quickdict({"state":StateMachine()})
+            self._producers[weakref.ref(producer)] = {src: rvalue}
+        return rvalue
+
+    def _consume(self, products, producer):
+        for product in products:
+            if "diff" in product:
+                diff = product["diff"]
+                src = product.get("source", str(producer))
+                record = self.__record(producer, src)
+                record.state.applyDiff(diff)
+                # Update history
+                history = record.history
+                for action in ("added", "updated"):
+                    changes = diff[action].contacts
+                    for key, value in changes.items():
+                        track = history.setdefault(key, [])                        
+                        if track or "rel_pos" in value: track.append(value)
+                for key, value in diff.removed.contacts.items():
+                    if value is None: 
+                        history.pop(key, None)
+                self.__gui.update()
+
+
+class ContactWidget(QtGui.QWidget):
+
+    '''class ConfigPanel(QtGui.QDialog, uiVizConfig.Ui_ConfigPanel):
         """Configuration panel for the ContactViz properties."""
         def __init__(self, current):
             QtGui.QDialog.__init__(self)
@@ -51,22 +112,11 @@ class ContactViz(QtGui.QWidget, HierarchicalConsumer):
                 return ContactViz.SISIZE
             else:
                 return ContactViz.SISIZE'''
-            
-    def __init__(self, antialiasing=False, fps=60, parent=None):
+
+
+    def __init__(self, node, antialiasing=False, parent=None):
         QtGui.QWidget.__init__(self, parent)
-        HierarchicalConsumer.__init__(self, "diff..contacts", fps)
-        self.__sources = {}
-        '''self.__display = DisplayDevice.create()
-        if self.__display.url.scheme=="dummy": 
-            print("WARNING: using dummy DisplayDevice")
-            self.__display.debug()
-        self.drawmode = ContactViz.SISIZE'''
-        self.debuglevel = 0
-        self.oldest = None
-        self.__fps_count = 0
-        self.__fps_previous = 0
-        self.__fps_timer = QtCore.QTimer()
-        self.__fps_timer.timeout.connect(self._fpsTimeout)
+        self.node = node
         # Setup GUI
         self.antialiasing = antialiasing
         self.setWhatsThis("Event &Viz")
@@ -79,47 +129,12 @@ class ContactViz(QtGui.QWidget, HierarchicalConsumer):
         ctrlQ.activated.connect(QtGui.QApplication.instance().quit)
         """position circle size"""
         self.phi = 4 
-
-    
-    def _checkRef(self):
-        HierarchicalConsumer._checkRef(self)
-        self.__sources = dict((k, v) for k, v in self.__sources.items() \
-                                  if k() is not None)
-        self.update()
-
-    def _removeObservable(self, observable):
-        HierarchicalConsumer._removeObservable(self, observable)
-        for ref in self.__sources.keys():
-            if ref() is observable: 
-                del self.__sources[ref]
-                self.update()
-                break
-
-    def __record(self, observable):
-        """Return the record associated to observable."""
-        for ref, record in self.__sources.items():
-            if ref() is observable: rvalue = record ; break
-        else:
-            rvalue = quickdict({"state":StateMachine()})
-            self.__sources[weakref.ref(observable)] = rvalue
-        return rvalue
-
-    def _consume(self, products, source):
-        record = self.__record(source)
-        for product in products:
-            if "diff" in product:
-                diff = product["diff"]
-                record.state.applyDiff(diff)
-                # Update history
-                history = record.history
-                for action in ("added", "updated"):
-                    changes = diff[action].contacts
-                    for key, value in changes.items():
-                        track = history.setdefault(key, [])                        
-                        if track or "rel_pos" in value: track.append(value)
-                for key, value in diff.removed.items():
-                    if value is None: history.pop(key, None)
-                self.update()
+        self.__fps_count = 0
+        self.__fps_previous = 0
+        self.__fps_timer = QtCore.QTimer()
+        self.__fps_timer.timeout.connect(self._fpsTimeout)
+        self.debuglevel = 0
+        self.oldest = None
 
     def paintEvent(self, event):
         width, height = self.width(), self.height()
@@ -137,152 +152,154 @@ class ContactViz(QtGui.QWidget, HierarchicalConsumer):
             painter.drawLine(0, y, width, y)
             painter.drawLine(x, 0, x, height)
         # Draw contacts
-        for source, record in self.__sources.items():
-            fill, outline = record.get("color",
-                                       (QtCore.Qt.gray, QtCore.Qt.black))
-            deviceratio = None
-            """contactstate = source.contacts.get("contacts", {})
-            pos_si_range = contactstate.get("pos_si_range")
-            if pos_si_range is not None:
-                deviceratio = float(pos_si_range[0])/pos_si_range[1] 
-            else: deviceratio = None
-            if pos_si_range and self.drawmode!=ContactViz.WINSIZE:
-                # Draw device area
-                if self.drawmode==ContactViz.SISIZE:
-                    pixel_pos_range = self.__display.mm2pixels([i*1000 for i in pos_si_range])
-                else:
-                    width, height = self.width(), self.height()
-                    vizratio = float(width) / height
-                    if vizratio>deviceratio: width = float(height)*deviceratio
-                    else: height = float(width) / deviceratio
-                    pixel_pos_range = (width, height)
-                painter.save()
-                pen = QtGui.QPen(fill, 6, QtCore.Qt.CustomDashLine)
-                pen.setDashPattern([3, 5])
-                painter.setPen(pen)
-                painter.setBrush(QtCore.Qt.NoBrush)
-                painter.drawRect(0, 0, pixel_pos_range[0], pixel_pos_range[1])
-                painter.restore()"""
-            painter.setPen(outline)
-            painter.setBrush(fill)
-            # Draw tracks
-            for gid, stateN in record.state.state().contacts.items():
-                #gid, history in record.history.items():
-                #stateN = record.contacts.history[gid]
-                posN = self.__tovizpos(stateN.rel_pos, deviceratio)
-                x, y = posN
-                history = record.history.setdefault(gid, [])
-                if len(history)>1:
-                    # Draw first point
-                    pos0 = self.__tovizpos(history[0].rel_pos, deviceratio)
+        for sources in self.node._producers.values():
+            for source, record in sources.items():
+                fill, outline = record.get("color",
+                                           (QtCore.Qt.gray, QtCore.Qt.black))
+                deviceratio = None
+                """contactstate = source.contacts.get("contacts", {})
+                pos_si_range = contactstate.get("pos_si_range")
+                if pos_si_range is not None:
+                    deviceratio = float(pos_si_range[0])/pos_si_range[1] 
+                else: deviceratio = None
+                if pos_si_range and self.drawmode!=ContactViz.WINSIZE:
+                    # Draw device area
+                    if self.drawmode==ContactViz.SISIZE:
+                        pixel_pos_range = self.__display.mm2pixels([i*1000 for i in pos_si_range])
+                    else:
+                        width, height = self.width(), self.height()
+                        vizratio = float(width) / height
+                        if vizratio>deviceratio: width = float(height)*deviceratio
+                        else: height = float(width) / deviceratio
+                        pixel_pos_range = (width, height)
                     painter.save()
-                    painter.setBrush(outline)
-                    painter.drawEllipse(pos0[0]-3, pos0[1]-3, 6, 6)
-                    painter.restore()
-                    # Draw path
-                    path = QtGui.QPainterPath()
-                    path.moveTo(*pos0);
-                    posI = pos0
-                    for memento in history[1:]:
-                        if "rel_pos" in memento: 
-                            posI = memento.rel_pos
-                            posI = self.__tovizpos(posI, deviceratio)
-                            path.lineTo(*posI)
-                            count += 1
-                    painter.strokePath(path, painter.pen())
-                # Draw boundingbox if defined                
-                if "boundingbox" in stateN \
-                        and "rel_size" in stateN.boundingbox:
-                    bb = stateN.boundingbox
-                    bb_rel_size = bb.rel_size
-                    bb_angle = bb.get("si_angle")
-                    bb_x, bb_y = (x, y) if "rel_pos" not in bb \
-                        else self.__tovizpos(bb.rel_pos, deviceratio)
-                    painter.save()
-                    painter.setPen(QtGui.QPen(fill, 2))
-                    bb_brush_color = QtGui.QColor(fill)
-                    bb_brush_color.setAlphaF(0.5)
-                    painter.setBrush(bb_brush_color)
-                    painter.translate(bb_x, bb_y)
-                    if bb_angle is not None: 
-                        painter.rotate(bb_angle[0]*180/math.pi)
-                    painter.drawEllipse(QtCore.QPoint(0,0),
-                                        int(bb_rel_size[0] * width),
-                                        int(bb_rel_size[1] * height))     
-                    painter.restore()
-                # Draw objclass if defined
-                if "objclass" in stateN:
-                    painter.drawText(x+1.5*o, y-2*o, "obj: %d"%stateN.objclass)
-                # Draw orientation if defined
-                if "si_angle" in stateN:
-                    painter.save()
-                    pencolor = QtGui.QColor(fill)
-                    pencolor.setAlphaF(0.4)
-                    painter.setPen(QtGui.QPen(pencolor, 16))
-                    l = 10
-                    angle = stateN.si_angle[0]
-                    dx = math.cos(angle) * l
-                    dy = math.sin(angle) * l
-                    painter.drawLine(x-dx, y-dy, x+dx, y+dy)           
-                    painter.restore()
-                # Draw speed if defined
-                if "rel_speed" in stateN:
-                    painter.save()
-                    pencolor = QtGui.QColor(fill)
-                    pencolor.setAlphaF(0.85)
-                    pen = QtGui.QPen(pencolor, 4)
-                    pen.setCapStyle(QtCore.Qt.RoundCap)
+                    pen = QtGui.QPen(fill, 6, QtCore.Qt.CustomDashLine)
+                    pen.setDashPattern([3, 5])
                     painter.setPen(pen)
-                    l = 25
-                    X, Y = self.__tovizpos(stateN.rel_speed, deviceratio)
-                    painter.drawLine(x, y, x+X*0.5, y+Y*0.5)           
-                    painter.restore()
-                # Draw current position
-                count += 1
-                painter.drawEllipse(x-self.phi, y-self.phi, 
-                                    2*self.phi, 2*self.phi)
-                # Print additional information
-                if self.debuglevel>0:
-                    painter.setPen(QtCore.Qt.black)
-                    painter.drawText(x+1.5*self.phi, y+self.phi, 
-                                     "%s (%s)"%(gid, len(history)))
-                    if self.debuglevel>1:
-                        i = 1 ;
-                        xx = x+1.5*self.phi
-                        yy = y+self.phi+i*10
-                        painter.drawText(
-                            xx, yy,
-                            "%.3f,%.3f (rel_pos)"%(
-                                stateN.rel_pos[0], stateN.rel_pos[1]))
-                        if "rel_speed" in stateN:
-                            i += 1 ;
+                    painter.setBrush(QtCore.Qt.NoBrush)
+                    painter.drawRect(0, 0, pixel_pos_range[0], pixel_pos_range[1])
+                    painter.restore()"""
+                painter.setPen(outline)
+                painter.setBrush(fill)
+                # Draw tracks
+                for gid, stateN in record.state.state().contacts.items():
+                    #gid, history in record.history.items():
+                    #stateN = record.contacts.history[gid]
+                    posN = self.__tovizpos(stateN.rel_pos, deviceratio)
+                    x, y = posN
+                    history = record.history.setdefault(gid, [])
+                    if len(history)>1:
+                        # Draw first point
+                        pos0 = self.__tovizpos(history[0].rel_pos, deviceratio)
+                        painter.save()
+                        painter.setBrush(outline)
+                        painter.drawEllipse(pos0[0]-3, pos0[1]-3, 6, 6)
+                        painter.restore()
+                        # Draw path
+                        path = QtGui.QPainterPath()
+                        path.moveTo(*pos0);
+                        posI = pos0
+                        for memento in history[1:]:
+                            if "rel_pos" in memento: 
+                                posI = memento.rel_pos
+                                posI = self.__tovizpos(posI, deviceratio)
+                                path.lineTo(*posI)
+                                count += 1
+                        painter.strokePath(path, painter.pen())
+                    # Draw boundingbox if defined                
+                    if "boundingbox" in stateN \
+                            and "rel_size" in stateN.boundingbox:
+                        bb = stateN.boundingbox
+                        bb_rel_size = bb.rel_size
+                        bb_angle = bb.get("si_angle")
+                        bb_x, bb_y = (x, y) if "rel_pos" not in bb \
+                            else self.__tovizpos(bb.rel_pos, deviceratio)
+                        painter.save()
+                        painter.setPen(QtGui.QPen(fill, 2))
+                        bb_brush_color = QtGui.QColor(fill)
+                        bb_brush_color.setAlphaF(0.5)
+                        painter.setBrush(bb_brush_color)
+                        painter.translate(bb_x, bb_y)
+                        if bb_angle is not None: 
+                            painter.rotate(bb_angle[0]*180/math.pi)
+                        painter.drawEllipse(QtCore.QPoint(0,0),
+                                            int(bb_rel_size[0] * width),
+                                            int(bb_rel_size[1] * height))     
+                        painter.restore()
+                    # Draw objclass if defined
+                    if "objclass" in stateN:
+                        painter.drawText(x+1.5*o, y-2*o, "obj: %d"%stateN.objclass)
+                    # Draw orientation if defined
+                    if "si_angle" in stateN:
+                        painter.save()
+                        pencolor = QtGui.QColor(fill)
+                        pencolor.setAlphaF(0.4)
+                        painter.setPen(QtGui.QPen(pencolor, 16))
+                        l = 10
+                        angle = stateN.si_angle[0]
+                        dx = math.cos(angle) * l
+                        dy = math.sin(angle) * l
+                        painter.drawLine(x-dx, y-dy, x+dx, y+dy)           
+                        painter.restore()
+                    # Draw speed if defined
+                    if "rel_speed" in stateN:
+                        painter.save()
+                        pencolor = QtGui.QColor(fill)
+                        pencolor.setAlphaF(0.85)
+                        pen = QtGui.QPen(pencolor, 4)
+                        pen.setCapStyle(QtCore.Qt.RoundCap)
+                        painter.setPen(pen)
+                        l = 25
+                        X, Y = self.__tovizpos(stateN.rel_speed, deviceratio)
+                        painter.drawLine(x, y, x+X*0.5, y+Y*0.5)           
+                        painter.restore()
+                    # Draw current position
+                    count += 1
+                    painter.drawEllipse(x-self.phi, y-self.phi, 
+                                        2*self.phi, 2*self.phi)
+                    # Print additional information
+                    if self.debuglevel>0:
+                        painter.setPen(QtCore.Qt.black)
+                        painter.drawText(x+1.5*self.phi, y+self.phi, 
+                                         "%s (%s)"%(gid, len(history)))
+                        if self.debuglevel>1:
+                            i = 1 ;
                             xx = x+1.5*self.phi
                             yy = y+self.phi+i*10
                             painter.drawText(
                                 xx, yy,
-                                "%+.3f,%+.3f (rel_speed)"%(
-                                    stateN.rel_speed[0], stateN.rel_speed[1]))
-                        if "si_angle" in stateN:
-                            i += 1 ;
-                            xx = x+1.5*self.phi
-                            yy = y+self.phi+i*10
-                            painter.drawText(
-                                xx, yy,
-                                "%+.3f (si_angle)"%(stateN.si_angle[0]))
-                        if self.debuglevel>2:
-                            i += 1
-                            xx = x+1.5*self.phi
-                            yy = y+self.phi+i*10
-                            painter.drawText(xx, yy, "%s (source)"%source())
+                                "%.3f,%.3f (rel_pos)"%(
+                                    stateN.rel_pos[0], stateN.rel_pos[1]))
+                            if "rel_speed" in stateN:
+                                i += 1 ;
+                                xx = x+1.5*self.phi
+                                yy = y+self.phi+i*10
+                                painter.drawText(
+                                    xx, yy,
+                                    "%+.3f,%+.3f (rel_speed)"%(
+                                        stateN.rel_speed[0], stateN.rel_speed[1]))
+                            if "si_angle" in stateN:
+                                i += 1 ;
+                                xx = x+1.5*self.phi
+                                yy = y+self.phi+i*10
+                                painter.drawText(
+                                    xx, yy,
+                                    "%+.3f (si_angle)"%(stateN.si_angle[0]))
+                            if self.debuglevel>2:
+                                i += 1
+                                xx = x+1.5*self.phi
+                                yy = y+self.phi+i*10
+                                painter.drawText(xx, yy, "%s (source)"%source)
         if self.debuglevel>3:
             painter.setPen(QtCore.Qt.black)
-            _sum = 0
-            for record in self.__sources.values(): 
-                _sum = _sum + len(record.history)
+            ntracks = nsources = 0
+            for sources in self.node._producers.values():
+                for record in sources.values(): 
+                    ntracks = ntracks + len(record.history)
+                    nsources += 1
             painter.drawText(5,10,
                              "%d sources; %d tracks; %d points;  %d ms"\
-                                 %(len(self.__sources), 
-                                   _sum, count, timer.elapsed()))
+                                 %(nsources, ntracks, count, timer.elapsed()))
             if self.oldest is not None:
                 lag = datetime.datetime.now()-self.oldest
                 msecs = lag.seconds*1000+lag.microseconds/1000
