@@ -29,46 +29,37 @@ If no module is specified, all modules are tested; otherwise only the
 specified modules will be executed. 
  
 Available modules: 
- dns_sd, display, eventloop, json, osc, slip, tcp, udp, utils
+ dns_sd, core, json, osc, slip, tcp, udp, utils
 """)
         sys.exit(0)
 
 list = []
 if len(sys.argv)==1 or 'dns_sd' in sys.argv:
-    from dns_sd import test_dns_sd
+    from net import test_dns_sd
     list += test_dns_sd.suite()
-if len(sys.argv)==1 or 'display' in sys.argv:
-    from display import test_DisplayDevice
-    list += test_DisplayDevice.suite()
-if len(sys.argv)==1 or 'eventloop' in sys.argv:
-    from eventloop import test_ReactiveObject #, test_StateMachine
+if len(sys.argv)==1 or 'core' in sys.argv:
+    from core import test_ReactiveObject
     list += test_ReactiveObject.suite()
-    # list += test_StateMachine.suite()
 if len(sys.argv)==1 or 'json' in sys.argv:
-    from _json import test__init__
-    list += test__init__.suite()
+    from net import test_json
+    list += test_json.suite()
 if len(sys.argv)==1 or 'osc' in sys.argv:
-    from osc import test_osc
+    from net import test_osc
     list += test_osc.suite()
-    # list += test_LogPlayer.suite()
 if len(sys.argv)==1 or 'slip' in sys.argv:
-    from slip import test__slip__
-    list += test__slip__.suite()
+    from net import test_slip
+    list += test_slip.suite()
 if len(sys.argv)==1 or 'tcp' in sys.argv:
-    from tcp import test_TcpServer, test_TcpSocket
-    list += test_TcpServer.suite()
-    list += test_TcpSocket.suite()
+    from net import test_tcp
+    list += test_tcp.suite()
 if len(sys.argv)==1 or 'udp' in sys.argv:
-    from udp import test_UdpSocket
-    list += test_UdpSocket.suite()
+    from net import test_udp
+    list += test_udp.suite()
 if len(sys.argv)==1 or 'utils' in sys.argv:
-    from utils import test_QPath
+    from utils import test_QPath, test_display
     list += test_QPath.suite()
-#     from utils import test_ExtensibleStruct, test_ExtensibleTree, \
-#         test_matching
-#     list += test_ExtensibleStruct.suite()
-#     list += test_ExtensibleTree.suite()
-#     list += test_matching.suite()
+    list += test_display.suite()
+
 alltests = unittest.TestSuite(list)
 runner = unittest.TextTestRunner()
 runner.run(alltests)

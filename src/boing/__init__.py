@@ -2,12 +2,12 @@
 #
 # boing/__init__.py -
 #
-# Authors: Nicolas Roussel (nicolas.roussel@inria.fr)
-#          Paolo Olivo (paolo.olivo@inria.fr)
+# Authors: Paolo Olivo (paolo.olivo@inria.fr)
+#          Nicolas Roussel (nicolas.roussel@inria.fr)
 #
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 MAJOR = 0
-MINOR = 1
+MINOR = 2
 VERSION = "%d.%d"%(MAJOR,MINOR)

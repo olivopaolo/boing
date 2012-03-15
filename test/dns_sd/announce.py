@@ -14,7 +14,7 @@ import sys
 
 from PyQt4 import QtCore
 
-from boing.dns_sd.DNSServiceAnnouncer import DNSServiceAnnouncer
+from boing.net.dns_sd.DNSServiceAnnouncer import DNSServiceAnnouncer
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], 

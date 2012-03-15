@@ -16,7 +16,7 @@ import sys
 
 from PyQt4 import QtCore
 
-from boing.dns_sd.DNSServiceBrowser import DNSServiceBrowser
+from boing.net.dns_sd.DNSServiceBrowser import DNSServiceBrowser
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], "hd:", ['help', 'domain='])

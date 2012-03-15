@@ -13,10 +13,10 @@ import getopt
 import signal
 import sys
 
-from PyQt4 import QtGui
+from PyQt4 import QtCore, QtGui
 
-from boing.url import URL
-import boing.utils.NodeLoader as loader
+from boing.utils.url import URL
+from boing.nodes.NodeLoader import NodeLoader
 
 def print_usage():
     name = "boing"
@@ -64,6 +64,9 @@ if args and not force:
 # Init application
 QtGui.QApplication.setStyle(QtGui.QStyleFactory.create("plastique"))
 app = QtGui.QApplication(sys.argv)
+# Reenable Ctrl-C to quit the application
+timer = QtCore.QTimer(timeout=lambda: None)
+timer.start(150)
 signal.signal(signal.SIGINT, lambda *args: app.quit())
 
 # Check minimal resources
@@ -79,16 +82,16 @@ if not outurl:
 inputs = []
 for url in inurl:
     url.scheme = ".".join(("in", url.scheme))
-    i = loader.NodeLoader(url)
+    i = NodeLoader(url)
     if i is not None: inputs.append(i)
 outputs = []
 for url in outurl:
     url.scheme = ".".join(("out", url.scheme))
-    o = loader.NodeLoader(url)
+    o = NodeLoader(url)
     if o is not None: outputs.append(o)
 functions = []
 for url in funcurl:
-    f = loader.NodeLoader(url)
+    f = NodeLoader(url)
     if f is not None: functions.append(f)
 
 rvalue = 0
