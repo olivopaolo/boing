@@ -149,7 +149,8 @@ class QPath(object):
             elif self._resultType=="COMPACTPATH":
                 self._result.append(path)
             elif self._resultType=="ITEMS":
-                self._result[0].append(path)
+                path = path[path.find(";")+1:]
+                self._result[0].append(path.replace(";","."))
                 self._result[1].append(value)
             elif self._resultType=="FILTER":
                 if path=="$":  self._result = value

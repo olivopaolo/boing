@@ -7,15 +7,19 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-import datetime
 import collections
+import copy
+import datetime
+import itertools
 import weakref
 
 from PyQt4 import QtCore
 
+import boing.utils as utils
+import boing.utils.QPath as QPath
+
 from boing.core.OnDemandProduction import OnDemandProducer, SelectiveConsumer
 from boing.core.ProducerConsumer import Producer
-import boing.utils.QPath as QPath
 
 class MappingProducer(OnDemandProducer):
 
@@ -36,12 +40,9 @@ class MappingProducer(OnDemandProducer):
         self.__tags = {}
         self.requestChanged.connect(self._updateTags)
         self.__info__source = str(self)
-        self._addTag("__info__", 
-                     {"__info__":
-                          {"timetag": datetime.datetime.now(),
-                           "fseq": self.__fseq,
-                           "source": self.__info__source}},
-                     update=False)
+        self._addTag("__timetag__", {"__timetag__": datetime.datetime.now()})
+        self._addTag("__fseq__", {"__fseq__": self.__fseq})
+        self._addTag("__source__", {"__source__": self.__info__source})
 
     def aggregateDemand(self):
         """Return the union of all the subscribed consumers' requests."""
@@ -51,11 +52,8 @@ class MappingProducer(OnDemandProducer):
         requests = (record.request for record in self._consumers.values())
         self.__aggregatedemand = QPath.join(*requests)
 
-    def _addTag(self, tag, template, update=True):
-        """ 'update' should be set to False if this method is used in
-        the object constructor."""
+    def _addTag(self, tag, template):
         record = MappingProducer.TagRecord(template)
-        if update: record.requested = self.isRequested(record.template)
         self.__tags[tag] = record
 
     def _updateTags(self):
@@ -75,10 +73,10 @@ class MappingProducer(OnDemandProducer):
         self.__fseq += 1
         if not isinstance(product, collections.Mapping):
             product = {"product":product}
-        if self._tag("__info__"):
-            product["__info__"] = {"timetag": datetime.datetime.now(),
-                                   "fseq": self.__fseq,
-                                   "source": self.__info__source}
+        if self._tag("__timetag__"): 
+            product["__timetag__"] = datetime.datetime.now()
+        if self._tag("__fseq__"):  product["__fseq__"] = self.__fseq
+        if self._tag("__source__"): product["__source__"] = self.__info__source
         OnDemandProducer._postProduct(self, product)
 
     @staticmethod
@@ -119,43 +117,57 @@ class HierarchicalProducer(MappingProducer):
             MappingConsumer.__init__(self, request=None)
             self.__ref = ref
 
+        def setRequest(self, request):
+            # Ensure that __callfseq__ is requested
+            MappingConsumer.setRequest(
+                self, QPath.join(request, "__callfseq__|__callsource__"))
+
         def _consume(self, products, producer):
-            for p in products:
-                MappingProducer._postProduct(self.__ref(), p)
+            if isinstance(producer, FunctionalNode):
+                for result in products:
+                    fseq = result.pop("__callfseq__")
+                    source = result.pop("__callsource__")
+                    # FIXME: add check __callsource__
+                    product, waiting = self.__ref()._postbuffer[fseq]
+                    waiting.remove(producer)
+                    utils.deepupdate(product, result, reuse=True)
+                    if not waiting:
+                        del self.__ref()._postbuffer[fseq]
+                        MappingProducer._postProduct(self.__ref(), product)
+            else:
+                for p in products:
+                    MappingProducer._postProduct(self.__ref(), p)
 
     def __init__(self, productoffer=None, cumulate=None, parent=None):
         # FIXME: set productoffer
         MappingProducer.__init__(self, productoffer, cumulate, parent)
-        """If serial, the products of the post Nodes are the only
-        output of this producer."""
-        self.__serial = False
         """List of the registered post nodes."""
         self._post = []
+        """List of the post FunctionalNodes which are active."""
+        self._postfunction = []
+        """Products that are waiting for the post functional nodes' result."""
+        self._postbuffer = {}
         """Forwards the produced products to the post Nodes before the
         standard forwarding."""
         self._postProducer = MappingProducer(productoffer)
-        self._postProducer.requestChanged.connect(self.requestChanged)
+        self._postProducer.requestChanged.connect(self._postRequestChanged)
         """Receives the products from the post Nodes and it forwards them
         as standard products."""
         self._postConsumer = HierarchicalProducer._PostConsumer(weakref.ref(self))
 
-    def isPostSerial(self):
-        return self.__serial
-
-    def setPostSerial(self, serial):
-        if self.__serial!=serial:
-            self.__serial = serial
-            # If there are no posts, serial is not influent
-            if self._post: self.requestChanged.emit()
-
-    def addPost(self, node, mode=QtCore.Qt.QueuedConnection, serial=None):
+    def addPost(self, node, mode=QtCore.Qt.DirectConnection):        
         self._post.append(node)
         self._postProducer.addObserver(node, mode=mode)
-        self._postConsumer.subscribeTo(node, mode=mode)        
-        if serial is not None and self.__serial!=serial: 
-            self.setPostSerial(serial)
+        self._postConsumer.subscribeTo(node, mode=mode)
         return self
 
+    def _postRequestChanged(self):
+        # Update enabled post
+        self._postfunction = list(post for post in self._post \
+                                      if isinstance(post, FunctionalNode) \
+                                      and post.isEnabled())
+        self.requestChanged.emit()
+    
     def _updateAggregateDemand(self):
         MappingProducer._updateAggregateDemand(self)
         # The standard aggregate demand is set as the request of the
@@ -163,21 +175,23 @@ class HierarchicalProducer(MappingProducer):
         self._postConsumer.setRequest(self.aggregateDemand())
 
     def isRequested(self, product):
-        """A product is requested if it is demanded from:
-         - one of the posts 
-         - one of the subscribed consumers, if it is not serial or 
-           if it is serial, but there are no post."""
-        return \
-            self._post and self._postProducer.aggregateDemand().test(product) \
-            or not self.__serial or not self._post \
-            and MappingProducer.isRequested(self, product)
+        """A product is requested if it is demanded from one of the
+        subscribed consumers or one of the posts."""
+        return MappingProducer.isRequested(self, product) \
+            or self._postProducer.aggregateDemand().test(product)
 
     def _postProduct(self, product):
-        # Forward the product to the posts
-        self._postProducer._postProduct(product)
-        # Standard production
-        if not self.__serial or not self._post:
+        # print(self, "postfunction", self._postfunction)
+        # print(self, "post:", self._post)
+        if self._postfunction:
+            fseq = self._postProducer._MappingProducer__fseq+1
+            self._postbuffer[fseq] = (product, self._postfunction[:])
+            self._postProducer._postProduct(product)
+        else:
+            # Standard production
             MappingProducer._postProduct(self, product)
+            # Forward the product to the posts
+            if self._post: self._postProducer._postProduct(product)
 
 
 class HierarchicalConsumer(MappingConsumer):
@@ -189,17 +203,39 @@ class HierarchicalConsumer(MappingConsumer):
         def __init__(self, ref, request):
             MappingConsumer.__init__(self, request=request)
             self.__ref = ref
+            self.__buffer = list()
+
+        def setRequest(self, request):
+            # Ensure that __callfseq__ is requested
+            MappingConsumer.setRequest(
+                self, QPath.join(request, "__callfseq__|__callsource__"))
 
         def _consume(self, products, producer):
-            self.__ref()._consume(products, producer)
+            if isinstance(producer, FunctionalNode):
+                for result in products:
+                    fseq = result.pop("__callfseq__")
+                    source = result.pop("__callsource__")
+                    # FIXME: add check __callsource__
+                    product, waiting = self.__ref()._prebuffer[fseq]
+                    waiting.remove(producer)
+                    utils.deepupdate(product, result, reuse=True)
+                    if not waiting:
+                        del self.__ref()._prebuffer[fseq]
+                        self.__buffer.append(product)
+                if self.__buffer:
+                    self.__ref()._consume(self.__buffer, producer)
+                    self.__buffer = list()
+            else:
+                self.__ref()._consume(products, producer)
 
     def __init__(self, request=OnDemandProducer.ANY_PRODUCT, hz=None):
         MappingConsumer.__init__(self, request, hz)
-        """If serial, the products from the pre Nodes are the only 
-        input of the standard consumption."""
-        self.__serial = False
         """List of the registered pre nodes."""
         self._pre = []
+        """List of pre FunctionalNodes which are active."""
+        self._prefunction = []
+        """Products that are waiting for the pre functional nodes' result."""
+        self._prebuffer = {}
         """Forwards the received products to the pre Nodes before the
         standard consumption."""
         self._preProducer = MappingProducer()
@@ -208,48 +244,47 @@ class HierarchicalConsumer(MappingConsumer):
         to the standard consumption."""
         # The standard request is set as the one of the preConsumer
         self._preConsumer = HierarchicalConsumer._PreConsumer(weakref.ref(self), 
-                                                             request)
+                                                              request)
 
-    def isPreSerial(self):
-        return self.__serial
-
-    def setPreSerial(self, serial):
-        if self.__serial!=serial:
-            self.__serial = serial
-            if self._pre: self._updateRequest()
-
-    def addPre(self, node, mode=QtCore.Qt.QueuedConnection, serial=None):
+    def addPre(self, node, mode=QtCore.Qt.DirectConnection, serial=None):
         self._pre.append(node)
         self._preProducer.addObserver(node, mode=mode)
         self._preConsumer.subscribeTo(node, mode=mode)
-        if serial is not None: self.setPreSerial(serial)
         return self
 
     def _updateRequest(self):
-        if not self.__serial or not self._pre:
-            # pre & self
-            join = QPath.join(self._preConsumer.request(), 
-                              self._preProducer.aggregateDemand())
-            MappingConsumer.setRequest(self, join)
-        else:
-            # pre only
-            MappingConsumer.setRequest(self, self._preProducer.aggregateDemand())
+        # Update enabled post
+        self._prefunction = list(pre for pre in self._pre \
+                                     if isinstance(pre, FunctionalNode) \
+                                     and pre.isEnabled())        
+        # pre & self
+        join = QPath.join(self._preConsumer.request(), 
+                          self._preProducer.aggregateDemand())
+        MappingConsumer.setRequest(self, join)
 
     def setRequest(self, request):
         # The standard request is set as the one of the preConsumer
         self._preConsumer.setRequest(request)
-        if not self.__serial or not self._pre: self._updateRequest()
+        self._updateRequest()
 
     def _refresh(self):
         for observable in self.queue():
             if isinstance(observable, Producer):
                 products = observable.products(self)
-                # Forward the products to the pre
-                for product in products:
-                    self._preProducer._postProduct(product)
-                if not self.__serial or not self._pre:
+                # print(self, "prefunction:", self._prefunction)
+                # print(self, "pre", self._pre)
+                if self._prefunction:
+                    for product in products:
+                        fseq = self._preProducer._MappingProducer__fseq+1
+                        self._prebuffer[fseq] = (product, self._prefunction[:])
+                        self._preProducer._postProduct(product)
+                else:
                     # Standard consumption
                     self._consume(products, observable)
+                    # Forward the product to the pres
+                    if self._pre:
+                        for product in products:
+                            self._preProducer._postProduct(product)
 
 # -------------------------------------------------------------------
 
@@ -267,3 +302,87 @@ class Node(HierarchicalProducer, HierarchicalConsumer):
     def _checkRef(self):
         HierarchicalProducer._checkRef(self)
         HierarchicalConsumer._checkRef(self)
+
+
+class FunctionalNode(Node):
+
+    _DEFAULT = -1
+    EMPTY_ARGS = (tuple(), tuple())
+
+    """For all the products it receives, it must post a product with
+    the same fseq of the received product."""
+    def __init__(self, args, target=None, template=None, forward=False,
+                 productoffer=None, cumulate=None, 
+                 request=_DEFAULT, hz=None,
+                 parent=None):
+        # If request is not defined, it is set to args if it is not
+        # supposed to forward all the products
+        if request==FunctionalNode._DEFAULT: 
+            request = OnDemandProducer.ANY_PRODUCT if forward else args 
+        # Ensure that __fseq__ and __source__ are requested
+        Node.__init__(self, productoffer, cumulate, 
+                      QPath.join(request, "__fseq__|__source__"), hz, parent)
+        self._args = QPath.QPath(args) \
+            if args is not None and not isinstance(args, QPath.QPath) \
+            else args
+        self._target = target
+        self._template = template
+        self._forward = forward
+        if self._template is not None:
+            self._addTag(self._target, self._template)
+            if not self._forward:
+                self.setEnabled(False)
+                self.requestChanged.connect(self.__checkTarget)
+
+    def _consume(self, products, producer):
+        for product in products:
+            if self._template is None or self._tag(self._target):
+                argpaths, argvalues = self._args.items(product) \
+                    if self._args is not None \
+                    else FunctionalNode.EMPTY_ARGS
+                if self._target is None:
+                    targets = argpaths
+                    values = self._function(argpaths, argvalues)
+                elif isinstance(self._target, collections.Callable):
+                    targets = self._target(argpaths)
+                    values = self._function(argpaths, argvalues)
+                else:
+                    targets = itertools.repeat(self._target)
+                    values = self._function(argpaths, argvalues)
+                if values is not None:
+                    # Apply values to targets
+                    copied = False
+                    for target, value in zip(targets, values):
+                        if not copied:
+                            result = copy.deepcopy(product) if self._forward \
+                                else utils.quickdict()
+                            copied = True
+                        split = target.split(".")
+                        if len(split)==1: result[target] = value
+                        else:
+                            node = result
+                            for key in split[1:-1]: 
+                                node = node[key]
+                            node[split[-1]] = value
+                    if not copied: 
+                        result = copy.copy(product) if self._forward \
+                            else utils.quickdict()
+                else:
+                    result = copy.copy(product) if self._forward \
+                        else utils.quickdict()
+            else:
+                result = copy.copy(product) if self._forward \
+                    else utils.quickdict()
+            result["__callfseq__"] = product["__fseq__"]
+            result["__callsource__"] = product["__source__"]            
+            self._postProduct(result)
+        
+    def _function(self, paths, values):
+        pass
+
+    def __checkTarget(self):
+        self.setEnabled(True if self._forward \
+                            or self._template is None \
+                            or self._tag(self._target) \
+                            else False)
+

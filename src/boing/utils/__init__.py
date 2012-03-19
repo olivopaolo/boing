@@ -57,43 +57,43 @@ class quickdict(dict):
 
 # -------------------------------------------------------------------
 
-def deepadd(obj, other, diff=False):
-    rvalue = dict() if diff else None
+def deepadd(obj, other, diff=False, reuse=False):
+    rvalue = quickdict() if diff else None
     for key, value in other.items():
         if key in obj:
             # Inner case
             objvalue = obj[key]
             if isinstance(value, collections.Mapping) \
                     and isinstance(objvalue, collections.Mapping):
-                inner = deepadd(objvalue, value, diff)                  
+                inner = deepadd(objvalue, value, diff, reuse)                  
                 if inner: rvalue[key] = inner
         else:
-            obj[key] = copy.deepcopy(value)
+            obj[key] = value if reuse else copy.deepcopy(value)
             if diff: rvalue[key] = value
     return rvalue
 
 
-def deepupdate(obj, other, diff=False):
-    rvalue = dict() if diff else None
+def deepupdate(obj, other, diff=False, reuse=False):
+    rvalue = quickdict() if diff else None
     for key, value in other.items():
         if key in obj:
             # Inner case
             objvalue = obj[key]
             if isinstance(value, collections.Mapping) \
                     and isinstance(objvalue, collections.Mapping):
-                inner = deepupdate(objvalue, value, diff)
+                inner = deepupdate(objvalue, value, diff, reuse)
                 if inner: rvalue[key] = inner
             elif objvalue!=value:
-                obj[key] = copy.deepcopy(value)
+                obj[key] = value if reuse else copy.deepcopy(value)
                 if diff: rvalue[key] = value
         else:
-            obj[key] = copy.deepcopy(value)
+            obj[key] = value if reuse else copy.deepcopy(value)
             if diff: rvalue[key] = value
     return rvalue
 
 
 def deepremove(obj, other, diff=False):
-    rvalue = dict() if diff else None
+    rvalue = quickdict() if diff else None
     for key, value in other.items():
         if key in obj:
             # Inner case

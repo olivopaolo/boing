@@ -151,17 +151,32 @@ class SelectiveConsumer(Consumer):
     def __init__(self, request=OnDemandProducer.ANY_PRODUCT, hz=None):
         Consumer.__init__(self, hz)
         self.__request = request
+        self.__enabled = True
 
     def request(self):
-        return self.__request
+        return self.__request if self.__enabled else None
+
+    def isEnabled(self):
+        return self.__enabled
+
+    def setEnabled(self, enabled):
+        if enabled!=self.__enabled:
+            self.__enabled = enabled
+            # Notify all OnDemandProducers it is subscribed to
+            for observable in self.observed():
+                if isinstance(observable, OnDemandProducer):
+                    observable._requestChange(
+                        self, self.__request if self.__enabled else None)
 
     def setRequest(self, request):
         """Set the new product request."""
-        self.__request = request
-        # Notify all OnDemandProducers it is subscribed to
-        for observable in self.observed():
-            if isinstance(observable, OnDemandProducer):
-                observable._requestChange(self, self.__request)
+        if request!=self.__request:
+            self.__request = request
+            if self.__enabled:
+                # Notify all OnDemandProducers it is subscribed to
+                for observable in self.observed():
+                    if isinstance(observable, OnDemandProducer):
+                        observable._requestChange(self, self.__request)
 
 # -------------------------------------------------------------------
 

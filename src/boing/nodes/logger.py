@@ -66,8 +66,8 @@ class LogPlayer(HierarchicalProducer):
         self._running = False
         self.looping = False
         self.playcnt = 0
-        self._addTag("data", {"data":bytearray()}, update=False)
-        self._addTag("osc", {"osc":osc.Packet()}, update=False)
+        self._addTag("data", {"data": bytearray()})
+        self._addTag("osc", {"osc": osc.Packet()})
 
     def start(self, looping=False):
         if self.__fd.isOpen() and not self._running:

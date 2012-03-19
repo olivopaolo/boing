@@ -107,7 +107,7 @@ class StatProducer(Node):
         self._inittime = datetime.datetime.now()
         self.__stat = {}
         self._update = False
-        self._addTag("str", {"str":str()}, update=False)
+        self._addTag("str", {"str": str()})
 
     def _checkRef(self):
         Node._checkRef(self)

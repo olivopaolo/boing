@@ -15,21 +15,21 @@ import sys
 
 from PyQt4 import QtCore, QtGui
 
-from boing.utils.url import URL
 from boing.nodes.NodeLoader import NodeLoader
 
 def print_usage():
     name = "boing"
-    print("usage: %s [-F] [-i <input>]... [-f <function>]... [-o <output>]..."%name)
+    #print("usage: %s [-F] [-i <input>]... [-b <bridge>]... [-o <output>]..."%name)
+    print("usage: %s [-F] [-i <input>]... [-o <output>]..."%name)
     print("       %s [-h, --help]"%(" "*len(name)))
 
 # configuration parameters
 inurl = []
-funcurl = []
+bridgeurl = []
 outurl = []
 force = False
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "i:o:f:Fh", ['help'])
+    opts, args = getopt.getopt(sys.argv[1:], "i:o:Fh", ['help'])
 except getopt.GetoptError as err:
     print(str(err)) # will print something like "option -a not recognized"
     print_usage()
@@ -43,15 +43,16 @@ for o, a in opts:
 Options:
  -i <input>           define an input
  -o <output>          define an output
- -f <function>        define a function
 
  -F                   force execution disabling safety checks
  -h, --help           display this help and exit
 """)
+        #  -b <bridge>          define a bridge
+
         sys.exit(0)
-    elif o=="-i": inurl.append(URL(a))
-    elif o=="-o": outurl.append(URL(a))
-    elif o=="-f": funcurl.append(URL(a))
+    elif o=="-i": inurl.append(a)
+    elif o=="-o": outurl.append(a)
+    elif o=="-b": bridgeurl.append(a)
     elif o=="F": force = True
 
 if args and not force:    
@@ -73,39 +74,37 @@ signal.signal(signal.SIGINT, lambda *args: app.quit())
 if not inurl: 
     default = "stdin:"
     print("Using default input:", default)    
-    inurl.append(URL(default))
+    inurl.append(default)
 if not outurl:
     default = "stdout:"
     print("Using default output:", default)
-    outurl.append(URL(default))
+    outurl.append(default)
 
 inputs = []
 for url in inurl:
-    url.scheme = ".".join(("in", url.scheme))
-    i = NodeLoader(url)
+    i = NodeLoader(url, "in")
     if i is not None: inputs.append(i)
 outputs = []
 for url in outurl:
-    url.scheme = ".".join(("out", url.scheme))
-    o = NodeLoader(url)
+    o = NodeLoader(url, "out")
     if o is not None: outputs.append(o)
-functions = []
-for url in funcurl:
-    f = NodeLoader(url)
-    if f is not None: functions.append(f)
+bridges = []
+for url in bridgeurl:
+    f = NodeLoader(url, "bridge")
+    if f is not None: bridges.append(f)
 
 rvalue = 0
 if outputs and inputs:
-    if not functions:
+    if not bridges:
         # Connect inputs to outputs
         for input_, output in itertools.product(inputs, outputs):
             input_.addObserver(output)
     else:
-        # Connect inputs to functions
-        for input_, function in itertools.product(inputs, functions):
+        # Connect inputs to bridges
+        for input_, function in itertools.product(inputs, bridges):
             input_.addObserver(function)
-        # Connect functions to outputs
-        for function, output in itertools.product(functions, outputs):
+        # Connect bridges to outputs
+        for function, output in itertools.product(bridges, outputs):
             function.addObserver(output)
     # Run
     rvalue = app.exec_()

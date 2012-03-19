@@ -57,8 +57,7 @@ class StateNode(Node, StateMachine):
         #FIXME: set productoffer
         Node.__init__(self, request=request, parent=parent)
         StateMachine.__init__(self, initial)
-        self._addTag("diff", {"diff":{"added":{}, "updated":{}, "removed":{}}}, 
-                     update=False)
+        self._addTag("diff", {"diff":{"added":{}, "updated":{}, "removed":{}}})
         
     def applyDiff(self, diff, additional=None):
         realdiff = StateMachine.applyDiff(self, diff, self._tag("diff"))

@@ -16,156 +16,132 @@ import boing.net.slip as slip
 import boing.net.tuio as tuio
 import boing.utils as utils
 
-from boing.core.MappingEconomy import Node
+from boing.core.MappingEconomy import Node, FunctionalNode
 
 # -------------------------------------------------------------------
 # TEXT
 
-class TextEncoder(Node):
+class TextEncoder(FunctionalNode):
     
-    def __init__(self, encoding="utf-8", hz=None, parent=None):
+    def __init__(self, encoding="utf-8", forward=False, hz=None, parent=None):
         # FIXME: set productoffer
-        Node.__init__(self, request="str", hz=hz, parent=parent)
+        FunctionalNode.__init__(self, "str", "data", {"data":bytes()}, forward, 
+                                hz=hz, parent=parent)
         self.encoding = encoding
-
-    def _consume(self, products, producer):
-        for p in products:
-            if "str" in p: 
-                text = p["str"]
-                if text is not None: 
-                    self._postProduct({"data":text.encode(self.encoding)})
+  
+    def _function(self, paths, values):
+        for text in values:
+            yield text.encode(self.encoding)
 
 
-class TextDecoder(Node):
+class TextDecoder(FunctionalNode):
     
-    def __init__(self, encoding="utf-8", hz=None, parent=None):
+    def __init__(self, encoding="utf-8", forward=False, hz=None, parent=None):
         # FIXME: set productoffer
-        Node.__init__(self, request="data", hz=hz, parent=parent)
+        FunctionalNode.__init__(self, "data", "str", {"str":str()}, forward, 
+                                hz=hz, parent=parent)
         self.encoding = encoding
         self.errors = "replace"
-
-    def _consume(self, products, producer):
-        for p in products:
-            if "data" in p:
-                data = p["data"]
-                if data is not None: 
-                    text = data.decode(self.encoding, self.errors)
-                    product = {"str": text}
-                    self._postProduct(product)
-
+    
+    def _function(self, paths, values):
+        for data in values:
+            yield data.decode(self.encoding, self.errors)
+            
 # -------------------------------------------------------------------
 # SLIP
 
-class SlipEncoder(Node):
-    # FIXME: The slip encoder should be able to get slip products also
-    # but if I let it do it, it will forward the same data
-    # twice. subscription on request using productoffer
+class SlipEncoder(FunctionalNode):
 
-    def __init__(self, hz=None, parent=None):
-        #FIXME: set productoffer
-        Node.__init__(self, request="data", hz=hz, parent=parent)
-        self._addTag("data", {"data":bytearray()}, update=False)
+    def __init__(self, forward=False, hz=None, parent=None):
+        # FIXME: set productoffer
+        FunctionalNode.__init__(self, "data", template={"data":bytearray()}, 
+                                forward=False, hz=hz, parent=parent)
 
-    def _consume(self, products, producer):
-        
-        if self._tag("data"):
-            for p in products:
-                packet = p.get("data")
-                if packet is not None:
-                    if packet:
-                        self._postProduct({'data': slip.encode(packet)})
-                    else:
-                        self._postProduct({'data': bytearray()})
-                    
+    def _function(self, paths, values):
+        for data in values:
+            yield slip.encode(data) if data else bytearray() 
+
 
 class SlipDecoder(Node):
-    
+
     def __init__(self, hz=None, parent=None):
         # FIXME: set productoffer
         Node.__init__(self, request="data", hz=hz, parent=parent)
         self._slipbuffer = None
-        self._addTag("data", {"data":bytearray()}, update=False)
-        self._addTag("slip", {"slip":bytearray()}, update=False)
-        # FIXME: if request changes it is possible that the slip
-        # buffer is not updated and data may be loss. Add notification.
-
-    def _consume(self, products, producer):
-        if self._tag("data") or self._tag("slip"):
-            for p in products:
-                encoded = p.get("data")
-                if encoded is not None:
-                    if self._tag("slip"): self._postProduct({"slip": encoded})
-                    if self._tag("data"):
-                        if encoded:
-                            packets, self._slipbuffer = slip.decode(
-                                encoded, self._slipbuffer)
-                            for packet in packets:
-                                self._postProduct({"data":packet})
-                        else: 
-                            self._postProduct({"data":bytearray()})
-
-# -------------------------------------------------------------------
-# OSC
-
-class OscEncoder(Node):
-
-    def __init__(self, hz=None, parent=None):
-        #FIXME: set productoffer
-        Node.__init__(self, request="osc", hz=hz, parent=parent)
-        self._addTag("data", {"data":bytearray()}, update=False)
+        self._addTag("data", {"data": bytearray()})
 
     def _consume(self, products, producer):
         if self._tag("data"):
             for p in products:
-                packet = p.get("osc")
-                if packet is not None:
-                    self._postProduct({'data': packet.encode()})
+                encoded = p.get("data")
+                if encoded is not None:
+                    if encoded:
+                        packets, self._slipbuffer = slip.decode(
+                            encoded, self._slipbuffer)
+                        for packet in packets:
+                            self._postProduct({"data": packet})
+                    else: 
+                        self._postProduct({"data":bytearray()})
+
+# -------------------------------------------------------------------
+# OSC
+
+class OscEncoder(FunctionalNode):
+
+    def __init__(self, forward=False, hz=None, parent=None):
+        # FIXME: set productoffer
+        FunctionalNode.__init__(self, "osc", "data", {"data": bytearray()}, 
+                                forward, hz=hz, parent=parent)
+
+    def _function(self, paths, values):
+        for packet in values:
+            yield packet.encode()
 
 
-class OscDecoder(Node):
+class OscDecoder(FunctionalNode):
 
-    def __init__(self, hz=None, parent=None):
+    def __init__(self, forward=False, hz=None, parent=None):
+        # FIXME: set productoffer
+        FunctionalNode.__init__(self, "data", "osc", {"osc": osc.Packet()}, 
+                                forward, hz=hz, parent=parent)
+    
+    def _function(self, paths, values):
+        for data in values:
+            if data: yield osc.decode(data)
+
+
+class OscDebug(FunctionalNode):
+
+    def __init__(self, forward=False, hz=None, parent=None):
         #FIXME: set productoffer
-        Node.__init__(self, request="data", hz=hz, parent=parent)
-        self._addTag("osc", {"osc":osc.Packet()}, update=False)
+        FunctionalNode.__init__(self, "osc", "str", {"str": str()}, 
+                                forward, hz=hz, parent=parent)
 
-    def _consume(self, products, producer):
-        if self._tag("osc"):
-            for p in products:
-                data = p.get("data")
-                if data:
-                    packet = osc.decode(data)
-                    self._postProduct({'osc':packet})
-
-
-class OscDebug(Node):
-
-    def __init__(self, hz=None, parent=None):
-        #FIXME: set productoffer
-        Node.__init__(self, request="osc", hz=hz, parent=parent)
-        self._addTag("str", {"str": str()})
-
-    def _consume(self, products, producer):
-        if self._tag("str"):
-            for p in products:
-                packet = p.get("osc")
-                if packet is not None:
-                    stream = io.StringIO()
-                    packet.debug(stream)
-                    self._postProduct({'str':stream.getvalue()})
+    def _function(self, paths, values):
+        for data in values:
+            stream = io.StringIO()
+            data.debug(stream)
+            yield stream.getvalue()
 
 # -------------------------------------------------------------------
 # TUIO
 
-class TuioDecoder(Node):
+class TuioDecoder(FunctionalNode):
     """Based on the TUIO 1.1 Protocol Specification
     http://www.tuio.org/?specification
     
     It will not work if inside an OSC bundle there is data from more
     than one source or for more than one TUIO profile."""
 
-    def __init__(self, rt=False, parent=None):
-        Node.__init__(self, request="osc", parent=parent)
+    def __init__(self, forward=False, hz=None, parent=None):
+        template = {"diff": {"added":{"contacts":{}}, 
+                             "updated":{"contacts":{}},
+                             "removed":{"contacts"}},
+                    "timetag": datetime.datetime.now(),
+                    "source": str()}
+        FunctionalNode.__init__(self, "osc", 
+                                lambda paths: ("diff", "timetag", "source"),
+                                template, forward, hz=hz, parent=parent)
         """Alive TUIO items."""
         # self.__alive[source][profile] = set of session_ids
         self.__alive = {}
@@ -175,22 +151,17 @@ class TuioDecoder(Node):
         # self.__idpairs[source][session_id] = event_id
         self.__idpairs = {}
         self.__idcount = 0
-        """If rt is True, the event is tagged using the timestamp at
-        the event creation instead of using the OSC bundle time tag."""
-        self.rt = rt
-        template = {"diff":{"added":{"contacts":{}}, 
-                            "updated":{"contacts":{}},
-                            "removed":{"contacts"}}}
-        self._addTag("diff", template, update=False)
 
-    def _consume(self, products, producer):
-        for p in products:
-            if "osc" in p and self._tag("diff"): self.__handleOsc(p["osc"])
-
+    def _function(self, paths, values):
+        for packet in values:
+            event = self.__handleOsc(packet)
+            if event is not None: 
+                for item in event: 
+                    yield item
+  
     def __handleOsc(self, packet):
-        print("__handleOsc")
-        timetag = datetime.datetime.now() \
-            if self.rt or packet.timetag is None else packet.timetag
+        timetag = packet.timetag if packet.timetag is not None \
+            else datetime.datetime.now()
         source = fseq = profile = None
         desc = {}
         alive = set()
@@ -294,8 +265,7 @@ class TuioDecoder(Node):
                 if gid is not None:
                     diff.removed.contacts[gid] = None
         src_profiles[profile] = alive
-        product = {"diff":diff, "timetag": timetag, "source":source}
-        if diff: self._postProduct(product)
+        return (diff, timetag, source) if diff else None
 
     def __nextId(self):
         value = self.__idcount
