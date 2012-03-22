@@ -19,7 +19,7 @@ import boing.utils as utils
 import boing.utils.QPath as QPath
 
 from boing.core.OnDemandProduction import OnDemandProducer, SelectiveConsumer
-from boing.core.ProducerConsumer import Producer
+from boing.core.ProducerConsumer import Producer, Consumer
 
 class MappingProducer(OnDemandProducer):
 
@@ -110,69 +110,54 @@ class MappingConsumer(SelectiveConsumer):
 class HierarchicalProducer(MappingProducer):
 
     class _PostConsumer(MappingConsumer):
-        """It forwards all the products of the parent
-        HierarchicalProducer's posts as products of the
-        HierarchicalProducer itself."""
         def __init__(self, ref):
             MappingConsumer.__init__(self, request=None)
             self.__ref = ref
 
-        def setRequest(self, request):
-            # Ensure that __callfseq__ is requested
-            MappingConsumer.setRequest(
-                self, QPath.join(request, "__callfseq__|__callsource__"))
-
         def _consume(self, products, producer):
-            if isinstance(producer, FunctionalNode):
-                for result in products:
-                    fseq = result.pop("__callfseq__")
-                    source = result.pop("__callsource__")
-                    # FIXME: add check __callsource__
-                    product, waiting = self.__ref()._postbuffer[fseq]
-                    waiting.remove(producer)
-                    utils.deepupdate(product, result, reuse=True)
-                    if not waiting:
-                        del self.__ref()._postbuffer[fseq]
-                        MappingProducer._postProduct(self.__ref(), product)
-            else:
-                for p in products:
-                    MappingProducer._postProduct(self.__ref(), p)
-
+            self.__ref()._postPipeline(products, producer)
+            
     def __init__(self, productoffer=None, cumulate=None, parent=None):
         # FIXME: set productoffer
         MappingProducer.__init__(self, productoffer, cumulate, parent)
         """List of the registered post nodes."""
         self._post = []
-        """List of the post FunctionalNodes which are active."""
-        self._postfunction = []
-        """Products that are waiting for the post functional nodes' result."""
-        self._postbuffer = {}
+        self._postConsumer = []
         """Forwards the produced products to the post Nodes before the
         standard forwarding."""
         self._postProducer = MappingProducer(productoffer)
-        self._postProducer.requestChanged.connect(self._postRequestChanged)
-        """Receives the products from the post Nodes and it forwards them
-        as standard products."""
-        self._postConsumer = HierarchicalProducer._PostConsumer(weakref.ref(self))
+        self._postProducer.requestChanged.connect(self.requestChanged)
 
-    def addPost(self, node, mode=QtCore.Qt.DirectConnection):        
+    def post(self):
+        return tuple(self._post)
+
+    def addPost(self, node, mode=QtCore.Qt.QueuedConnection):
         self._post.append(node)
+        if isinstance(node, Producer):
+            postconsumer = HierarchicalProducer._PostConsumer(weakref.ref(self))
+            postconsumer.subscribeTo(node, mode=mode)
+            self._postConsumer.append(postconsumer)
+        else:
+            self._postConsumer.append(None)
         self._postProducer.addObserver(node, mode=mode)
-        self._postConsumer.subscribeTo(node, mode=mode)
         return self
-
-    def _postRequestChanged(self):
-        # Update enabled post
-        self._postfunction = list(post for post in self._post \
-                                      if isinstance(post, FunctionalNode) \
-                                      and post.isEnabled())
-        self.requestChanged.emit()
     
     def _updateAggregateDemand(self):
         MappingProducer._updateAggregateDemand(self)
-        # The standard aggregate demand is set as the request of the
-        # postConsumer
-        self._postConsumer.setRequest(self.aggregateDemand())
+        cumulate = self.aggregateDemand()
+        for post, consumer in zip(reversed(self._post), 
+                                  reversed(self._postConsumer)):
+            if isinstance(consumer, MappingConsumer):
+                consumer.setRequest(cumulate)
+                if isinstance(post, FunctionalNode):
+                    if post.isActive():
+                        if post.mode in (FunctionalNode.RESULT, 
+                                        FunctionalNode.ARGSRESULT):
+                            cumulate = post.request()
+                        else:
+                            cumulate = QPath.join(cumulate, post.args())
+                else:                  
+                    cumulate = QPath.join(cumulate, post.request())
 
     def isRequested(self, product):
         """A product is requested if it is demanded from one of the
@@ -181,110 +166,107 @@ class HierarchicalProducer(MappingProducer):
             or self._postProducer.aggregateDemand().test(product)
 
     def _postProduct(self, product):
-        # print(self, "postfunction", self._postfunction)
-        # print(self, "post:", self._post)
-        if self._postfunction:
-            fseq = self._postProducer._MappingProducer__fseq+1
-            self._postbuffer[fseq] = (product, self._postfunction[:])
-            self._postProducer._postProduct(product)
-        else:
-            # Standard production
-            MappingProducer._postProduct(self, product)
-            # Forward the product to the posts
-            if self._post: self._postProducer._postProduct(product)
+        self._postPipeline((product,))
 
+    def _postPipeline(self, products, current=None):
+        stop = False
+        i = 0 if current is None else self._post.index(current)+1
+        while not stop:
+            post = self._post[i] if i<len(self._post) else None
+            if post is None:
+                stop = True
+                for product in products:
+                    # Standard production
+                    MappingProducer._postProduct(self, product)
+            elif isinstance(post, Consumer) \
+                    and (not isinstance(post, FunctionalNode) or post.isActive()):
+                if isinstance(post, Node): stop = True
+                # Forward the product to the post
+                for product in products:
+                    self._postProducer._postProductTo(product, post)
+            i += 1
+        
 
 class HierarchicalConsumer(MappingConsumer):
 
     class _PreConsumer(MappingConsumer):
-        """It forwards all the products of the parent
-        HierarchicalConsumer's pre as products of the
-        HierarchicalConsumer itself."""
         def __init__(self, ref, request):
             MappingConsumer.__init__(self, request=request)
             self.__ref = ref
-            self.__buffer = list()
-
-        def setRequest(self, request):
-            # Ensure that __callfseq__ is requested
-            MappingConsumer.setRequest(
-                self, QPath.join(request, "__callfseq__|__callsource__"))
 
         def _consume(self, products, producer):
-            if isinstance(producer, FunctionalNode):
-                for result in products:
-                    fseq = result.pop("__callfseq__")
-                    source = result.pop("__callsource__")
-                    # FIXME: add check __callsource__
-                    product, waiting = self.__ref()._prebuffer[fseq]
-                    waiting.remove(producer)
-                    utils.deepupdate(product, result, reuse=True)
-                    if not waiting:
-                        del self.__ref()._prebuffer[fseq]
-                        self.__buffer.append(product)
-                if self.__buffer:
-                    self.__ref()._consume(self.__buffer, producer)
-                    self.__buffer = list()
-            else:
-                self.__ref()._consume(products, producer)
+            self.__ref()._prePipeline(products, producer, isPre=True)
 
     def __init__(self, request=OnDemandProducer.ANY_PRODUCT, hz=None):
         MappingConsumer.__init__(self, request, hz)
+        self._baserequest = self.request()
         """List of the registered pre nodes."""
         self._pre = []
-        """List of pre FunctionalNodes which are active."""
-        self._prefunction = []
-        """Products that are waiting for the pre functional nodes' result."""
-        self._prebuffer = {}
+        self._preConsumer = []
         """Forwards the received products to the pre Nodes before the
         standard consumption."""
         self._preProducer = MappingProducer()
         self._preProducer.requestChanged.connect(self._updateRequest)
-        """Receives the products from the pre Nodes and it passes them
-        to the standard consumption."""
-        # The standard request is set as the one of the preConsumer
-        self._preConsumer = HierarchicalConsumer._PreConsumer(weakref.ref(self), 
-                                                              request)
 
-    def addPre(self, node, mode=QtCore.Qt.DirectConnection, serial=None):
-        self._pre.append(node)
+    def pre(self):
+        return tuple(self._pre)
+
+    def addPre(self, node, mode=QtCore.Qt.QueuedConnection):
+        self._pre.insert(0, node)
+        if isinstance(node, Producer):
+            preconsumer = HierarchicalConsumer._PreConsumer(weakref.ref(self),
+                                                            self._baserequest)
+            preconsumer.subscribeTo(node, mode=mode)
+            self._preConsumer.insert(0, preconsumer)
+        else:
+            self._preConsumer.insert(0, None)
         self._preProducer.addObserver(node, mode=mode)
-        self._preConsumer.subscribeTo(node, mode=mode)
         return self
 
     def _updateRequest(self):
-        # Update enabled post
-        self._prefunction = list(pre for pre in self._pre \
-                                     if isinstance(pre, FunctionalNode) \
-                                     and pre.isEnabled())        
-        # pre & self
-        join = QPath.join(self._preConsumer.request(), 
-                          self._preProducer.aggregateDemand())
-        MappingConsumer.setRequest(self, join)
+        cumulate = self._baserequest
+        for pre, consumer in zip(reversed(self._pre), 
+                                 reversed(self._preConsumer)):
+            if isinstance(consumer, MappingConsumer):
+                consumer.setRequest(cumulate)
+                if isinstance(pre, FunctionalNode):
+                    if pre.isActive():
+                        if pre.mode in (FunctionalNode.RESULT, 
+                                        FunctionalNode.ARGSRESULT):
+                            cumulate = pre.request()
+                        else:
+                            cumulate = QPath.join(cumulate, pre.args())
+                else:                  
+                    cumulate = QPath.join(cumulate, pre.request())
+        MappingConsumer.setRequest(self, cumulate)
 
     def setRequest(self, request):
-        # The standard request is set as the one of the preConsumer
-        self._preConsumer.setRequest(request)
+        self._baseRequest =  QPath.QPath(request) \
+            if request is not None and not isinstance(request, QPath.QPath) \
+            else request
         self._updateRequest()
 
     def _refresh(self):
         for observable in self.queue():
             if isinstance(observable, Producer):
-                products = observable.products(self)
-                # print(self, "prefunction:", self._prefunction)
-                # print(self, "pre", self._pre)
-                if self._prefunction:
-                    for product in products:
-                        fseq = self._preProducer._MappingProducer__fseq+1
-                        self._prebuffer[fseq] = (product, self._prefunction[:])
-                        self._preProducer._postProduct(product)
-                else:
-                    # Standard consumption
-                    self._consume(products, observable)
-                    # Forward the product to the pres
-                    if self._pre:
-                        for product in products:
-                            self._preProducer._postProduct(product)
+                self._prePipeline(observable.products(self), observable)
+
+    def _prePipeline(self, products, producer, isPre=False):
+        stop = False
+        i = 0 if not isPre else self._pre.index(producer)+1
+        while not stop:                    
+            pre = self._pre[i] if i<len(self._pre) else None
+            if pre is None:
+                stop = True
+                # Standard consumption                
+                self._consume(products, producer)
+            elif isinstance(pre, Consumer) \
+                    and (not isinstance(pre, FunctionalNode) or pre.isActive()):
+                if isinstance(pre, Node): stop = True
+                # Forward the product to the pre
+                for product in products:
+                    self._preProducer._postProductTo(product, pre)
+            i += 1
 
 # -------------------------------------------------------------------
 
@@ -306,34 +288,70 @@ class Node(HierarchicalProducer, HierarchicalConsumer):
 
 class FunctionalNode(Node):
 
-    _DEFAULT = -1
+    DEFAULT_REQUEST = -1
     EMPTY_ARGS = (tuple(), tuple())
 
-    """For all the products it receives, it must post a product with
-    the same fseq of the received product."""
-    def __init__(self, args, target=None, template=None, forward=False,
-                 productoffer=None, cumulate=None, 
-                 request=_DEFAULT, hz=None,
+    '''
+     - RESULT         the default request is defined as 'args' and it posts 
+                      only the function result if it is requested;
+
+     - ARGSRESULT     the default request is defined as 'args' and it posts 
+                      the received product joined with the function result if the
+                      result is requested;
+
+     - MERGE          the default request is ANY_PRODUCT and it joins the 
+                      received product and the function result if the result is
+                      requested.
+
+     - FORCE_FORWARD  the default request is ANY_PRODUCT and it forwards any
+                      received products in any case.
+    '''
+    RESULT, ARGSRESULT, MERGE, FORCE_FORWARD = range(4)
+
+    def __init__(self, args, target=None, template=None, 
+                 mode=MERGE, reuse=False,
+                 productoffer=None, cumulate=None,
+                 request=DEFAULT_REQUEST, hz=None,
                  parent=None):
+        self.__active = True
         # If request is not defined, it is set to args if it is not
         # supposed to forward all the products
-        if request==FunctionalNode._DEFAULT: 
-            request = OnDemandProducer.ANY_PRODUCT if forward else args 
-        # Ensure that __fseq__ and __source__ are requested
-        Node.__init__(self, productoffer, cumulate, 
-                      QPath.join(request, "__fseq__|__source__"), hz, parent)
+        if request==FunctionalNode.DEFAULT_REQUEST: 
+            request = args if mode==FunctionalNode.RESULT \
+                or mode==FunctionalNode.ARGSRESULT \
+                else OnDemandProducer.ANY_PRODUCT 
+        Node.__init__(self, productoffer, cumulate, request, hz, parent)
         self._args = QPath.QPath(args) \
             if args is not None and not isinstance(args, QPath.QPath) \
             else args
         self._target = target
         self._template = template
-        self._forward = forward
+        self.mode = mode
+        self.reuse = reuse
         if self._template is not None:
             self._addTag(self._target, self._template)
-            if not self._forward:
-                self.setEnabled(False)
+            if self.mode!=FunctionalNode.FORCE_FORWARD:
+                self.__active = False
                 self.requestChanged.connect(self.__checkTarget)
 
+    def isActive(self):
+        return self.__active
+
+    def setActive(self, active):
+        if self.__active!=active:
+            self.__active = active
+            # Notify all OnDemandProducers it is subscribed to
+            for observable in self.observed():
+                if isinstance(observable, OnDemandProducer):
+                    observable._requestChange(
+                        self, self.request() if self.__active else None)
+
+    def args(self):
+        return self._args if self.__active else None
+
+    def request(self):
+        return Node.request(self) if self.__active else None
+    
     def _consume(self, products, producer):
         for product in products:
             if self._template is None or self._tag(self._target):
@@ -351,12 +369,16 @@ class FunctionalNode(Node):
                     values = self._function(argpaths, argvalues)
                 if values is not None:
                     # Apply values to targets
-                    copied = False
+                    updated = False
                     for target, value in zip(targets, values):
-                        if not copied:
-                            result = copy.deepcopy(product) if self._forward \
-                                else utils.quickdict()
-                            copied = True
+                        if not updated:
+                            if self.mode==FunctionalNode.RESULT:
+                                result = utils.quickdict()
+                            elif self.reuse:
+                                result = product
+                            else:
+                                result = copy.deepcopy(product)
+                            updated = True
                         split = target.split(".")
                         if len(split)==1: result[target] = value
                         else:
@@ -364,24 +386,22 @@ class FunctionalNode(Node):
                             for key in split[1:-1]: 
                                 node = node[key]
                             node[split[-1]] = value
-                    if not copied: 
-                        result = copy.copy(product) if self._forward \
-                            else utils.quickdict()
+                    if not updated: 
+                        result = None if self.mode==FunctionalNode.RESULT \
+                            else product
                 else:
-                    result = copy.copy(product) if self._forward \
-                        else utils.quickdict()
+                    result = None if self.mode==FunctionalNode.RESULT \
+                        else product
             else:
-                result = copy.copy(product) if self._forward \
-                    else utils.quickdict()
-            result["__callfseq__"] = product["__fseq__"]
-            result["__callsource__"] = product["__source__"]            
+                result = None if self.mode==FunctionalNode.RESULT \
+                    else product
             self._postProduct(result)
         
     def _function(self, paths, values):
         pass
 
     def __checkTarget(self):
-        self.setEnabled(True if self._forward \
+        self.setActive(True if self.mode==FunctionalNode.FORCE_FORWARD \
                             or self._template is None \
                             or self._tag(self._target) \
                             else False)

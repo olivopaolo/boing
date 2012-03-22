@@ -75,7 +75,7 @@ class OnDemandProducer(Producer):
         rvalue = Producer.addObserver(self, reactiveobject)
         if rvalue and isinstance(reactiveobject, Consumer):
             record = OnDemandProducer.ConsumerRecord(reactiveobject)
-            record.trigger.connect(reactiveobject._react, mode)                      
+            record.trigger.connect(reactiveobject._react, mode)
             self._consumers[weakref.ref(reactiveobject)] = record
             self.requestChanged.emit()
         return rvalue
@@ -123,14 +123,22 @@ class OnDemandProducer(Producer):
         return products
 
     def _postProduct(self, product):
+        for record in self._consumers.values():
+            self._postProductToRecord(product, record)
+
+    def _postProductTo(self, product, consumer):
         for ref, record in self._consumers.items():
-            consumer = ref()
-            subset = self.filter(product, record.request) 
-            if subset:
-                record.products = self.cumulate(subset, record.products)
-                if record.products and not record.notified: 
-                    record.notified = True
-                    record.trigger.emit(self)
+            if ref()==consumer:
+                self._postProductToRecord(product, record)
+                break
+
+    def _postProductToRecord(self, product, record):
+        subset = self.filter(product, record.request) 
+        if subset:
+            record.products = self.cumulate(subset, record.products)
+            if record.products and not record.notified: 
+                record.notified = True
+                record.trigger.emit(self)
 
     def _requestChange(self, consumer, request):
         """Invoked by a SelectiveConsumer to notify that its request
@@ -151,32 +159,18 @@ class SelectiveConsumer(Consumer):
     def __init__(self, request=OnDemandProducer.ANY_PRODUCT, hz=None):
         Consumer.__init__(self, hz)
         self.__request = request
-        self.__enabled = True
 
     def request(self):
-        return self.__request if self.__enabled else None
-
-    def isEnabled(self):
-        return self.__enabled
-
-    def setEnabled(self, enabled):
-        if enabled!=self.__enabled:
-            self.__enabled = enabled
-            # Notify all OnDemandProducers it is subscribed to
-            for observable in self.observed():
-                if isinstance(observable, OnDemandProducer):
-                    observable._requestChange(
-                        self, self.__request if self.__enabled else None)
+        return self.__request
 
     def setRequest(self, request):
         """Set the new product request."""
         if request!=self.__request:
             self.__request = request
-            if self.__enabled:
-                # Notify all OnDemandProducers it is subscribed to
-                for observable in self.observed():
-                    if isinstance(observable, OnDemandProducer):
-                        observable._requestChange(self, self.__request)
+            # Notify all OnDemandProducers it is subscribed to
+            for observable in self.observed():
+                if isinstance(observable, OnDemandProducer):
+                    observable._requestChange(self, self.__request)
 
 # -------------------------------------------------------------------
 

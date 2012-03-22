@@ -20,13 +20,13 @@
 <pre>&gt; python3 test/run.py -i tuio: -o viz:</pre>
 
 <p>Record to a file a TUIO stream received on a UDP socket:</p>
-<pre>&gt; python3 test/run.py -i tuio://:3334 -o log.osc:///tmp/log.osc.bz2</pre>
+<pre>&gt; python3 test/run.py -i tuio://:3334 -o osc:///tmp/log.osc.bz2</pre>
 
 <p>Replay a TUIO log to an UDP socket:</p>
-<pre>&gt; python3 test/run.py -i play.tuio:///tmp/log.osc.bz2 -o udp://[::1]:7777</pre>
+<pre>&gt; python3 test/run.py -i tuio:///tmp/log.osc.bz2 -o udp://[::1]:7777</pre>
 
 <p>Replay a TUIO log (at double speed and loop enabled) to a TCP socket:</p>
-<pre>&gt; python3 test/run.py -i play.tuio:///tmp/log.osc.bz2?speed=2&amp;loop -o slip.tcp://[::1]:7777</pre>
+<pre>&gt; python3 test/run.py -i "tuio:///tmp/log.osc.bz2?speed=2&amp;loop" -o slip.tcp://[::1]:7777</pre>
 
 <p><sup>1</sup>TUIO packets read/written on TCP sockets or files
   are supposed to be SLIP encoded/decoded.</p>

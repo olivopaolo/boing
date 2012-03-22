@@ -23,10 +23,11 @@ from boing.core.MappingEconomy import Node, FunctionalNode
 
 class TextEncoder(FunctionalNode):
     
-    def __init__(self, encoding="utf-8", forward=False, hz=None, parent=None):
+    def __init__(self, encoding="utf-8", 
+                 mode=FunctionalNode.MERGE, reuse=False, hz=None, parent=None):
         # FIXME: set productoffer
-        FunctionalNode.__init__(self, "str", "data", {"data":bytes()}, forward, 
-                                hz=hz, parent=parent)
+        FunctionalNode.__init__(self, "str", "data", {"data":bytes()}, 
+                                mode, reuse, hz=hz, parent=parent)
         self.encoding = encoding
   
     def _function(self, paths, values):
@@ -36,10 +37,11 @@ class TextEncoder(FunctionalNode):
 
 class TextDecoder(FunctionalNode):
     
-    def __init__(self, encoding="utf-8", forward=False, hz=None, parent=None):
+    def __init__(self, encoding="utf-8", 
+                 mode=FunctionalNode.MERGE, reuse=False, hz=None, parent=None):
         # FIXME: set productoffer
-        FunctionalNode.__init__(self, "data", "str", {"str":str()}, forward, 
-                                hz=hz, parent=parent)
+        FunctionalNode.__init__(self, "data", "str", {"str":str()},
+                                mode, reuse, hz=hz, parent=parent)
         self.encoding = encoding
         self.errors = "replace"
     
@@ -52,10 +54,11 @@ class TextDecoder(FunctionalNode):
 
 class SlipEncoder(FunctionalNode):
 
-    def __init__(self, forward=False, hz=None, parent=None):
+    def __init__(self, mode=FunctionalNode.MERGE, reuse=False, 
+                 hz=None, parent=None):
         # FIXME: set productoffer
-        FunctionalNode.__init__(self, "data", template={"data":bytearray()}, 
-                                forward=False, hz=hz, parent=parent)
+        FunctionalNode.__init__(self, "data", template={"data":bytearray()},
+                                mode=mode, reuse=reuse, hz=hz, parent=parent)
 
     def _function(self, paths, values):
         for data in values:
@@ -88,10 +91,12 @@ class SlipDecoder(Node):
 
 class OscEncoder(FunctionalNode):
 
-    def __init__(self, forward=False, hz=None, parent=None):
+    def __init__(self, mode=FunctionalNode.MERGE, reuse=False, 
+                 request=FunctionalNode.DEFAULT_REQUEST, hz=None, parent=None):
         # FIXME: set productoffer
-        FunctionalNode.__init__(self, "osc", "data", {"data": bytearray()}, 
-                                forward, hz=hz, parent=parent)
+        FunctionalNode.__init__(self, "osc", "data", {"data": bytearray()},
+                                mode, reuse, request=request, 
+                                hz=hz, parent=parent)
 
     def _function(self, paths, values):
         for packet in values:
@@ -100,10 +105,12 @@ class OscEncoder(FunctionalNode):
 
 class OscDecoder(FunctionalNode):
 
-    def __init__(self, forward=False, hz=None, parent=None):
+    def __init__(self, mode=FunctionalNode.MERGE, reuse=False, 
+                 request=FunctionalNode.DEFAULT_REQUEST, hz=None, parent=None):
         # FIXME: set productoffer
-        FunctionalNode.__init__(self, "data", "osc", {"osc": osc.Packet()}, 
-                                forward, hz=hz, parent=parent)
+        FunctionalNode.__init__(self, "data", "osc", {"osc": osc.Packet()},
+                                mode, reuse, request=request,
+                                hz=hz, parent=parent)
     
     def _function(self, paths, values):
         for data in values:
@@ -112,10 +119,12 @@ class OscDecoder(FunctionalNode):
 
 class OscDebug(FunctionalNode):
 
-    def __init__(self, forward=False, hz=None, parent=None):
-        #FIXME: set productoffer
-        FunctionalNode.__init__(self, "osc", "str", {"str": str()}, 
-                                forward, hz=hz, parent=parent)
+    def __init__(self, mode=FunctionalNode.MERGE, reuse=False, 
+                 request=FunctionalNode.DEFAULT_REQUEST, hz=None, parent=None):
+        # FIXME: set productoffer
+        FunctionalNode.__init__(self, "osc", "str", {"str": str()},
+                                mode, reuse, request=request, 
+                                hz=hz, parent=parent)
 
     def _function(self, paths, values):
         for data in values:
@@ -133,15 +142,17 @@ class TuioDecoder(FunctionalNode):
     It will not work if inside an OSC bundle there is data from more
     than one source or for more than one TUIO profile."""
 
-    def __init__(self, forward=False, hz=None, parent=None):
-        template = {"diff": {"added":{"contacts":{}}, 
+    def __init__(self, mode=FunctionalNode.MERGE, reuse=False, 
+                 request=FunctionalNode.DEFAULT_REQUEST, hz=None, parent=None):
+        template = {"diff": {"added":{"contacts":{'0':{'rel_pos':tuple()}}}, 
                              "updated":{"contacts":{}},
-                             "removed":{"contacts"}},
+                             "removed":{"contacts": {}}},
                     "timetag": datetime.datetime.now(),
                     "source": str()}
         FunctionalNode.__init__(self, "osc", 
                                 lambda paths: ("diff", "timetag", "source"),
-                                template, forward, hz=hz, parent=parent)
+                                template, mode, reuse, 
+                                request=request, hz=hz, parent=parent)
         """Alive TUIO items."""
         # self.__alive[source][profile] = set of session_ids
         self.__alive = {}

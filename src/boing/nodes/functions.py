@@ -17,7 +17,7 @@ from PyQt4 import QtCore, QtGui
 import boing.utils.QPath as QPath
 import boing.utils as utils
 from boing.core.OnDemandProduction import OnDemandProducer
-from boing.core.MappingEconomy import Node
+from boing.core.MappingEconomy import Node, FunctionalNode
 
 class Filter(Node):
     """It forwards everything it requires."""
@@ -79,44 +79,17 @@ class Lag(Node):
 
 # -------------------------------------------------------------------
 
-class BaseFunction(Node):
+class ArgumentFunction(FunctionalNode):
 
-    def __init__(self, args, target=None, update=False, function=None,
-                 request=OnDemandProducer.ANY_PRODUCT, hz=None, parent=None):
-        #FIXME: set productoffer
-        Node.__init__(self, request=request, hz=hz, parent=parent)
-        self._functionobj = function
-        self._args = QPath.QPath(args) \
-            if args is not None and not isinstance(args, QPath.QPath) \
-            else args
-        self._target = target
-        self._update = update
+    def __init__(self, function, *args, **kwargs):
+        FunctionalNode.__init__(self, *args, **kwargs)
+        self.__argfunction = function
 
-    def _consume(self, products, producer):
-        for p in products:
-            paths, args = self._args.items(p)
-            if paths:
-                forward = copy.deepcopy(p) if self._update else utils.quickdict()
-                for path, value in zip(self._target(*paths) \
-                                           if self._target is not None \
-                                           else paths, 
-                                       self._function(*args)):
-                    split = path.split(";")
-                    if len(split)==1: forward = value
-                    else:
-                        node = forward
-                        for key in split[1:-1]: 
-                            node = node[key]
-                        node[split[-1]] = value
-                self._postProduct(forward)
-            elif self._update:
-                self._postProduct(p)
-
-    def _function(self, *args):
-        if self._functionobj is not None: self._functionobj(*args)
+    def _function(self, *args, **kwargs):
+        self.__argfunction(*args, **kwargs)
 
 
-class Calibration(BaseFunction):
+class Calibration(FunctionalNode):
 
     Identity = QtGui.QMatrix4x4()
     Right = QtGui.QMatrix4x4(0.0,-1.0, 0.0, 1.0, 
@@ -132,14 +105,13 @@ class Calibration(BaseFunction):
                              0.0, 0.0, 1.0, 0.0,
                              0.0, 0.0, 0.0, 1.0)
 
-    def __init__(self, matrix, args, target=None, update=True,
-                 request=OnDemandProducer.ANY_PRODUCT, hz=None, parent=None):
-        BaseFunction.__init__(self, args, target, update, 
-                              request=request, hz=hz, parent=parent)
+    def __init__(self, matrix, *args, **kwargs):
+        FunctionalNode.__init__(self, *args, **kwargs)
         self._matrix = matrix
 
-    def _function(self, *args):
-        for v in args:
+    def _function(self, paths, values):
+        #print(paths)
+        for v in values:
             if len(v)==2:
                 point = self._matrix*QtGui.QVector4D(v[0], v[1], 0, 1)
                 yield (point.x(), point.y())

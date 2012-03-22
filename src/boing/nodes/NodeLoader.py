@@ -29,272 +29,246 @@ from boing.utils.url import URL
 if sys.platform=='linux2':
     from boing.nodes.multitouch.MtDevDevice import MtDevDevice
 
-class NodeServer(tcp.TcpServer):
-    def __init__(self, *args, **kwargs):
-        tcp.TcpServer.__init__(self, *args, **kwargs)
-        self.newConnection.connect(self.__newConnection)
-    def __newConnection(self): 
-        conn = self.nextPendingConnection()
-        reader = DataReader(conn, parent=conn)
-        reader.addObserver(self.parent())
 
-def NodeLoader(url, option="", getstr=True, **kwargs):
+def NodeLoader(url, mode="", **kwargs):
     """Create a new node using the argument "url"."""
+    if mode not in ("", "in", "out"): raise ValueError("Invalid mode: %s"%mode)
     if not isinstance(url, URL): url = URL(str(url))
-    node = None
+
+    # -------------------------------------------------------------------
+    # IN. AND  OUT. REPLACED USING MODE
+    if url.scheme.startswith("in."):
+        if mode in ("", "in"):
+            url = str(url).replace("in.", "", 1)
+            node = NodeLoader(url, "in", **kwargs)
+        else:
+            raise Exception("Requested node is not an output: %s"%str(url))
+
+    elif url.scheme.startswith("out."):
+        if mode in ("", "out"):
+            url = str(url).replace("out.", "", 1)
+            node = NodeLoader(url, "out", **kwargs)
+        else:
+            raise Exception("Requested node is not an input: %s"%str(url))
 
     # -------------------------------------------------------------------
     # UTILS
-    if url.scheme=="dump" and option in ("", "out"):
-        kwargs.update(_filterargs(url, "request"))
-        node = debug.DumpNode(**kwargs)
+    elif url.scheme=="dump":
+        if mode in ("", "out"):
+            kwargs.update(_filterargs(url, "request", "hz"))
+            node = debug.DumpNode(**kwargs)
+        else:
+            raise Exception("Requested node is not an input: %s"%str(url))
 
-    elif url.scheme=="stdin" and option in ("", "in"):
-        node = DataReader(fileutils.CommunicationDevice(sys.stdin), **kwargs)
-        node.addPost(encoding.TextEncoder())
-
-    elif url.scheme=="stdout" and option in ("", "out"):
-        node = DataWriter(fileutils.IODevice(sys.stdout), **kwargs)
-
-    elif url.scheme=="stat" and option in ("", "out"):
-        kwargs.update(_filterargs(url, "request"))
-        node = debug.StatProducer(**kwargs)
-        node.addObserver(NodeLoader("stdout:", parent=node))
+    elif url.scheme=="stat":
+        if mode in ("", "out"):
+            kwargs.update(_filterargs(url, "request", "hz"))
+            node = debug.StatProducer(**kwargs)
+            node.addObserver(NodeLoader("stdout:", parent=node))
+        else:
+            raise Exception("Requested node is not an input: %s"%str(url))
 
     # -------------------------------------------------------------------
     # BRIDGES
-    elif url.scheme in ("", "file") and option=="in" \
-            or url.scheme=="in.file" and option==("", "in"):
-        filepath = str(url.path)
-        if os.path.isfile(filepath):
-            file_ = fileutils.FileReader(url, **_filterargs(url, "uncompress"))
-            # FIXME: start should be triggered at outputs ready
-            QtCore.QTimer.singleShot(300, file_.start)
-        elif os.path.exists(filepath):            
-            file_ = fileutils.CommunicationFile(url)
+    elif url.scheme=="stdin":
+        if mode in ("", "in"):
+            node = DataReader(fileutils.CommunicationDevice(sys.stdin), **kwargs)
+            node.addPost(encoding.TextEncoder(reuse=True))
         else:
-            file_ = None
-            print("ERROR! Cannot open requested file:", filepath)
-        if file_ is not None:
-            node = DataReader(file_, **kwargs)
-            node.addPost(encoding.TextEncoder() \
-                             if file_.isTextModeEnabled() \
-                             else encoding.TextDecoder())
+            raise Exception("Requested node is not an output: %s"%str(url))        
 
-    elif url.scheme in ("", "file") and option=="out" \
-            or url.scheme=="out.file" and option in ("", "out"):
-        try:
-            node = DataWriter(fileutils.File(url, fileutils.File.WriteOnly),
-                              **kwargs)
-        except IOError:
-            print("ERROR! Cannot write to file:", str(url.path))
+    elif url.scheme=="stdout":
+        if mode in ("", "out"):
+            node = DataWriter(fileutils.IODevice(sys.stdout), **kwargs)
+        else:
+            raise Exception("Requested node is not an input: %s"%str(url))
 
-    elif url.scheme=="udp" and option=="in" \
-            or url.scheme=="in.udp" and option in ("", "in"):
-        node = DataReader(udp.UdpListener(url), **kwargs)
-        if getstr: node.addPost(encoding.TextDecoder())
+    elif url.scheme in ("", "file"):
+        if mode=="in":
+            filepath = str(url.path)
+            if os.path.isfile(filepath):
+                inputfile = fileutils.FileReader(
+                    url, **_filterargs(url, "uncompress"))
+                # FIXME: start should be triggered at outputs ready
+                QtCore.QTimer.singleShot(300, inputfile.start)
+            else:
+                inputfile = fileutils.CommunicationFile(url)
+            kwargs.update(_filterargs(url, "postend"))
+            node = DataReader(inputfile, **kwargs)
+            node.addPost(encoding.TextEncoder(reuse=True) \
+                             if inputfile.isTextModeEnabled() \
+                             else encoding.TextDecoder(reuse=True))
+        elif mode=="out":
+            node = DataWriter(
+                fileutils.File(url, fileutils.File.WriteOnly), **kwargs)
+        elif not mode:
+            raise NotImplementedError()
 
-    elif url.scheme=="udp" and option=="out" \
-            or url.scheme=="out.udp" and option==("", "out"):
-        node = DataWriter(udp.UdpSender(url), **kwargs)
+    elif url.scheme=="udp":
+        if mode=="in":
+            node = DataReader(udp.UdpListener(url), **kwargs)
+            node.addPost(encoding.TextDecoder(reuse=True))
+        elif mode=="out":
+            kwargs.update(_filterargs(url, "writeend"))
+            node = DataWriter(udp.UdpSender(url), **kwargs)
+        elif not mode:
+            raise NotImplementedError()
 
-    elif url.scheme=="tcp" and option=="in" \
-            or url.scheme=="in.tcp" and option==("", "in"):
-        node = functions.Filter(**kwargs)
-        if getstr: node.addPost(encoding.TextDecoder())
-        server = NodeServer(url.site.host, url.site.port, parent=node)
-
-    elif url.scheme=="tcp" and option=="out" \
-            or url.scheme=="out.tcp" and option==("", "out"):
-        node = DataWriter(tcp.TcpConnection(url), **kwargs)
+    elif url.scheme=="tcp":
+        if mode=="in":
+            node = functions.Filter(**kwargs)
+            node.addPost(encoding.TextDecoder(reuse=True))
+            server = NodeServer(url.site.host, url.site.port, parent=node)
+        elif mode=="out":
+            kwargs.update(_filterargs(url, "writeend", "hz"))
+            node = DataWriter(tcp.TcpConnection(url), **kwargs)
+        elif not mode:
+            raise NotImplementedError()
 
     # -------------------------------------------------------------------
     # SLIP ENCODING
-    elif url.scheme.startswith("slip.") and option=="in":
-        node = encoding.SlipDecoder(**kwargs)
-        if getstr: node.addPost(encoding.TextDecoder())
-        url = URL(str(url))
-        url.scheme = url.scheme.replace("slip.", "")
-        url.query.data["uncompress"] = ""
-        reader = NodeLoader(url, "in", parent=node)
-        reader.addObserver(node)
-
-    elif url.scheme.startswith("slip.") and option=="out":
-        node = encoding.SlipEncoder(**kwargs)
-        url = URL(str(url))
-        url.scheme = url.scheme.replace("slip.", "")
-        port = NodeLoader(url, "out", parent=node)
-        port.subscribeTo(node)
+    elif url.scheme.startswith("slip."):
+        if mode=="in":
+            lower = URL(str(url).replace("slip.", "", 1))
+            lower.query.data["uncompress"] = ""
+            node = NodeLoader(lower, "in", **kwargs)
+            node.addPost(
+                encoding.SlipDecoder().addPost(
+                    encoding.TextDecoder(reuse=True)))
+        elif mode=="out":
+            lower = str(url).replace("slip.", "", 1)
+            node = NodeLoader(lower, "out", **kwargs)
+            node.addPre(
+                encoding.SlipEncoder().addPost(
+                    encoding.TextDecoder(reuse=True)))
+        elif not mode:
+            raise NotImplementedError()
 
     # -------------------------------------------------------------------
     # OSC ENCODING
-    elif url.scheme in ("osc", "in.osc", "out.osc"):
+    elif url.scheme=="osc":
         url = URL(str(url))
         if not str(url.path): url.scheme += ".udp"
         else: 
-            url.scheme += ".slip.file"
+            url.scheme += ".log"
             url.query.data["uncompress"] = ""
         print("No transport protocol specified in URL, assuming: %s"%url.scheme)
-        node = NodeLoader(url, option, **kwargs)
+        node = NodeLoader(url, mode, **kwargs)
 
-    elif url.scheme.startswith("osc.") and option=="in":
-        # TODO: handle in.osc.
-        url = URL(str(url))
-        url.scheme = url.scheme.replace("osc.", "")
-        url.query.data["uncompress"] = ""
-        node = NodeLoader(url, "in", getstr=False)
-        oscdecoder = encoding.OscDecoder(**kwargs)
-        if getstr: oscdecoder.addPost(encoding.OscDebug())
-        node.addPost(oscdecoder)
-
-    elif url.scheme.startswith("osc.") and option=="out":
-        # TODO: handle out.osc.
-        node = encoding.OscEncoder(forward=True, **kwargs)
-        if getstr: node.addPost(encoding.OscDebug())
-        url = URL(str(url))
-        url.scheme = url.scheme.replace("osc.", "")
-        transport = NodeLoader(url, "out", parent=node)
-        transport.subscribeTo(node)
-
-    # -------------------------------------------------------------------
-    # TUIO ENCODING
-    elif url.scheme=="tuio" and option=="in" \
-            or url.scheme=="in.tuio" and option in ("", "in"):
-        url = URL(str(url))
-        if not str(url.path): 
-            url.scheme += ".udp"
-            if not url.site.host and url.site.port==0: url.site.port = 3333
-        else: 
-            url.scheme += ".slip.file"
-            url.query.data["uncompress"] = ""
-        print("No transport protocol specified in URL, assuming: %s"%url.scheme)
-        node = NodeLoader(url, option, **kwargs)
-        
-    elif url.scheme=="tuio" and option=="out" \
-            or url.scheme=="out.tuio" and option in ("", "out"):
-        url = URL(str(url))
-        if not str(url.path) and url.site.port==0: url.scheme += ".stdout" 
-        else: 
-            url.scheme += ".slip.file"
-        print("No transport protocol specified in URL, assuming: %s"%url.scheme)
-        node = NodeLoader(url, option, **kwargs)
-
-    elif url.scheme.startswith("tuio.") and option=="in":
-        # TODO: handle in.tuio.
-        url = URL(str(url))
-        url.scheme = url.scheme.replace("tuio.", "")
-        url.scheme = url.scheme.replace("osc.", "")
-        url.query.data["uncompress"] = ""
-        node = NodeLoader(url, "in", getstr=False)
-        oscdecoder = encoding.OscDecoder(**kwargs)
-        if getstr: oscdecoder.addPost(encoding.OscDebug())
-        oscdecoder.addPost(encoding.TuioDecoder(**kwargs))
-        node.addPost(oscdecoder)
-
-    elif url.scheme.startswith("tuio.") and option=="out":
-        # TODO: handle out.tuio.
-        node = encoding.TuioEncoder(**kwargs)
-        oscencoder = encoding.OscEncoder()
-        if getstr: node.addPost(encoding.OscDebug())
-        url = URL(str(url))
-        url.scheme = url.scheme.replace("tuio.", "")
-        url.scheme = url.scheme.replace("osc.", "")
-        url.query.data["uncompress"] = ""
-        transport = NodeLoader(url, "out", parent=node)
-        transport.subscribeTo(node)
-
-    # -------------------------------------------------------------------
-    # RECORD/REPLAY
-    elif url.scheme=="log.osc" and option in ("", "out"):
-        try:
+    elif url.scheme=="osc.log":
+        if mode=="in":
+            kwargs.update(_filterargs(url, "loop", "speed"))
+            node = logger.LogPlayer(fileutils.File(url, uncompress=True), 
+                                    **kwargs)
+            node.addPost(encoding.OscDebug(reuse=True))
+            # FIXME: start should be triggered at outputs ready
+            QtCore.QTimer.singleShot(300, node.start)
+        elif mode=="out":
             kwargs.update(_filterargs(url, "raw"))
             node = logger.LogFile(
                 fileutils.File(url, fileutils.File.WriteOnly), **kwargs)
-        except IOError:
-            print("Cannot write to file:", str(url.path))
+            print("Ctrl-C to stop and close file.")
+        elif not mode:
+            raise NotImplementedError()            
 
-    elif url.scheme in ("out.log.tuio", "log.tuio"):
-        try:
-            node = encoding.TuioEncoder(**kwargs).addPost(encoding.OscEncoder)
-            node.addObserver(
-                logger.LogFile(fileutils.File(url, fileutils.File.WriteOnly)),
-                parent=Node)
-        except IOError:
-            print("Cannot write to file:", str(url.path))
+    elif url.scheme.startswith("osc."):
+        if mode=="in":
+            lower = URL(str(url).replace("osc.", "", 1))
+            node = NodeLoader(lower, "in", **kwargs)
+            node.addPost(
+                encoding.OscDecoder(reuse=True).addPost(
+                    encoding.OscDebug(reuse=True)))
+        elif mode=="out":
+            lower = str(url).replace("osc.", "", 1)
+            node = NodeLoader(lower, "out", **kwargs)
+            node.addPre(
+                encoding.OscEncoder(mode=FunctionalNode.ARGSRESULT).addPost(
+                    encoding.OscDebug(reuse=True)))
+        elif not mode:
+            raise NotImplementedError()
 
-    elif url.scheme=="play.osc" and option in ("", "in"):
-        filepath = str(url.path)
-        if os.path.isfile(filepath):
-            node = logger.LogPlayer(
-                fileutils.File(url, fileutils.File.ReadOnly, uncompress=True),
-                **kwargs)
-            if getstr: node.addPost(encoding.OscDebug())
-            args = _filterargs(url, "loop", "speed")
-            node.setSpeed(args.get("speed", 1))
-            # FIXME: start should be triggered at outputs ready
-            QtCore.QTimer.singleShot(
-                    300, lambda: node.start(kwargs.get("loop", False)))
-        else:
-            print("ERROR! Cannot open requested file:", filepath)
-        
-    elif url.scheme=="play.tuio" and option in ("", "in"):
-        filepath = str(url.path)
-        if os.path.isfile(filepath):
-            node = logger.LogPlayer(
-                fileutils.File(url, fileutils.File.ReadOnly, uncompress=True),
-                **kwargs)
-            if getstr: node.addPost(encoding.OscDebug())
-            args = _filterargs(url, "loop", "speed")
-            node.setSpeed(args.get("speed", 1))
-            # FIXME: start should be triggered at outputs ready
-            QtCore.QTimer.singleShot(
-                    300, lambda: node.start(kwargs.get("loop", False)))
-            node.addPost(encoding.TuioDecoder(**_filterargs(url, "rt")))
-        else:
-            print("Cannot open file:", filepath)
+    # -------------------------------------------------------------------
+    # TUIO ENCODING
+    elif url.scheme=="tuio":
+        if mode=="in":
+            url = URL(str(url))
+            if str(url.path): url.scheme += ".osc.log"
+            else:
+                url.scheme += ".osc.udp"
+                if url.site.port==0: url.site.port = 3333
+        elif mode=="out":
+            url = URL(str(url))
+            if str(url.path): url.scheme += ".osc.log"
+            elif url.site.host or url.site.port!=0:
+                url.scheme += ".osc.udp"
+                if not url.site.host: url.site.host="127.0.0.1"
+                if url.site.port==0: url.site.port=3333
+            else:
+                url.scheme += ".stdout" 
+        elif not mode:
+            raise NotImplementedError()
+        print("No transport protocol specified in URL, assuming: %s"%url.scheme)
+        node = NodeLoader(url, mode, **kwargs)
+
+    elif url.scheme.startswith("tuio."):
+        if mode=="in":
+            lower = str(url).replace("tuio.", "", 1) \
+                if "osc." in url.scheme \
+                else str(url).replace("tuio.", "osc.", 1)
+            node = NodeLoader(lower, "in", **kwargs).addPost(
+                encoding.TuioDecoder(reuse=True))
+        elif mode=="out":
+            lower = str(url).replace("tuio.", "", 1) \
+                if "osc." in url.scheme \
+                else str(url).replace("tuio.", "osc.", 1)
+            node = NodeLoader(lower, "out", **kwargs)
+            node.addPre(
+                encoding.TuioEncoder().addPost(
+                    encoding.OscDebug(reuse=True)))
+        elif not mode:
+            raise NotImplementedError()            
 
     # -------------------------------------------------------------------
     # MULTI-TOUCH INTERACTION
-    elif url.scheme=="mtdev" and option in ("", "in"):
+    elif url.scheme=="mtdev":
         if sys.platform == "linux2":
-            try:
+            if mode in ("", "in"):
+                kwargs.update(_filterargs(url))
                 node = MtDevDevice(str(url.path), **kwargs)
-            except Exception:
-                traceback.print_exc()
+            else:
+                raise Exception("Requested node is not an output: %s"%str(url))
         else:
-            print("ERROR! 'libmtdev' is not available on this platform:", 
-                  sys.platform)
+            raise Exception(
+                "'libmtdev' is not available on this platform: %s", sys.platform)
 
-    elif url.scheme=="viz" and option in ("", "out"):
-        node = ContactViz(**kwargs)
+    elif url.scheme=="viz":
+        if mode in ("", "out"):
+            kwargs.update(_filterargs(url, "antialiasing", "fps", "request"))
+            node = ContactViz(**kwargs)
+        else:
+            raise Exception("Requested node is not an input: %s"%str(url))
+
 
     # -------------------------------------------------------------------
     # FUNCTIONS
-        '''elif url.scheme in ("calib", "out.calib"):
+        '''elif url.scheme=="calib":
         matrix = None
-        kwargs = _filterargs(url, "matrix", "screen")
-        if "matrix" in kwargs:
-            matrix = QtGui.QMatrix4x4(kwargs["matrix"])
+        args = _filterargs(url, "matrix", "screen")
+        if "matrix" in kwargs: matrix = QtGui.QMatrix4x4(kwargs["matrix"])
         elif "screen" in kwargs:
             value = kwargs["screen"]
             if value=="normal": matrix = functions.Calibration.Identity
-            if value=="left": matrix = functions.Calibration.Left
-            if value=="inverted": matrix = functions.Calibration.Inverted
-            if value=="right": matrix = functions.Calibration.Right
+            elif value=="left": matrix = functions.Calibration.Left
+            elif value=="inverted": matrix = functions.Calibration.Inverted
+            elif value=="right": matrix = functions.Calibration.Right
         else: matrix = functions.Calibration.Identity
-        kwargs = _filterargs(url, "args", "request")
-        if "args" not in kwargs: kwargs["args"] = "$..rel_pos,rel_speed"            
-        if "request" not in kwargs: 
-            kwargs["request"] = "diff.*.contacts|timetag|source"
+        kwargs.update(_filterargs(url, "args", "request"))
+        if "args" not in kwargs: kwargs["args"] = "$diff.*.contacts.*.rel_pos"
+        #if "request" not in kwargs: 
+        #    kwargs["request"] = "diff.*.contacts|timetag|source"
         node = functions.Calibration(matrix, **kwargs)
-        kwargs = _filterargs(url)
-        for key, value in kwargs.items():
-            first, partition, end = key.partition("out")
-            if first=="" and partition=="out" and (end=="" or end.isdecimal()):
-                post = NodeLoader(value)
-                if post is not None: node.addPost(post)
 
-    elif url.scheme in ("lag", "out.lag"):
+        elif url.scheme in ("lag", "out.lag"):
         kwargs = _filterargs(url, "msec", "request")
         if "msec" not in kwargs: kwargs["msec"] = 200
         node = functions.Lag(**kwargs)
@@ -317,7 +291,27 @@ def NodeLoader(url, option="", getstr=True, **kwargs):
 
     else:
         print("Invalid URL:", url)
+
+    '''# -------------------------------------------------------------------
+    # POST ARGS
+    kwargs = _filterargs(url)
+    for key, value in kwargs.items():
+        first, partition, end = key.partition("post")
+        if first=="" and partition=="post" and (end=="" or end.isdecimal()):
+            post = NodeLoader(value)
+            if post is not None: node.addPost(post)'''
+
     return node
+
+
+class NodeServer(tcp.TcpServer):
+    def __init__(self, *args, **kwargs):
+        tcp.TcpServer.__init__(self, *args, **kwargs)
+        self.newConnection.connect(self.__newConnection)
+    def __newConnection(self): 
+        conn = self.nextPendingConnection()
+        reader = DataReader(conn, parent=conn)
+        reader.addObserver(self.parent())
 
 
 def _filterargs(url, *restrictions):
@@ -329,6 +323,8 @@ def _filterargs(url, *restrictions):
 
 def _kwstr2value(string):
     if string=="": rvalue = True
+    elif string.lower()=="true": rvalue = True
+    elif string.lower()=="false": rvalue = False
     elif string.lower()=="none": rvalue = None
     elif string.isdecimal(): rvalue = int(string)
     else:

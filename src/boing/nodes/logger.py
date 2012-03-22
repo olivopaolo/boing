@@ -21,7 +21,7 @@ class LogFile(QtCore.QObject, HierarchicalConsumer):
 
     def __init__(self, outputdevice, raw=False, parent=None):
         QtCore.QObject.__init__(self, parent)
-        HierarchicalConsumer.__init__(self, request="data")
+        HierarchicalConsumer.__init__(self, request="osc")
         self.__out = outputdevice
         self.raw = raw
         self.cnt = 0 # for statistics...
@@ -44,8 +44,8 @@ class LogFile(QtCore.QObject, HierarchicalConsumer):
  
     def _consume(self, products, producer):
         for p in products:
-            data = p.get("data")
-            if data: self.logData(data)
+            osc = p.get("osc")
+            if osc: self.logData(osc.encode())
 
 class LogPlayer(HierarchicalProducer):
     """
@@ -55,24 +55,23 @@ class LogPlayer(HierarchicalProducer):
     started = QtCore.pyqtSignal()
     stopped = QtCore.pyqtSignal()
     
-    def __init__(self, fd, parent=None):
+    def __init__(self, fd, loop=False, speed=1.0, parent=None):
         HierarchicalProducer.__init__(self, parent)
         self.__timer = QtCore.QTimer(timeout=self.__proceed)
         self.__timer.setSingleShot(True)
         self.__fd = fd
         self._slipbuffer = None
         self._packets = []
-        self.speed = 1.0
         self._running = False
-        self.looping = False
+        self.speed = speed
+        self.looping = loop
         self.playcnt = 0
         self._addTag("data", {"data": bytearray()})
         self._addTag("osc", {"osc": osc.Packet()})
 
-    def start(self, looping=False):
+    def start(self):
         if self.__fd.isOpen() and not self._running:
             self._running = True
-            self.looping = looping
             self.playcnt = self.playcnt+1
             self.started.emit()
             self._parseSendOutAndWait()
@@ -101,9 +100,11 @@ class LogPlayer(HierarchicalProducer):
             self.__sendOut(first.elements)
         if not self._packets:
             # Log is finished 
-            self.__sendOut(None)
             self.stop()
-            if self.looping: self.__timer.start(1000)
+            if self.looping: 
+                self.__timer.start(1000)
+            else:
+                self.__sendOut(None)
         else:
             # Read the next bundle and wait 
             second = self._packets[0]
@@ -139,4 +140,4 @@ class LogPlayer(HierarchicalProducer):
         if self.isPlaying():
             self._parseSendOutAndWait()
         else:
-            self.start(True)
+            self.start()

@@ -10,6 +10,7 @@
 
 import itertools
 import getopt
+import traceback
 import signal
 import sys
 
@@ -25,7 +26,7 @@ def print_usage():
 
 # configuration parameters
 inurl = []
-bridgeurl = []
+# bridgeurl = []
 outurl = []
 force = False
 try:
@@ -51,8 +52,7 @@ Options:
 
         sys.exit(0)
     elif o=="-i": inurl.append(a)
-    elif o=="-o": outurl.append(a)
-    elif o=="-b": bridgeurl.append(a)
+    elif o=="-o": outurl.append(a) # elif o=="-b": bridgeurl.append(a)
     elif o=="F": force = True
 
 if args and not force:    
@@ -82,30 +82,38 @@ if not outurl:
 
 inputs = []
 for url in inurl:
-    i = NodeLoader(url, "in")
-    if i is not None: inputs.append(i)
+    try:
+        i = NodeLoader(url, "in")
+    except Exception:
+        traceback.print_exc(0)
+    else:
+        inputs.append(i)
 outputs = []
 for url in outurl:
-    o = NodeLoader(url, "out")
-    if o is not None: outputs.append(o)
-bridges = []
-for url in bridgeurl:
-    f = NodeLoader(url, "bridge")
-    if f is not None: bridges.append(f)
+    try:
+        o = NodeLoader(url, "out")
+    except Exception:
+        traceback.print_exc(0)
+    else:
+        outputs.append(o)
+# bridges = []
+# for url in bridgeurl:
+#     f = NodeLoader(url, "bridge")
+#     if f is not None: bridges.append(f)
 
 rvalue = 0
 if outputs and inputs:
-    if not bridges:
+    if True: #not bridges:
         # Connect inputs to outputs
         for input_, output in itertools.product(inputs, outputs):
             input_.addObserver(output)
-    else:
-        # Connect inputs to bridges
-        for input_, function in itertools.product(inputs, bridges):
-            input_.addObserver(function)
-        # Connect bridges to outputs
-        for function, output in itertools.product(bridges, outputs):
-            function.addObserver(output)
+    # else:
+    #     # Connect inputs to bridges
+    #     for input_, function in itertools.product(inputs, bridges):
+    #         input_.addObserver(function)
+    #     # Connect bridges to outputs
+    #     for function, output in itertools.product(bridges, outputs):
+    #         function.addObserver(output)
     # Run
     rvalue = app.exec_()
 print("Exiting...")
