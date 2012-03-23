@@ -151,8 +151,7 @@ class HierarchicalProducer(MappingProducer):
                 consumer.setRequest(cumulate)
                 if isinstance(post, FunctionalNode):
                     if post.isActive():
-                        if post.mode in (FunctionalNode.RESULT, 
-                                        FunctionalNode.ARGSRESULT):
+                        if post.mode==FunctionalNode.RESULT:
                             cumulate = post.request()
                         else:
                             cumulate = QPath.join(cumulate, post.args())
@@ -231,8 +230,7 @@ class HierarchicalConsumer(MappingConsumer):
                 consumer.setRequest(cumulate)
                 if isinstance(pre, FunctionalNode):
                     if pre.isActive():
-                        if pre.mode in (FunctionalNode.RESULT, 
-                                        FunctionalNode.ARGSRESULT):
+                        if pre.mode==FunctionalNode.RESULT:
                             cumulate = pre.request()
                         else:
                             cumulate = QPath.join(cumulate, pre.args())
@@ -295,10 +293,6 @@ class FunctionalNode(Node):
      - RESULT         the default request is defined as 'args' and it posts 
                       only the function result if it is requested;
 
-     - ARGSRESULT     the default request is defined as 'args' and it posts 
-                      the received product joined with the function result if the
-                      result is requested;
-
      - MERGE          the default request is ANY_PRODUCT and it joins the 
                       received product and the function result if the result is
                       requested.
@@ -306,7 +300,7 @@ class FunctionalNode(Node):
      - FORCE_FORWARD  the default request is ANY_PRODUCT and it forwards any
                       received products in any case.
     '''
-    RESULT, ARGSRESULT, MERGE, FORCE_FORWARD = range(4)
+    RESULT, MERGE, FORCE_FORWARD = range(3)
 
     def __init__(self, args, target=None, template=None, 
                  mode=MERGE, reuse=False,
@@ -318,7 +312,6 @@ class FunctionalNode(Node):
         # supposed to forward all the products
         if request==FunctionalNode.DEFAULT_REQUEST: 
             request = args if mode==FunctionalNode.RESULT \
-                or mode==FunctionalNode.ARGSRESULT \
                 else OnDemandProducer.ANY_PRODUCT 
         Node.__init__(self, productoffer, cumulate, request, hz, parent)
         self._args = QPath.QPath(args) \
@@ -383,7 +376,7 @@ class FunctionalNode(Node):
                         if len(split)==1: result[target] = value
                         else:
                             node = result
-                            for key in split[1:-1]: 
+                            for key in split[:-1]: 
                                 node = node[key]
                             node[split[-1]] = value
                     if not updated: 
@@ -405,4 +398,3 @@ class FunctionalNode(Node):
                             or self._template is None \
                             or self._tag(self._target) \
                             else False)
-

@@ -27,13 +27,14 @@ class Filter(Node):
 
 
 class FilterOut(Node):
-    def __init__(self, filterout, request=OnDemandProducer.ANY_PRODUCT,             
+    def __init__(self, out=OnDemandProducer.ANY_PRODUCT, 
+                 request=OnDemandProducer.ANY_PRODUCT,             
                  hz=None, parent=None):
         #FIXME: set productoffer
         Node.__init__(self, request=request, hz=hz, parent=parent)
-        self.filterout = QPath.QPath(filterout) \
-            if filterout is not None and not isinstance(filterout, QPath.QPath) \
-            else filterout
+        self.filterout = QPath.QPath(out) \
+            if out is not None and not isinstance(out, QPath.QPath) \
+            else out
 
     def filterOut(self):
         return self._filterout
@@ -110,7 +111,6 @@ class Calibration(FunctionalNode):
         self._matrix = matrix
 
     def _function(self, paths, values):
-        #print(paths)
         for v in values:
             if len(v)==2:
                 point = self._matrix*QtGui.QVector4D(v[0], v[1], 0, 1)

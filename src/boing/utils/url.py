@@ -134,11 +134,25 @@ class URL_query(object):
     def __init__(self, aString=''):
         self.data = {}
         if aString:
+
+            innerurl = re.compile("=['\"].*?['\"]")
+            innertag = re.compile("<\[!#([0-9]+)\]>")
+            sub = []
+            def encode_inner(match):
+                m = match.group()           
+                sub.append(match.group()[2:-1])
+                return "=<[!#%d]>"%(len(sub)-1)
+            def decode_inner(match):
+                return sub.pop(0)
+
+            aString = innerurl.sub(encode_inner, aString)
             lst = aString.split('&')
             for kv in lst:
-                tmp = kv.split('=')
-                k = tmp[0]
-                try: v = self._decode(tmp[1])
+                tmp = kv.split('=', 1)
+                k = tmp[0]                
+                value = innertag.sub(decode_inner, tmp[1]) if len(tmp)>1 \
+                    else ""
+                try: v = self._decode(value)
                 except: v = ''
                 self.data[k] = v
 

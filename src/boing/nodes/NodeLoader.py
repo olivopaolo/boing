@@ -131,12 +131,14 @@ def NodeLoader(url, mode="", **kwargs):
         if mode=="in":
             lower = URL(str(url).replace("slip.", "", 1))
             lower.query.data["uncompress"] = ""
+            _validLowerUrl(lower)
             node = NodeLoader(lower, "in", **kwargs)
             node.addPost(
                 encoding.SlipDecoder().addPost(
                     encoding.TextDecoder(reuse=True)))
         elif mode=="out":
-            lower = str(url).replace("slip.", "", 1)
+            lower = URL(str(url).replace("slip.", "", 1))
+            _validLowerUrl(lower)
             node = NodeLoader(lower, "out", **kwargs)
             node.addPre(
                 encoding.SlipEncoder().addPost(
@@ -153,7 +155,7 @@ def NodeLoader(url, mode="", **kwargs):
             url.scheme += ".log"
             url.query.data["uncompress"] = ""
         print("No transport protocol specified in URL, assuming: %s"%url.scheme)
-        node = NodeLoader(url, mode, **kwargs)
+        return NodeLoader(url, mode, **kwargs)
 
     elif url.scheme=="osc.log":
         if mode=="in":
@@ -174,15 +176,17 @@ def NodeLoader(url, mode="", **kwargs):
     elif url.scheme.startswith("osc."):
         if mode=="in":
             lower = URL(str(url).replace("osc.", "", 1))
+            _validLowerUrl(lower)
             node = NodeLoader(lower, "in", **kwargs)
             node.addPost(
                 encoding.OscDecoder(reuse=True).addPost(
                     encoding.OscDebug(reuse=True)))
         elif mode=="out":
-            lower = str(url).replace("osc.", "", 1)
+            lower = URL(str(url).replace("osc.", "", 1))
+            _validLowerUrl(lower)
             node = NodeLoader(lower, "out", **kwargs)
             node.addPre(
-                encoding.OscEncoder(mode=FunctionalNode.ARGSRESULT).addPost(
+                encoding.OscEncoder(request="osc").addPost(
                     encoding.OscDebug(reuse=True)))
         elif not mode:
             raise NotImplementedError()
@@ -208,19 +212,21 @@ def NodeLoader(url, mode="", **kwargs):
         elif not mode:
             raise NotImplementedError()
         print("No transport protocol specified in URL, assuming: %s"%url.scheme)
-        node = NodeLoader(url, mode, **kwargs)
+        return NodeLoader(url, mode, **kwargs)
 
     elif url.scheme.startswith("tuio."):
         if mode=="in":
-            lower = str(url).replace("tuio.", "", 1) \
+            lower = URL(str(url).replace("tuio.", "", 1) \
                 if "osc." in url.scheme \
-                else str(url).replace("tuio.", "osc.", 1)
+                else str(url).replace("tuio.", "osc.", 1))
+            _validLowerUrl(lower)
             node = NodeLoader(lower, "in", **kwargs).addPost(
                 encoding.TuioDecoder(reuse=True))
         elif mode=="out":
-            lower = str(url).replace("tuio.", "", 1) \
+            lower = URL(str(url).replace("tuio.", "", 1) \
                 if "osc." in url.scheme \
-                else str(url).replace("tuio.", "osc.", 1)
+                else str(url).replace("tuio.", "osc.", 1))
+            _validLowerUrl(lower)
             node = NodeLoader(lower, "out", **kwargs)
             node.addPre(
                 encoding.TuioEncoder().addPost(
@@ -251,55 +257,52 @@ def NodeLoader(url, mode="", **kwargs):
 
     # -------------------------------------------------------------------
     # FUNCTIONS
-        '''elif url.scheme=="calib":
+    elif url.scheme=="calib":
         matrix = None
         args = _filterargs(url, "matrix", "screen")
-        if "matrix" in kwargs: matrix = QtGui.QMatrix4x4(kwargs["matrix"])
-        elif "screen" in kwargs:
-            value = kwargs["screen"]
+        if "matrix" in args: matrix = QtGui.QMatrix4x4(args["matrix"])
+        elif "screen" in args:
+            value = args["screen"]
             if value=="normal": matrix = functions.Calibration.Identity
             elif value=="left": matrix = functions.Calibration.Left
             elif value=="inverted": matrix = functions.Calibration.Inverted
             elif value=="right": matrix = functions.Calibration.Right
         else: matrix = functions.Calibration.Identity
         kwargs.update(_filterargs(url, "args", "request"))
-        if "args" not in kwargs: kwargs["args"] = "$diff.*.contacts.*.rel_pos"
-        #if "request" not in kwargs: 
-        #    kwargs["request"] = "diff.*.contacts|timetag|source"
-        node = functions.Calibration(matrix, **kwargs)
+        if "args" not in kwargs: 
+            kwargs["args"] = "diff..contacts..rel_pos,rel_speed"
+        if "request" not in kwargs: 
+            kwargs["request"] = "diff.*.contacts|timetag|source"
+        node = functions.Calibration(matrix, reuse=True, **kwargs)
 
-        elif url.scheme in ("lag", "out.lag"):
-        kwargs = _filterargs(url, "msec", "request")
+    elif url.scheme=="lag":
+        kwargs.update(_filterargs(url, "msec", "request"))
         if "msec" not in kwargs: kwargs["msec"] = 200
         node = functions.Lag(**kwargs)
-        kwargs = _filterargs(url)
-        for key, value in kwargs.items():
-            first, partition, end = key.partition("out")
-            if first=="" and partition=="out" and (end=="" or end.isdecimal()):
-                post = NodeLoader(value)
-                if post is not None: node.addPost(post)
 
-    elif url.scheme in ("sieve", "out.sieve"):
-        kwargs = _filterargs(url, "request")
+    elif url.scheme=="filter":
+        kwargs.update(_filterargs(url, "request", "hz"))
         node = functions.Filter(**kwargs)
-        kwargs = _filterargs(url)
-        for key, value in kwargs.items():
-            first, partition, end = key.partition("out")
-            if first=="" and partition=="out" and (end=="" or end.isdecimal()):
-                post = NodeLoader(value)
-                if post is not None: node.addPost(post)'''
+
+    elif url.scheme=="filterout":
+        kwargs.update(_filterargs(url, "out", "request", "hz"))
+        node = functions.FilterOut(**kwargs)
 
     else:
-        print("Invalid URL:", url)
+        raise Exception("Invalid URL: %s"%url)
 
-    '''# -------------------------------------------------------------------
-    # POST ARGS
+    # -------------------------------------------------------------------
+    # POST & PRE ARGS
     kwargs = _filterargs(url)
     for key, value in kwargs.items():
+        # Post
         first, partition, end = key.partition("post")
         if first=="" and partition=="post" and (end=="" or end.isdecimal()):
-            post = NodeLoader(value)
-            if post is not None: node.addPost(post)'''
+            node.addPost(NodeLoader(value))
+        # Pre
+        first, partition, end = key.partition("pre")
+        if first=="" and partition=="pre" and (end=="" or end.isdecimal()):
+            node.addPre(NodeLoader(value))
 
     return node
 
@@ -334,6 +337,17 @@ def _kwstr2value(string):
             rvalue = string
     return rvalue
 
+def _validLowerUrl(url):
+    # Remove post query 
+    for key in tuple(url.query.data.keys()):
+        first, partition, end = key.partition("post")
+        if first=="" and partition=="post" and (end=="" or end.isdecimal()):
+            del url.query.data[key]
+    # Remove pre query 
+    for key in tuple(url.query.data.keys()):
+        first, partition, end = key.partition("pre")
+        if first=="" and partition=="pre" and (end=="" or end.isdecimal()):
+            del url.query.data[key]
 
 '''
 def JSONReader(url):
