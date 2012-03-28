@@ -21,9 +21,7 @@ class OnDemandProducer(Producer):
     new products."""
     
     class ConsumerRecord(QtCore.QObject):
-    
         trigger = QtCore.pyqtSignal(QtCore.QObject)
-
         def __init__(self, consumer):
             QtCore.QObject.__init__(self)
             self.request = consumer.request() \
@@ -34,31 +32,23 @@ class OnDemandProducer(Producer):
 
     """Any product request tag."""
     ANY_PRODUCT = "*"
-
     """Emitted when a SelectiveConsumer is added, removed or its
     request has changed."""
-    requestChanged = QtCore.pyqtSignal()
+    demandChanged = QtCore.pyqtSignal()
 
-    def __init__(self, productoffer=None, cumulate=None, filter_=None, parent=None):
-        """'productoffer' defines the kind of objects this instance
-        can produce. 'cumulate' defines a specific callable function
-        used to cumulate products. 'filter_' defines a specific
-        callable function used to filter the posted products for each
-        registered consumers requirements."""
+    def __init__(self, productoffer=None, 
+                 cumulate=None, test=None, parent=None):
         Producer.__init__(self, parent)
         self._productoffer = productoffer
-        self.cumulate = cumulate \
-            if isinstance(cumulate, collections.Callable) \
-            else lambda p, s: [p] if s is None else s + [p]
-        self.filter = filter_ \
-            if isinstance(filter_, collections.Callable) \
-            else lambda product, request: product
         self._consumers = dict()
+        self.cumulate = cumulate if isinstance(cumulate, collections.Callable) \
+            else lambda s, p: [p] if s is None else s + [p]
+        self.test = test if isinstance(test, collections.Callable) \
+            else lambda request, product: True
 
     def __del__(self):        
         for ref, record in self._consumers.items():
-            c = ref()
-            if c is not None: record.trigger.disconnect(c._react)
+            if ref() is not None: record.trigger.disconnect(ref()._react)
         Producer.__del__(self)
 
     def _checkRef(self):
@@ -69,7 +59,7 @@ class OnDemandProducer(Producer):
                                    for ref, record in self._consumers.items() \
                                    if ref() is not None)
         if old!=len(self._consumers):
-            self.requestChanged.emit()
+            self.demandChanged.emit()
     
     def addObserver(self, reactiveobject, mode=QtCore.Qt.QueuedConnection): 
         rvalue = Producer.addObserver(self, reactiveobject)
@@ -77,7 +67,7 @@ class OnDemandProducer(Producer):
             record = OnDemandProducer.ConsumerRecord(reactiveobject)
             record.trigger.connect(reactiveobject._react, mode)
             self._consumers[weakref.ref(reactiveobject)] = record
-            self.requestChanged.emit()
+            self.demandChanged.emit()
         return rvalue
 
     def removeObserver(self, reactiveobject):
@@ -87,7 +77,7 @@ class OnDemandProducer(Producer):
                 if ref() is reactiveobject: 
                     record.trigger.disconnect(reactiveobject._react)
                     del self._consumers[ref]
-                    self.requestChanged.emit()
+                    self.demandChanged.emit()
                     break
         return rvalue
     
@@ -96,49 +86,55 @@ class OnDemandProducer(Producer):
             record.trigger.disconnect(ref()._react)
         self._consumers.clear()
         Producer.clearObservers(self)
-        self.requestChanged.emit()
+        self.demandChanged.emit()
 
     def productOffer(self):
         return self._productoffer
 
     def isRequested(self, product):
         """A product is requested if any of the subscribed consumers
-        requires it. This method should be used only to decide if a
-        product should be created, and not to filter products in the
-        _postProduct method."""
-        rvalue = False
+        requires it."""
         for record in self._consumers.values():
-             if self.filter(product, record.request) is not None:
-                rvalue = True ; break
+             if self.test(record.request, product): rvalue = True ; break
         return rvalue
 
-    def products(self, customer=None):
-        products = None
-        for ref, record in self._consumers.items():
-            if ref() is customer:
-                record.notified = False
-                products = record.products
-                record.products = None
-                break
-        return products
-
     def _postProduct(self, product):
-        for record in self._consumers.values():
-            self._postProductToRecord(product, record)
+        for ref, record in self._consumers.items():
+            self._postProductToRecord(product, ref(), record)
 
     def _postProductTo(self, product, consumer):
+        """Posts a product to a target currently subscribed consumer;
+        it returns True if the consumer is interested to the product
+        or False if the product is not requested. Raises Exception if
+        'consumer' is not a currently subscribed consumer."""
         for ref, record in self._consumers.items():
             if ref()==consumer:
-                self._postProductToRecord(product, record)
-                break
+                return self._postProductToRecord(product, consumer, record)
+        else:
+            raise Exception(
+                "Cannot post a product to un unsubscribed consumer: %s"%consumer)
 
-    def _postProductToRecord(self, product, record):
-        subset = self.filter(product, record.request) 
-        if subset:
-            record.products = self.cumulate(subset, record.products)
+    def _postProductToRecord(self, product, consumer, record):
+        rvalue = self.test(record.request, product)
+        if rvalue:
+            record.products = self.cumulate(record.products, product)
             if record.products and not record.notified: 
                 record.notified = True
                 record.trigger.emit(self)
+        return rvalue
+
+    def products(self, customer=None):
+        rvalue = None
+        for ref, record in self._consumers.items():
+            if ref() is customer:
+                record.notified = False                
+                rvalue = record.products
+                record.products = None
+                break
+        else:
+            raise Exception(
+                "Unsubscribed consumers cannot get products: %s"%customer)
+        return rvalue
 
     def _requestChange(self, consumer, request):
         """Invoked by a SelectiveConsumer to notify that its request
@@ -146,7 +142,7 @@ class OnDemandProducer(Producer):
         for ref, record in self._consumers.items():
             if ref() is consumer: 
                 record.request = request
-                self.requestChanged.emit()
+                self.demandChanged.emit()
                 break
 
 
@@ -191,9 +187,9 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, lambda *args: app.quit())
     QtCore.QTimer.singleShot(int(sys.argv[1])*1000, app.quit)
     # Init producer
-    filter_ = lambda product, request: product if product in request else None
+    test = lambda request, product: product in request
     prod = OnDemandProducer({"statue", "painting", "obelisk", "temple"}, 
-                            filter_=filter_)
+                            test=test)
     for product, period in zip(prod.productOffer(), (400, 500, 800, 900)):
         f = production(prod, product)
         tid = QtCore.QTimer(prod)

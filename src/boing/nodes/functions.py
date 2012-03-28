@@ -7,66 +7,18 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-import copy
 import collections
 import datetime
-import weakref
 
 from PyQt4 import QtCore, QtGui
 
-import boing.utils.QPath as QPath
-import boing.utils as utils
-from boing.core.OnDemandProduction import OnDemandProducer
 from boing.core.MappingEconomy import Node, FunctionalNode
-
-class Filter(Node):
-    """It forwards everything it requires."""
-    def _consume(self, products, producer):
-        for p in products:
-            self._postProduct(p)
-
-
-class FilterOut(Node):
-    def __init__(self, out=OnDemandProducer.ANY_PRODUCT, 
-                 request=OnDemandProducer.ANY_PRODUCT,             
-                 hz=None, parent=None):
-        #FIXME: set productoffer
-        Node.__init__(self, request=request, hz=hz, parent=parent)
-        self.filterout = QPath.QPath(out) \
-            if out is not None and not isinstance(out, QPath.QPath) \
-            else out
-
-    def filterOut(self):
-        return self._filterout
-
-    def setFilterOut(self, filterout):
-        self.filterout = QPath.QPath(request) \
-            if filterout is not None and not isinstance(request, QPath.QPath) \
-            else filterout
-    
-    """It forwards everything it requires."""
-    def _consume(self, products, producer):
-        for p in products:
-            filtered = FilterOut.filterout(p, self.filterout)
-            self._postProduct(filtered)
-            
-    @staticmethod
-    def filterout(product, filterout):
-        """Return the subset of 'product' that matches 'request' or
-        None."""
-        if filterout==OnDemandProducer.ANY_PRODUCT:
-            rvalue = Node
-        elif filterout is None:
-            rvalue = product
-        else:
-            rvalue = filterout.filterout(product)
-        return rvalue
 
 
 class Lag(Node):
 
     def __init__(self, msec, *args, **kwargs):
-        Node.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.lag = msec
         self.__buffer = collections.deque()
 
@@ -77,6 +29,17 @@ class Lag(Node):
         for p in products:
             self.__buffer.append(p)
             QtCore.QTimer.singleShot(self.lag, self.__timeout)
+
+
+class Timekeeper(FunctionalNode):
+    
+    def __init__(self, hz=None, parent=None):
+        super().__init__(None, "timetag", {"timetag": datetime.datetime.now()},
+                         request=Node.TRANSPARENT, hz=hz, parent=parent)
+  
+    def _function(self, paths, values):
+        yield datetime.datetime.now()
+
 
 # -------------------------------------------------------------------
 

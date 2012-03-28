@@ -16,27 +16,37 @@ import weakref
 from PyQt4 import QtCore
 
 import boing.utils as utils
-from boing.core.OnDemandProduction import OnDemandProducer
-from boing.core.MappingEconomy import HierarchicalProducer, Node
 
+from boing.core.OnDemandProduction import OnDemandProducer
+from boing.core.MappingEconomy import \
+    MappingProducer, HierarchicalProducer, HierarchicalConsumer, \
+    Node, FilterOut
+from boing.core.ProducerConsumer import Producer, Consumer
+import boing.utils.fileutils as fileutils
 
 class DumpNode(Node):
 
-    def __init__(self, request=OnDemandProducer.ANY_PRODUCT, hz=None, parent=None):
+    def __init__(self, src=False, dest=False, depth=None, 
+                 request=OnDemandProducer.ANY_PRODUCT, hz=None, parent=None):
         Node.__init__(self, request=request, hz=hz, parent=parent)
-        self.dumpsrc = False
-        self.dumpdest = False
+        self.dumpsrc = src
+        self.dumpdest = dest
+        self.depth = depth
 
     def _consume(self, products, producer):
-        if self.dumpsrc: print("from:", str(producer))
-        if self.dumpdest: print("DumpNode('%s')"%self.request())
+        stream = io.StringIO()
+        if self.dumpsrc: 
+            stream.write("from: %s\n"%str(producer))
+        if self.dumpdest: 
+            stream.write("DumpNode(request=%s)\n"%repr(str(self.request())))
         for p in products:
-            utils.dump(p, sys.stdout)
-        print()
+            utils.deepDump(p, stream, self.depth)
+        stream.write("\n")
+        self._postProduct({'str': stream.getvalue()})
 
 # -------------------------------------------------------------------
 
-class RenameNode(Node):
+'''class RenameNode(Node):
 
     def __init__(self, request, rename, target=None,
                  productoffer=None, hz=None, parent=None):
@@ -47,7 +57,7 @@ class RenameNode(Node):
     def _consume(self, products, producer):
         for p in products:
             if isinstance(p, collections.Mapping) and self.target in p: 
-                self._postProduct({self.rename: p[self.target]})
+                self._postProduct({self.rename: p[self.target]})'''
 
 # -------------------------------------------------------------------
 
@@ -170,3 +180,129 @@ class StatProducer(Node):
                     record.tags.clear()
             if intro: data.write("\n")
             self._postProduct({"str": data.getvalue()})
+
+# -------------------------------------------------------------------
+
+class Console(QtCore.QObject):
+
+    def __init__(self, inputdevice, outputdevice, 
+                 nohelp=False, parent=None):
+        super().__init__(parent)
+        self.__input = inputdevice
+        self.__input.readyRead.connect(self.__exec)
+        self.__output = outputdevice
+        self.prologue = "Boing console\n"
+        self.linebegin = "> "
+        self.__cmd = dict()
+        if not nohelp: 
+            self.addCommand("help", Console.__help, 
+                            help="Display available commands.", 
+                            cmd=self.__cmd, fd=self.__output)
+        if self.__output.isOpen(): self._startUp()
+        elif hasattr(self.__output, "connected"):
+            self.__output.connected.connect(self._startUp)
+    
+    def inputDevice(self):
+        return self.__input
+
+    def outputDevice(self):
+        return self.__output
+
+    def addCommand(self, name, func, help="", *args, **kwargs):
+        self.__cmd[name] = (help, func, args, kwargs) 
+
+    def __exec(self):
+        data = self.__input.read()
+        text = data if self.__input.isTextModeEnabled() else data.decode()
+        command, *rest = text.partition("\n")
+        if command:
+            if command in self.__cmd:
+                help, func, args, kwargs = self.__cmd[command]
+                func(*args, **kwargs)
+            else:
+                self.__output.write("%s: command not found"%command)
+                self.__output.flush()
+        self.__output.write(self.linebegin)
+        self.__output.flush()
+
+    def _startUp(self):
+        self.__output.write(self.prologue)
+        if "help" in self.__cmd:
+            self.__output.write("Type 'help' for the command guide.\n")
+        self.__output.write(self.linebegin)
+        self.__output.flush()
+
+    @staticmethod
+    def __help(cmd, fd=sys.stdout):
+        for name, record in cmd.items():
+            help, *rest = record
+            fd.write(" %s                %s\n"%(name, help))
+        fd.write("\n")
+
+# -------------------------------------------------------------------
+
+def dumpGraph(origins, fd=sys.stdout, maxdepth=None, indent=4):
+    # print("dumpGraph", origins, fd)
+    memo = []
+    for node in origins:
+        dumpNode(node, memo, fd, 0, maxdepth, indent)
+
+
+def dumpNode(node, memo, fd, level, maxdepth, indent):
+    # print("dumpNode", memo, fd)
+    if memo is None: memo = []
+    if node in memo:
+        fd.write("Node: %d"%memo.index(node))
+    else:
+        memo.append(node)
+        base = " "*(level*indent)
+        fd.write(base+"%d: %s\n"%(len(memo), type(node)))
+        if isinstance(node, Consumer):
+            request = node.request()
+            if request is not None: request = repr(str(request))
+            fd.write(base+"  request = %s\n"%request)
+            if isinstance(node, FilterOut):
+                filterout = node.request()
+                if filterout is not None: filterout = repr(str(filterout))
+                fd.write(base+"  filterout = %s\n"%filterout)
+            if isinstance(node, HierarchicalConsumer):
+                fd.write(base+"  pre = [")
+                if not node.pre():
+                    fd.write("]\n")
+                elif maxdepth is None or level<maxdepth:
+                    fd.write(base+"\n\n")                
+                    for pre in node.pre():
+                        dumpNode(pre, memo, fd, level+1, maxdepth, indent)
+                    fd.write(base+"  ]\n")                
+                else:
+                    fd.write("...]\n")
+                baserequest = node._baserequest
+                if baserequest is not None: baserequest = repr(str(baserequest))
+                fd.write(base+"  _baserequest = %s\n"%baserequest)
+        if isinstance(node, Producer):
+            if isinstance(node, MappingProducer):
+                if isinstance(node, HierarchicalProducer):
+                    fd.write(base+"  post = [")
+                    if not node.post():
+                        fd.write("]\n")
+                    elif maxdepth is None or level<maxdepth:
+                        fd.write(base+"\n\n")                
+                        for post in node.post():
+                            dumpNode(post, memo, fd, level+1, maxdepth, indent)
+                        fd.write(base+"  ]\n")                
+                    else:
+                        fd.write("...]\n")
+                demand = node.aggregateDemand()
+                if demand is not None: demand = repr(str(demand))
+                fd.write(base+"  aggregateDemand = %s\n"%demand)
+            fd.write(base+"  observers = [")
+            if not node.observers():
+                fd.write(base+"]\n\n")
+            elif maxdepth is None or level<maxdepth:
+                fd.write(base+"\n\n")                
+                for observer in node.observers():
+                    dumpNode(observer, memo, fd, level+1, maxdepth, indent)
+                fd.write(base+"  ]\n")
+            else:
+                fd.write("...]\n\n")
+                

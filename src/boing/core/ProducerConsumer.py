@@ -12,24 +12,28 @@ from boing.core.ReactiveObject import Observable, DelayedReactive
 class Producer(Observable):
 
     def products(self, customer=None):
-        """Return the produced products. 'customer' should be used to
-        define who is demanding the products."""
+        """Return the produced products. The argument 'customer' must
+        be used to define who is demanding the products."""
         raise NotImplementedError()
 
     def _postProduct(self, product):
+        """Notify a new product."""
         raise NotImplementedError()
 
 
 class Consumer(DelayedReactive):
-    """Anytime it is triggered, it requires the available products to
-    all producers it is subscribed to."""
+    """Anytime it is triggered, it requires all the available products
+    to all producers it is subscribed to."""
+    def __init__(self, hz=None):
+        DelayedReactive.__init__(self, hz)
 
     def _refresh(self):
         for observable in self.queue():
             if isinstance(observable, Producer):
-                self._consume(observable.products(self), observable)
+                products = observable.products(self)
+                self._consume(products, observable)
 
     def _consume(self, products, producer):
-        """It can be overridden to define business logic, but do not invoke it
-        directly."""
+        """The consumer normally must not modify the received
+        products, because they could be shared with other consumers."""        
         pass

@@ -50,15 +50,15 @@ class Test_QPath(unittest.TestCase):
 
     def test_None_get(self):
         path = None
-        self.assertFalse(QPath.get(self.obj, path))
+        self.assertRaises(TypeError, QPath.get, self.obj, path)
 
     def test_None_filter(self):
         path = None
-        self.assertIsNone(QPath.filter(self.obj, path))
+        self.assertRaises(TypeError, QPath.get, self.obj, path)
 
     def test_None_test(self):
         path = None
-        self.assertFalse(QPath.test(self.obj, path))
+        self.assertRaises(TypeError, QPath.get, self.obj, path)
 
     def test_empty_get(self):
         path = ""

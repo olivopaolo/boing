@@ -9,7 +9,6 @@
 
 import collections
 import copy
-import io
 
 class quickdict(dict):
 
@@ -109,37 +108,52 @@ def deepremove(obj, other, diff=False):
 
 # -------------------------------------------------------------------
 
-def dump(obj, fp, indent=4, level=0):
+def deepDump(obj, fd, maxdepth=None, indent=4):
+    return _deepDump(obj, fd, 0, maxdepth, indent)
+
+def _deepDump(obj, fd, level, maxdepth, indent):
     if isinstance(obj, list):
-        fp.write(" "*level)
-        fp.write("[")
-        for i, value in enumerate(obj):
-            if isinstance(value, collections.Mapping) \
-                    or isinstance(value, list):
-                dump(value, fp, indent, level+indent)
-            else:
-                if i>0: fp.write(" "*(level+1))
-                fp.write(repr(value))
-            if i<len(obj)-1:
-                fp.write(",\n")
-            else:
-                fp.write("]")
+        fd.write(" "*(level*indent))
+        fd.write("[")
+        if maxdepth is None or level<maxdepth:
+            for i, value in enumerate(obj):
+                if isinstance(value, collections.Mapping) \
+                        or isinstance(value, list):
+                    _deepDump(value, fd, level+1, maxdepth, indent)
+                else:
+                    if i>0: fd.write(" "*(level*indent+1))
+                    fd.write(repr(value))
+                if i<len(obj)-1:
+                    fd.write(",\n")
+                else:
+                    fd.write("]")
+        else:
+            fd.write("...]")
     elif isinstance(obj, collections.Mapping):
-        fp.write(" "*level)
-        fp.write("{")
-        for i, (key, value) in enumerate(obj.items()):
-            if i>0: fp.write(" "*(level+1))
-            if isinstance(value, collections.Mapping) \
-                    or isinstance(value, list):
-                fp.write("%s:\n"%repr(key))
-                dump(value, fp, indent, level+indent)
-            else:
-                fp.write("%s: %s"%(repr(key), repr(value)))
-            if i<len(obj)-1:
-                fp.write(",\n")
-            else:
-                fp.write("}")
+        fd.write(" "*(level*indent))
+        fd.write("{")
+        if maxdepth is None or level<maxdepth:
+            for i, (key, value) in enumerate(obj.items()):
+                if i>0: fd.write(" "*(level*indent+1))
+                if isinstance(value, collections.Mapping) \
+                        or isinstance(value, list):
+                    fd.write("%s:\n"%repr(key))
+                    _deepDump(value, fd, level+1, maxdepth, indent)
+                else:
+                    fd.write("%s: %s"%(repr(key), repr(value)))
+                if i<len(obj)-1:
+                    fd.write(",\n")
+                else:
+                    fd.write("}")
+        else:
+            for i, key in enumerate(obj.keys()):
+                if i>0: fd.write(" "*(level*indent+1))
+                fd.write("%s: ..."%repr(key))
+                if i<len(obj)-1:
+                    fd.write(",\n")
+                else:
+                    fd.write("}")
     else:
-        fp.write(repr(obj))
-    if level==0: fp.write("\n")
+        fd.write(repr(obj))
+    if level==0: fd.write("\n")
 

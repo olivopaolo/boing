@@ -7,7 +7,9 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import copy
 import collections
+import itertools
 import re
 
 def get(obj, path):
@@ -19,9 +21,9 @@ def paths(obj, path):
     matched by 'path'."""
     return QPath(path).paths(obj)
 
-def filter(obj, path):
+def filter(obj, path, deepcopy=True):
     """Returns the a subset of 'obj' that is matched by 'path'."""
-    return QPath(path).filter(obj)
+    return QPath(path).filter(obj, deepcopy)
 
 def filterout(obj, path):
     return QPath(path).filterout(obj)
@@ -32,15 +34,27 @@ def test(obj, path):
     return QPath(path).test(obj)
 
 def join(*paths):
+    """Returns the union of many QPaths."""
     if not paths:
-        rvalue = QPath(None)
-    elif "*" in paths:
+        rvalue = None
+    elif "*" in map(str, paths):
         rvalue = QPath("*")
     else:
-        paths = tuple((p for p in paths if str(p)!="None"))
-        rvalue = QPath("|".join(map(str, paths)) if paths else None)
+        filtered = set(itertools.chain(*(
+                    str(p).split("|") for p in paths if p is not None)))
+        rvalue = QPath("|".join(filtered)) if filtered else None
     return rvalue
-                      
+
+def subtract(minuend, subtrahend):
+    if subtrahend is None: 
+        rvalue = minuend
+    elif str(subtrahend)=="*" or minuend==subtrahend: 
+        rvalue = None
+    else:
+        difference = set(str(minuend).split("|"))-set(str(subtrahend).split("|"))
+        rvalue = QPath("|".join(difference)) if difference else None
+    return rvalue
+
 
 class QPath(object):
 
@@ -48,7 +62,10 @@ class QPath(object):
         pass
     
     def __init__(self, path):
-        self._path = str(path) if path is not None else None
+        if path is None: 
+            raise TypeError(
+                "QPath() argument must be a string, not %s"%type(path))
+        self._path = str(path)
         self._norm = QPath._normalize(self._path)
         self._resultType = None
         self._result = None
@@ -57,6 +74,7 @@ class QPath(object):
         # ListPlaceholders, so before returning the result, it is
         # necessary to reconvert them to standard lists.
         self._validate = False
+        self._deepcopy = False
 
     def get(self, obj):
         """Returns the list of the matched items of 'obj'."""
@@ -90,10 +108,11 @@ class QPath(object):
         self._tearDown()
         return rvalue
    
-    def filter(self, obj):
+    def filter(self, obj, deepcopy=True):
         """Returns the matched subset of "obj"."""
         self._target = obj
         self._resultType = "FILTER"
+        self._deepcopy = deepcopy
         self._result = None
         for path in self._norm:
             self._trace(path, obj, "$")
@@ -137,10 +156,11 @@ class QPath(object):
 
     def _tearDown(self):
         self._target = self._result = self._resultType = None
-        self._validate = False
+        self._deepcopy = self._validate = False
 
     def _store(self, path, value):
         """Store result."""
+        stop = False
         if path: 
             if self._resultType=="VALUE":
                 self._result.append(value)
@@ -153,8 +173,10 @@ class QPath(object):
                 self._result[0].append(path.replace(";","."))
                 self._result[1].append(value)
             elif self._resultType=="FILTER":
-                if path=="$":  self._result = value
-                else:                    
+                if path=="$":  
+                    self._result = value if not self._deepcopy \
+                        else copy.deepcopy(value)
+                else:
                     obj = self._target
                     if self._result is None:
                         if isinstance(obj, collections.Mapping):
@@ -173,37 +195,50 @@ class QPath(object):
                                 temp = type(obj)()
                             else:
                                 temp = QPath.ListPlaceholder()
-                                self._validate = True                            
+                                self._validate = True
                             result[key] = temp
                         result = temp
-                    result[split[-1]] = value
+                    result[split[-1]] = value if not self._deepcopy \
+                        else copy.deepcopy(value)
             elif self._resultType=="TEST":
-                self._result = True
+                self._result = stop = True
+        return stop
 
     def _trace(self, expr, obj, path):
         """Parce query."""
+        stop = False
         if expr:
             first, sep, rest = expr.partition(";")
             if QPath._hasprop(obj, first):
-                self._trace(rest, QPath._getprop(obj, first), ";".join((path, first)))
-            elif first=="*" or (first==":" and isinstance(obj, collections.Sequence)):
+                stop = self._trace(rest, QPath._getprop(obj, first), 
+                                   ";".join((path, first)))
+            elif first=="*" \
+                    or (first==":" and isinstance(obj, collections.Sequence)):
                 for key, value in QPath._iterprop(obj):
-                    self._trace(rest, value, ";".join((path, str(key))))
+                    stop = self._trace(rest, value, ";".join((path, str(key))))
+                    if stop: break
             elif first=="..":
-                self._trace(rest, obj, path)
-                for key, value in QPath._iterprop(obj):
-                    if value!=obj: self._trace(expr, value, ";".join((path, str(key))))
+                stop = self._trace(rest, obj, path)
+                if not stop:
+                    for key, value in QPath._iterprop(obj):
+                        if value!=obj: 
+                            stop = self._trace(expr, value, 
+                                               ";".join((path, str(key))))
+                            if stop: break
             elif "," in first: # [name1,name2,...]
                 for key in first.split(","):
-                    self._trace(";".join((key, rest)), obj, path)
+                    stop = self._trace(";".join((key, rest)), obj, path)
+                    if stop: break
             elif first[0]=="(" and first[-1]==")": # [(expr)]
                 key = QPath._eval(first, obj)
                 if key is not None:
-                    self._trace(";".join((str(key), rest)), obj, path)
+                    stop = self._trace(";".join((str(key), rest)), obj, path)
             elif first.startswith("?(") and first[-1]==")": # [?(expr)]
                 for key, value in QPath._iterprop(obj):
                     if QPath._eval(first[1:], value):
-                        self._trace(rest, value, ";".join((path, str(key))))
+                        stop = self._trace(rest, value, 
+                                           ";".join((path, str(key))))
+                        if stop: break
             elif isinstance(obj, collections.Sequence) :
                 m = re.match("^(-?[0-9]*):(-?[0-9]*):?([0-9]*)$", first)
                 if m:
@@ -215,9 +250,12 @@ class QPath(object):
                     end = max(0, end+l) if end<0 else min(l, end)
                     step = int(step) if step else 1
                     for i in range(start, end, step):
-                        self._trace(rest, obj[i], ";".join((path, str(i))))
+                        stop = self._trace(rest, obj[i], 
+                                           ";".join((path, str(i))))
+                        if stop: break
         else:
-            self._store(path, obj)
+            stop = self._store(path, obj)
+        return stop
 
     @staticmethod
     def _validate(obj):
@@ -313,11 +351,17 @@ class QPath(object):
             pass
         return rvalue
 
+    def __hash__(self):
+        return hash(self._path)
+
     def __str__(self):
         return str(self._path)
 
     def __repr__(self):
         return "QPath('%s')"%str(self._path)
+
+    def __bool__(self):
+        return bool(self._path)
 
     def __eq__(self, other):        
         return isinstance(other, QPath) and self._path==other._path

@@ -18,8 +18,8 @@ from boing.utils.url import URL
 
 class TcpSocket(QTcpSocket):
 
-    def __init__(self, parent=None):
-        QTcpSocket.__init__(self, parent)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.logger = logging.getLogger("TcpSocket.%d"%id(self))
         self.error.connect(self.__error)
         
@@ -102,10 +102,11 @@ def TcpConnection(url, family=None):
 class TcpServer(QTcpServer):
 
     def __init__(self, host=None, port=0, family=None,
-                 maxconnections=30, factory=TcpSocket, options=tuple(), parent=None):
+                 maxconnections=30, factory=TcpSocket, options=tuple(),
+                 *args, **kwargs):
         """Raises Exception if TCP socket cannot be bound at specified
         host and port."""
-        QTcpServer.__init__(self, parent=parent)
+        super().__init__(*args, **kwargs)
         self.__factory = factory
         self.__options = options if options is not None else tuple()
         self.setMaxPendingConnections(maxconnections)

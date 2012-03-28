@@ -47,6 +47,8 @@ class LogFile(QtCore.QObject, HierarchicalConsumer):
             osc = p.get("osc")
             if osc: self.logData(osc.encode())
 
+# -----------------------------------------------------------------
+
 class LogPlayer(HierarchicalProducer):
     """
     TODO: should support partial decoding, i.e. decode only the bundle
@@ -66,8 +68,9 @@ class LogPlayer(HierarchicalProducer):
         self.speed = speed
         self.looping = loop
         self.playcnt = 0
-        self._addTag("data", {"data": bytearray()})
+        self.__next = None
         self._addTag("osc", {"osc": osc.Packet()})
+        self._addTag("timetag", {"timetag": datetime.datetime.now()})
 
     def start(self):
         if self.__fd.isOpen() and not self._running:
@@ -104,7 +107,9 @@ class LogPlayer(HierarchicalProducer):
             if self.looping: 
                 self.__timer.start(1000)
             else:
-                self.__sendOut(None)
+                # FIXME: Handle how to notify that a log is terminated
+                # self.__sendOut(None)
+                pass
         else:
             # Read the next bundle and wait 
             second = self._packets[0]
@@ -116,25 +121,24 @@ class LogPlayer(HierarchicalProducer):
             self.__timer.start(seconds*1000/self.speed)
 
     def __parse(self):
+        rvalue = False
         if self.__fd.isOpen(): 
             encoded = self.__fd.read()
             if encoded: 
                 packets, self._slipbuffer = slip.decode(encoded, self._slipbuffer)
                 self._packets.extend(map(osc.decode, packets))
-                return True
-        return False
+                rvalue = True
+        return rvalue
 
     def __sendOut(self, packets):
-        if self._tag("osc") or self._tag("data"):
-            if packets:
+        if self._tag("osc"):
+            if self._tag("timetag"):
                 for packet in packets:
-                    product = {}
-                    if self._tag("osc"): product["osc"] = packet
-                    if self._tag("data"): product["data"] = packet.encode()
-                    self._postProduct(product)
+                    self._postProduct(
+                        {"osc": packet, "timetag": datetime.datetime.now()})
             else:
-                if self._tag("data"):
-                    self._postProduct({"data": bytes()})
+                for packet in packets:
+                    self._postProduct({"osc": packet})
 
     def __proceed(self):
         if self.isPlaying():
