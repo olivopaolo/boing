@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# unittest/dns_sd/test_dns_sd.py -
+# boing/test/dns_sd/test_dns_sd.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

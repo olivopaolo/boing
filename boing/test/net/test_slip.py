@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# unittest/slip/test__slip__.py -
+# boing/test/net/test__slip__.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

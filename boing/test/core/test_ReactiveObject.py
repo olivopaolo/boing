@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# unittest/core/test_ReactiveObject.py -
+# boing/test/core/test_ReactiveObject.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

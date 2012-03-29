@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# unittest/eventloop/__init__.py -
+# boing/test/core/__init__.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

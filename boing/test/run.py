@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# unittest/run.py -
+# boing/test/run.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

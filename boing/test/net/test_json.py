@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# unittest/net/test_json.py -
+# boing/test/net/test_json.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

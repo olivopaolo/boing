@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# unittest/udp/test_TcpServer.py -
+# boing/test/net/test_tcp.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

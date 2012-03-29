@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# unittest/utils/test_QPath.py -
+# boing/test/utils/test_QPath.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

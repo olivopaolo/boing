@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# unittest/eventloop/test_StateMachine.py -
+# boing/test/core/test_StateMachine.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

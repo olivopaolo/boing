@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# unittest/net/__init__.py -
+# boing/test/net/__init__.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
