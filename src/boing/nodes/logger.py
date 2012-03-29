@@ -7,6 +7,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import collections
 import datetime
 import io
 
@@ -63,11 +64,12 @@ class LogPlayer(HierarchicalProducer):
         self.__timer.setSingleShot(True)
         self.__fd = fd
         self._slipbuffer = None
-        self._packets = []
+        self._packets = collections.deque()
         self._running = False
         self.speed = speed
         self.looping = loop
         self.playcnt = 0
+        """Time when the next packet should be sent."""
         self.__next = None
         self._addTag("osc", {"osc": osc.Packet()})
         self._addTag("timetag", {"timetag": datetime.datetime.now()})
@@ -83,6 +85,8 @@ class LogPlayer(HierarchicalProducer):
         self.__timer.stop()
         if self.__fd.isOpen(): self.__fd.seek(0)
         self._slipbuffer = None
+        self._packets.clear()
+        self.__next = None
         self._running = False
         self.stopped.emit()
 
@@ -99,7 +103,7 @@ class LogPlayer(HierarchicalProducer):
             return 
         if self._packets:
             # Send out the first packet
-            first = self._packets.pop(0)          
+            first = self._packets.popleft()
             self.__sendOut(first.elements)
         if not self._packets:
             # Log is finished 
@@ -112,13 +116,16 @@ class LogPlayer(HierarchicalProducer):
                 pass
         else:
             # Read the next bundle and wait 
-            second = self._packets[0]
-            delta = second.timetag - first.timetag
+            now = datetime.datetime.now()
+            delta = self._packets[0].timetag - first.timetag
+            if self.__next is not None: delta = delta - (now - self.__next)
+            self.__next = now + delta
             seconds = \
                 delta.days*24*3600 + \
                 delta.seconds + \
                 delta.microseconds*1e-6
-            self.__timer.start(seconds*1000/self.speed)
+            interval = seconds*1000/self.speed
+            self.__timer.start(interval if interval>0 else 0)
 
     def __parse(self):
         rvalue = False
@@ -132,13 +139,15 @@ class LogPlayer(HierarchicalProducer):
 
     def __sendOut(self, packets):
         if self._tag("osc"):
-            if self._tag("timetag"):
-                for packet in packets:
-                    self._postProduct(
-                        {"osc": packet, "timetag": datetime.datetime.now()})
-            else:
-                for packet in packets:
-                    self._postProduct({"osc": packet})
+            for packet in packets:
+                if isinstance(packet, osc.Bundle):
+                    packet.timetag = self.__next if self.__next is not None \
+                        else datetime.datetime.now()
+                product = {"osc": packet}
+                if self._tag("timetag"):
+                    product["timetag"] = self.__next if self.__next is not None \
+                        else datetime.datetime.now()
+                self._postProduct(product)
 
     def __proceed(self):
         if self.isPlaying():

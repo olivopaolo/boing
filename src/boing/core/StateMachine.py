@@ -23,7 +23,7 @@ class StateMachine(object):
     def state(self):
         return self._state
 
-    def setState(self, add=None, update=None, remove=None):
+    def setState(self, update=None, add=None, remove=None):
         diff = utils.quickdict()
         if add is not None: diff.added = add
         if update is not None: diff.updated = update
@@ -57,15 +57,13 @@ class StateNode(Node, StateMachine):
         #FIXME: set productoffer
         Node.__init__(self, request=request, parent=parent)
         StateMachine.__init__(self, initial)
-        self._addTag("diff", {"diff":{"added":{}, "updated":{}, "removed":{}}})
         
     def applyDiff(self, diff, additional=None):
-        realdiff = StateMachine.applyDiff(self, diff, self._tag("diff"))
+        realdiff = StateMachine.applyDiff(self, diff, True)
         if realdiff:
             product = utils.quickdict({"diff":diff})
             if additional is not None: product.update(additional)
             self._postProduct(product)
-
 
 # -------------------------------------------------------------------
 

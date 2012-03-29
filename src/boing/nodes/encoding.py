@@ -29,8 +29,8 @@ class TextEncoder(FunctionalNode):
     def __init__(self, encoding="utf-8", 
                  mode=FunctionalNode.MERGE, hz=None, parent=None):
         # FIXME: set productoffer
-        FunctionalNode.__init__(self, "str", "data", {"data":bytes()}, mode,
-                                hz=hz, parent=parent)
+        super().__init__("str", "data", {"data":bytes()}, mode,
+                         hz=hz, parent=parent)
         self.encoding = encoding
   
     def _function(self, paths, values):
@@ -43,8 +43,8 @@ class TextDecoder(FunctionalNode):
     def __init__(self, encoding="utf-8", 
                  mode=FunctionalNode.MERGE, hz=None, parent=None):
         # FIXME: set productoffer
-        FunctionalNode.__init__(self, "data", "str", {"str":str()},
-                                mode, hz=hz, parent=parent)
+        super().__init__("data", "str", {"str":str()}, mode,
+                         hz=hz, parent=parent)
         self.encoding = encoding
         self.errors = "replace"
     
@@ -59,8 +59,8 @@ class SlipEncoder(FunctionalNode):
 
     def __init__(self, mode=FunctionalNode.MERGE, hz=None, parent=None):
         # FIXME: set productoffer
-        FunctionalNode.__init__(self, "data", template={"data":bytearray()},
-                                mode=mode, hz=hz, parent=parent)
+        super().__init__("data", template={"data":bytearray()}, mode=mode,
+                         hz=hz, parent=parent)
 
     def _function(self, paths, values):
         for data in values:
@@ -71,7 +71,7 @@ class SlipDecoder(Node):
 
     def __init__(self, hz=None, parent=None):
         # FIXME: set productoffer
-        Node.__init__(self, request="data", hz=hz, parent=parent)
+        super().__init__(request="data", hz=hz, parent=parent)
         self._slipbuffer = None
         self._addTag("data", {"data": bytearray()})
 
@@ -94,36 +94,39 @@ class SlipDecoder(Node):
 class OscEncoder(FunctionalNode):
 
     def __init__(self, mode=FunctionalNode.MERGE, hz=None, parent=None):
-        FunctionalNode.__init__(self, "osc", "data", {"data": bytearray()}, mode,
-                                hz=hz, parent=parent)
-
+        super().__init__("osc", "data", {"data": bytearray()}, mode,
+                         hz=hz, parent=parent)
+        
     def _function(self, paths, values):
-        for packet in values:
-            yield packet.encode()
+        yield values[0].encode()
 
 
 class OscDecoder(FunctionalNode):
 
-    def __init__(self, mode=FunctionalNode.MERGE, hz=None, parent=None):
-        FunctionalNode.__init__(self, "data", "osc", {"osc": osc.Packet()}, mode, 
-                                hz=hz, parent=parent)
+    def __init__(self, rt=False, mode=FunctionalNode.MERGE, hz=None, parent=None):
+        super().__init__("data", ("osc", "timetag"), {"osc": osc.Packet()}, 
+                         mode, hz=hz, parent=parent)
+        self._receipttime = rt
     
     def _function(self, paths, values):
-        for data in values:
-            if data: yield osc.decode(data)
+        data = values[0]
+        if data: 
+            packet = osc.decode(data)
+            yield packet
+            yield packet.timetag if not self._receipttime \
+                else datetime.datetime.now()
 
 
 class OscDebug(FunctionalNode):
 
     def __init__(self, mode=FunctionalNode.MERGE, hz=None, parent=None):
-        FunctionalNode.__init__(self, "osc", "str", {"str": str()}, mode,
-                                hz=hz, parent=parent)
+        super().__init__("osc", "str", {"str": str()}, mode,
+                         hz=hz, parent=parent)
 
     def _function(self, paths, values):
-        for data in values:
-            stream = io.StringIO()
-            data.debug(stream)
-            yield stream.getvalue()
+        stream = io.StringIO()
+        values[0].debug(stream)
+        yield stream.getvalue()
 
 # -------------------------------------------------------------------
 # TUIO
@@ -139,11 +142,9 @@ class TuioDecoder(FunctionalNode):
         template = {"diff": {"added":{"contacts":{'0':{'rel_pos':tuple()}}}, 
                              "updated":{"contacts":{}},
                              "removed":{"contacts": {}}},
-                    "timetag": datetime.datetime.now(),
                     "source": str()}
-        FunctionalNode.__init__(self, "osc", 
-                                lambda paths: ("diff", "timetag", "source"),
-                                template, mode, hz=hz, parent=parent)
+        super().__init__("osc", ("diff", "source"), template, mode,
+                         hz=hz, parent=parent)
         """Alive TUIO items."""
         # self.__alive[source][profile] = set of session_ids
         self.__alive = {}
@@ -162,8 +163,6 @@ class TuioDecoder(FunctionalNode):
                     yield item
   
     def __handleOsc(self, packet):
-        timetag = packet.timetag if packet.timetag is not None \
-            else datetime.datetime.now()
         source = fseq = profile = None
         desc = {}
         alive = set()
@@ -267,7 +266,7 @@ class TuioDecoder(FunctionalNode):
                 if gid is not None:
                     diff.removed.contacts[gid] = None
         src_profiles[profile] = alive
-        return (diff, timetag, source) if diff else None
+        return (diff, source) if diff else None
 
     def __nextId(self):
         value = self.__idcount
@@ -278,10 +277,12 @@ class TuioDecoder(FunctionalNode):
 
 class TuioEncoder(Node):
     """Convert contact events into OSC/TUIO packets."""
-    def __init__(self, request="diff.*.contacts|source", hz=None, parent=None):
-        Node.__init__(self, request=request, parent=parent)
+    def __init__(self, request="diff.*.contacts|source|timetag", 
+                 hz=None, parent=None):
+        super().__init__(request=request, hz=hz, parent=parent)
         # self._tuiostate[observable-ref][source][profile] = [fseq, {s_id: TuioDescriptor}]
         self._tuiostate = {}
+        self._addTag("osc", {"osc": osc.Packet()})
     
     def _checkRef(self):
         Node._checkRef(self)
@@ -306,210 +307,210 @@ class TuioEncoder(Node):
         return rvalue
 
     def _consume(self, products, producer):
-        for product in products:
-            if "diff" in product:
-                # Set of s_id that have been updated.  
-                # setters[<profile>] = {s_id1, s_id2, ..., s_idn}
-                setters = {}
-                # Set of profiles for which a s_id have been removed
-                removed = set() 
-                diff = product["diff"]
-                src = product.get("source", str(producer))
-                sourcetuiostate = self.__sourcetuiostate(producer, src)
-                toupdate = None
-                if "added" in diff: toupdate = diff.added.contacts
-                if "updated" in diff:
-                    if toupdate is None: 
-                        toupdate = diff.updated.contacts
+        if self._tag("osc"):
+            for product in products:
+                if "diff" in product: self._encodeEvent(product, producer)
+                    
+
+    def _encodeEvent(self, event, producer):
+        # Set of s_id that have been updated.  
+        # setters[<profile>] = {s_id1, s_id2, ..., s_idn}
+        setters = {}
+        # Set of profiles for which a s_id have been removed
+        removed = set() 
+        diff = event["diff"]
+        src = event.get("source", str(producer))
+        sourcetuiostate = self.__sourcetuiostate(producer, src)
+        toupdate = None
+        if "added" in diff: toupdate = diff.added.contacts
+        if "updated" in diff:
+            if toupdate is None: 
+                toupdate = diff.updated.contacts
+            else:
+                utils.deepupdate(toupdate, diff.updated.contacts)
+        if toupdate is not None:
+            for gid, gdiff in toupdate.items():
+                # Determine the TUIO profiles for the gesture event
+                profiles = set()
+                for profile, profilestate in sourcetuiostate.items():
+                    if gid in profilestate[1]: profiles.add(profile)
+                if not profiles:
+                    if "rel_pos" in gdiff:
+                        if "objclass" in gdiff: 
+                            if len(gdiff.rel_pos)==2: 
+                                profiles.add("2Dobj")
+                            elif len(gdiff.rel_pos)==3: 
+                                profiles.add("3Dobj")
+                        elif len(gdiff.rel_pos)==2: 
+                            profiles.add("2Dcur")
+                        elif len(gdiff.rel_pos)==3: 
+                            profiles.add("3Dcur")
+                    if "boundingbox" in gdiff: 
+                        if "rel_pos" in gdiff.boundingbox:
+                            if len(gdiff.boundingbox.rel_pos)==2: 
+                                profiles.add("2Dblb")
+                            elif len(gdiff.boundingbox.rel_pos)==3: 
+                                profiles.add("3Dblb")
+                        elif "rel_pos" in gdiff:
+                            if len(gdiff.rel_pos)==2: 
+                                profiles.add("2Dblb")
+                            elif len(gdiff.rel_pos)==3: 
+                                profiles.add("3Dblb")
+                elif len(profiles)==1 and "boundingbox" in gdiff:
+                    if "rel_pos" in gdiff.boundingbox:
+                        if len(gdiff.boundingbox.rel_pos)==2: 
+                            profiles.add("2Dblb")
+                        elif len(gdiff.boundingbox.rel_pos)==3: 
+                            profiles.add("3Dblb")
                     else:
-                        utils.deepupdate(toupdate, diff.updated.contacts)
-                if toupdate is not None:
-                    for gid, gdiff in toupdate.items():
-                        # Determine the TUIO profiles for the gesture event
-                        profiles = set()
-                        for profile, profilestate in sourcetuiostate.items():
-                            if gid in profilestate[1]: profiles.add(profile)
-                        if not profiles:
-                            if "rel_pos" in gdiff:
-                                if "objclass" in gdiff: 
-                                    if len(gdiff.rel_pos)==2: 
-                                        profiles.add("2Dobj")
-                                    elif len(gdiff.rel_pos)==3: 
-                                        profiles.add("3Dobj")
-                                elif len(gdiff.rel_pos)==2: 
-                                    profiles.add("2Dcur")
-                                elif len(gdiff.rel_pos)==3: 
-                                    profiles.add("3Dcur")
-                            if "boundingbox" in gdiff: 
-                                if "rel_pos" in gdiff.boundingbox:
-                                    if len(gdiff.boundingbox.rel_pos)==2: 
-                                        profiles.add("2Dblb")
-                                    elif len(gdiff.boundingbox.rel_pos)==3: 
-                                        profiles.add("3Dblb")
-                                elif "rel_pos" in gdiff:
-                                    if len(gdiff.rel_pos)==2: 
-                                        profiles.add("2Dblb")
-                                    elif len(gdiff.rel_pos)==3: 
-                                        profiles.add("3Dblb")
-                        elif len(profiles)==1 and "boundingbox" in gdiff:
-                            if "rel_pos" in gdiff.boundingbox:
-                                if len(gdiff.boundingbox.rel_pos)==2: 
-                                    profiles.add("2Dblb")
-                                elif len(gdiff.boundingbox.rel_pos)==3: 
-                                    profiles.add("3Dblb")
-                            elif "rel_pos" in gdiff:
-                                if len(gdiff.rel_pos)==2: profiles.add("2Dblb")
-                                elif len(gdiff.rel_pos)==3: profiles.add("3Dblb")
-                        # Create set descriptors for each updated profile
-                        for profile in profiles:
-                            update = False
-                            profilestate = sourcetuiostate.setdefault(
-                                profile, [0, {}])
-                            if gid in profilestate[1]: 
-                                prev = profilestate[1][gid]
-                            else:
-                                len_ = len(tuio.TuioDescriptor.profiles[profile])
-                                prev = tuio.TuioDescriptor(
-                                    None, profile, None, None, None,
-                                    *([tuio.TuioDescriptor.undef_value]*len_))
-                                prev.s = int(gid)
-                                profilestate[1][gid] = prev
+                        for other in profiles: break
+                        if other.startswith("2D"): profiles.add("2Dblb")
+                        elif other.startswith("3D"): profiles.add("3Dblb")
+                # Create set descriptors for each updated profile
+                for profile in profiles:
+                    update = False
+                    profilestate = sourcetuiostate.setdefault(
+                        profile, [0, {}])
+                    if gid in profilestate[1]: 
+                        prev = profilestate[1][gid]
+                    else:
+                        len_ = len(tuio.TuioDescriptor.profiles[profile])
+                        prev = tuio.TuioDescriptor(
+                            None, profile, None, None, None,
+                            *([tuio.TuioDescriptor.undef_value]*len_))
+                        prev.s = int(gid)
+                        profilestate[1][gid] = prev
+                        update = True
+                    if profile=="2Dcur":
+                        if "rel_pos" in gdiff:
+                            prev.x, prev.y = gdiff.rel_pos[:2]
+                            update = True
+                        if "rel_speed" in gdiff:
+                            prev.X, prev.Y = gdiff.rel_speed[:2]
+                            update = True
+                    elif profile in ("25Dcurr", "3Dcur"):
+                        if "rel_pos" in gdiff:
+                            prev.x, prev.y, prev.z= gdiff.rel_pos[:3]
+                            update = True
+                        if "rel_speed" in gdiff:
+                            prev.X, prev.Y, prev.Z = gdiff.rel_speed[:3]
+                            update = True
+                    elif profile=="2Dobj":
+                        if "rel_pos" in gdiff: 
+                            prev.x, prev.y = gdiff.rel_pos[:2]
+                            update = True
+                        if "rel_speed" in gdiff:
+                            prev.X, prev.Y = gdiff.rel_speed[:2]
+                            update = True
+                        if "si_angle" in gdiff: 
+                            prev.a = gdiff.si_angle[0]
+                            update = True
+                        if "objclass" in gdiff:
+                            prev.i = gdiff.objclass
+                            update = True
+                    elif profile=="25Dobj":
+                        if "rel_pos" in gdiff:
+                            prev.x, prev.y, prev.z= gdiff.rel_pos[:3]
+                            update = True
+                        if "rel_speed" in gdiff:
+                            prev.X, prev.Y, prev.Z = gdiff.rel_speed[:3]
+                            update = True
+                        if "si_angle" in gdiff: 
+                            prev.a = gdiff.si_angle[0]
+                            update = True
+                        if "objclass" in gdiff:
+                            prev.i = gdiff.objclass
+                            update = True
+                    elif profile=="3Dobj":
+                        if "rel_pos" in gdiff:
+                            prev.x, prev.y, prev.z= gdiff.rel_pos[:3]
+                            update = True
+                        if "rel_speed" in gdiff:
+                            prev.X, prev.Y, prev.Z = gdiff.rel_speed[:3]
+                            update = True
+                        if "si_angle" in gdiff: 
+                            prev.a, prev.b, prev.c = gdiff.si_angle[:3]
+                            update = True
+                        if "objclass" in gdiff:
+                            prev.i = gdiff.objclass
+                            update = True
+                    elif profile=="2Dblb":
+                        if "boundingbox" in gdiff:
+                            bb = gdiff.boundingbox
+                            if "rel_pos" in bb: 
+                                prev.x, prev.y = bb.rel_pos[:2]
                                 update = True
-                            if profile=="2Dcur":
-                                if "rel_pos" in gdiff:
-                                    prev.x, prev.y = gdiff.rel_pos[:2]
-                                    update = True
-                                if "rel_speed" in gdiff:
-                                    prev.X, prev.Y = gdiff.rel_speed[:2]
-                                    update = True
-                            elif profile in ("25Dcurr", "3Dcur"):
-                                if "rel_pos" in gdiff:
-                                    prev.x, prev.y, prev.z= gdiff.rel_pos[:3]
-                                    update = True
-                                if "rel_speed" in gdiff:
-                                    prev.X, prev.Y, prev.Z = gdiff.rel_speed[:3]
-                                    update = True
-                            elif profile=="2Dobj":
-                                if "rel_pos" in gdiff: 
-                                    prev.x, prev.y = gdiff.rel_pos[:2]
-                                    update = True
-                                if "rel_speed" in gdiff:
-                                    prev.X, prev.Y = gdiff.rel_speed[:2]
-                                    update = True
-                                if "si_angle" in gdiff: 
-                                    prev.a = gdiff.si_angle[0]
-                                    update = True
-                                if "objclass" in gdiff:
-                                    prev.i = gdiff.objclass
-                                    update = True
-                            elif profile=="25Dobj":
-                                if "rel_pos" in gdiff:
-                                    prev.x, prev.y, prev.z= gdiff.rel_pos[:3]
-                                    update = True
-                                if "rel_speed" in gdiff:
-                                    prev.X, prev.Y, prev.Z = gdiff.rel_speed[:3]
-                                    update = True
-                                if "si_angle" in gdiff: 
-                                    prev.a = gdiff.si_angle[0]
-                                    update = True
-                                if "objclass" in gdiff:
-                                    prev.i = gdiff.objclass
-                                    update = True
-                            elif profile=="3Dobj":
-                                if "rel_pos" in gdiff:
-                                    prev.x, prev.y, prev.z= gdiff.rel_pos[:3]
-                                    update = True
-                                if "rel_speed" in gdiff:
-                                    prev.X, prev.Y, prev.Z = gdiff.rel_speed[:3]
-                                    update = True
-                                if "si_angle" in gdiff: 
-                                    prev.a, prev.b, prev.c = gdiff.si_angle[:3]
-                                    update = True
-                                if "objclass" in gdiff:
-                                    prev.i = gdiff.objclass
-                                    update = True
-                            elif profile=="2Dblb":
-                                if "boundingbox" in gdiff:
-                                    bb = gdiff.boundingbox
-                                    if "rel_pos" in bb: 
-                                        prev.x, prev.y = bb.rel_pos[:2]
-                                        update = True
-                                    if "rel_speed" in bb:
-                                        prev.X, prev.Y = bb.rel_speed[:2]
-                                        update = True
-                                    if "si_angle" in bb:
-                                        prev.a = bb.si_angle[0]
-                                        update = True
-                                    if "rel_size" in bb:
-                                        prev.w, prev.h = bb.rel_size[:2]
-                                        update = True
-                            elif profile=="25Dblb":
-                                if "boundingbox" in gdiff:
-                                    bb = gdiff.boundingbox
-                                    if "rel_pos" in bb: 
-                                        prev.x, prev.y, prev.z = bb.rel_pos[:3]
-                                        update = True
-                                    if "rel_speed" in bb:
-                                        prev.X, prev.Y, prev.Z = bb.rel_speed[:3]
-                                        update = True
-                                    if "si_angle" in bb:
-                                        prev.a = bb.si_angle[0]
-                                        update = True
-                                    if "rel_size" in bb:
-                                        prev.w, prev.h = bb.rel_size[:2]
-                                        update = True
-                            elif profile=="3Dblb":
-                                if "boundingbox" in gdiff:
-                                    bb = gdiff.boundingbox
-                                    if "rel_pos" in bb: 
-                                        prev.x, prev.y, prev.z = bb.rel_pos[:3]
-                                        update = True
-                                    if "rel_speed" in bb:
-                                        prev.X, prev.Y, prev.Z = bb.rel_speed[:3]
-                                        update = True
-                                    if "si_angle" in bb:
-                                        prev.a, prev.b, prev.c = bb.si_angle[:3]
-                                        update = True
-                                    if "rel_size" in bb:
-                                        prev.w, prev.h, prev.d = bb.rel_size[:3]
-                                        update = True
-                            if update: setters.setdefault(profile, set()).add(gid)
-                if "removed" in diff:
-                    for gid in diff.removed.contacts.keys():
-                        for profile, profilestate in sourcetuiostate.items():
-                            if gid in profilestate[1]:
-                                del profilestate[1][gid]
-                                removed.add(profile)
-                                if profile in setters:
-                                    setters[profile].discard(gid)
-                # Create an OSC bundle 
-                packets = []
-                for profile in (set(setters.keys()) | removed):
-                    profilestate = sourcetuiostate[profile]
-                    sourcemsg = osc.Message("/tuio/%s"%profile, 
-                                            "ss", "source", 
-                                            src)
-                    alive = list(int(gid) for gid in profilestate[1].keys())
-                    alivemsg = osc.Message("/tuio/%s"%profile, 
-                                           "s"+"i"*len(alive), "alive", 
-                                           *alive)
-                    msgs = [sourcemsg, alivemsg]
-                    profilesetters = setters.get(profile)
-                    if profilesetters is not None:
-                        setmsgs = []
-                        for s_id in profilesetters:
-                            desc = profilestate[1][s_id]
-                            args = []
-                            for name in tuio.TuioDescriptor.profiles[profile]:
-                                args.append(getattr(desc, name))
-                            setmsgs.append(osc.Message("/tuio/%s"%profile,
-                                                       None, "set", 
-                                                       *args))
-                        msgs.extend(setmsgs)
-                    msgs.append(osc.Message("/tuio/%s"%profile, 
-                                            "si", "fseq", 
-                                            profilestate[0]))
-                    profilestate[0] += 1
-                    forward = utils.quickdict()
-                    forward.osc = osc.Bundle(product.get("timetag"), msgs)
-                    self._postProduct(forward)
+                            if "rel_speed" in bb:
+                                prev.X, prev.Y = bb.rel_speed[:2]
+                                update = True
+                            if "si_angle" in bb:
+                                prev.a = bb.si_angle[0]
+                                update = True
+                            if "rel_size" in bb:
+                                prev.w, prev.h = bb.rel_size[:2]
+                                update = True
+                    elif profile=="25Dblb":
+                        if "boundingbox" in gdiff:
+                            bb = gdiff.boundingbox
+                            if "rel_pos" in bb: 
+                                prev.x, prev.y, prev.z = bb.rel_pos[:3]
+                                update = True
+                            if "rel_speed" in bb:
+                                prev.X, prev.Y, prev.Z = bb.rel_speed[:3]
+                                update = True
+                            if "si_angle" in bb:
+                                prev.a = bb.si_angle[0]
+                                update = True
+                            if "rel_size" in bb:
+                                prev.w, prev.h = bb.rel_size[:2]
+                                update = True
+                    elif profile=="3Dblb":
+                        if "boundingbox" in gdiff:
+                            bb = gdiff.boundingbox
+                            if "rel_pos" in bb: 
+                                prev.x, prev.y, prev.z = bb.rel_pos[:3]
+                                update = True
+                            if "rel_speed" in bb:
+                                prev.X, prev.Y, prev.Z = bb.rel_speed[:3]
+                                update = True
+                            if "si_angle" in bb:
+                                prev.a, prev.b, prev.c = bb.si_angle[:3]
+                                update = True
+                            if "rel_size" in bb:
+                                prev.w, prev.h, prev.d = bb.rel_size[:3]
+                                update = True
+                    if update: setters.setdefault(profile, set()).add(gid)
+        if "removed" in diff:
+            for gid in diff.removed.contacts.keys():
+                for profile, profilestate in sourcetuiostate.items():
+                    if gid in profilestate[1]:
+                        del profilestate[1][gid]
+                        removed.add(profile)
+                        if profile in setters:
+                            setters[profile].discard(gid)
+        # Create an OSC bundle 
+        packets = []
+        for profile in (set(setters.keys()) | removed):
+            profilestate = sourcetuiostate[profile]
+            sourcemsg = osc.Message("/tuio/%s"%profile, "ss", "source", src)
+            alive = list(int(gid) for gid in profilestate[1].keys())
+            alivemsg = osc.Message("/tuio/%s"%profile, 
+                                   "s"+"i"*len(alive), "alive", *alive)
+            msgs = [sourcemsg, alivemsg]
+            profilesetters = setters.get(profile)
+            if profilesetters is not None:
+                setmsgs = []
+                for s_id in profilesetters:
+                    desc = profilestate[1][s_id]
+                    args = []
+                    for name in tuio.TuioDescriptor.profiles[profile]:
+                        args.append(getattr(desc, name))
+                    setmsgs.append(osc.Message("/tuio/%s"%profile,
+                                               None, "set", *args))
+                msgs.extend(setmsgs)
+            msgs.append(osc.Message("/tuio/%s"%profile, "si", "fseq", 
+                                    profilestate[0]))
+            profilestate[0] += 1
+            forward = utils.quickdict()
+            forward.osc = osc.Bundle(event.get("timetag"), msgs)
+            self._postProduct(forward)

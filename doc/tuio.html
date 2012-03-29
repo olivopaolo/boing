@@ -25,8 +25,15 @@
 <p>Replay a TUIO log to an UDP socket:</p>
 <pre>&gt; python3 test/run.py -i tuio:///tmp/log.osc.bz2 -o udp://[::1]:7777</pre>
 
-<p>Replay a TUIO log (at double speed and loop enabled) to a TCP socket:</p>
-<pre>&gt; python3 test/run.py -i "tuio:///tmp/log.osc.bz2?speed=2&amp;loop" -o slip.tcp://[::1]:7777</pre>
+<p>Replay a TUIO log (at double speed and loop enabled) to a TCP
+socket and show it locally (antialised at 30 fps):</p>
+<pre>&gt; python3 test/run.py -i "tuio:///tmp/log.osc.bz2?speed=2&amp;loop" -o slip.tcp://[::1]:7777 "viz:?antialiasing&fps=30"</pre>
+
+<p>Convert mtdev events to TUIO and send them through a socket (administrator privileges may be required to read from device node):</p>
+<pre>&gt; python3 test/run.py -i mtdev:///dev/input/event5 -o tuio://[::1]:3333</pre>
+
+<p>Merge a TUIO stream and a mtdev device into a single TUIO stream and print it on the stdout:</p>
+<pre>&gt; python3 test/run.py -i mtdev:///dev/input/event5 tuio: -o tuio.stdout:</pre>
 
 <p><sup>1</sup>TUIO packets read/written on TCP sockets or files
   are supposed to be SLIP encoded/decoded.</p>

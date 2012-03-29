@@ -134,7 +134,6 @@ def NodeLoader(url, mode="", **kwargs):
             node.addPost(encoding.TextDecoder())
             server = NodeServer(url.site.host, url.site.port, parent=node)
         elif mode=="out":
-            kwargs.update(_filterargs(url, "writeend", "hz"))
             node = DataWriter(tcp.TcpConnection(url), **kwargs)
         elif not mode:
             raise NotImplementedError()
@@ -189,7 +188,8 @@ def NodeLoader(url, mode="", **kwargs):
             lower = LowerURL(str(url).replace("osc.", "", 1))
             node = NodeLoader(lower, "in", **kwargs)
             node.addPost(FilterOut("str"))
-            node.addPost(encoding.OscDecoder().addPost(encoding.OscDebug()))
+            args = _filterargs(url, "rt")
+            node.addPost(encoding.OscDecoder(**args).addPost(encoding.OscDebug()))
         elif mode=="out":
             lower = LowerURL(str(url).replace("osc.", "", 1))
             node = NodeLoader(lower, "out", **kwargs)
@@ -241,7 +241,7 @@ def NodeLoader(url, mode="", **kwargs):
     elif url.scheme=="mtdev":
         if sys.platform == "linux2":
             if mode in ("", "in"):
-                kwargs.update(_filterargs(url))
+                kwargs.update(_filterargs(url, "parent"))
                 node = MtDevDevice(str(url.path), **kwargs)
             else:
                 raise Exception("Requested node is not an output: %s"%str(url))
@@ -269,9 +269,9 @@ def NodeLoader(url, mode="", **kwargs):
         node = FilterOut(request, **kwargs)
 
     elif url.scheme=="lag":
-        kwargs.update(_filterargs(url, "msec", "request"))
-        if "msec" not in kwargs: kwargs["msec"] = 200
-        node = functions.Lag(**kwargs)
+        kwargs.update(_filterargs(url, "request"))
+        msec = int(url.opaque) if url.opaque else 200
+        node = functions.Lag(msec, **kwargs)
 
     elif url.scheme=="timekeeper":
         node = functions.Timekeeper(**kwargs)
@@ -279,7 +279,9 @@ def NodeLoader(url, mode="", **kwargs):
     elif url.scheme=="calib":
         matrix = None
         args = _filterargs(url, "matrix", "screen")
-        if "matrix" in args: matrix = QtGui.QMatrix4x4(args["matrix"])
+        if "matrix" in args: 
+            values = tuple(map(float, args["matrix"].strip().split(",")))
+            matrix = QtGui.QMatrix4x4(*values)
         elif "screen" in args:
             value = args["screen"]
             if value=="normal": matrix = functions.Calibration.Identity
@@ -289,8 +291,11 @@ def NodeLoader(url, mode="", **kwargs):
         else: matrix = functions.Calibration.Identity
         kwargs.update(_filterargs(url, "args", "request"))
         if "args" not in kwargs:
-            kwargs["args"] = "diff..contacts..rel_pos,rel_speed"
-            kwargs["template"] = {"diff": {}}
+            kwargs["args"] = "diff.added,updated.contacts..rel_pos,rel_speed"
+            kwargs["template"] = \
+                {"diff": {"*": 
+                          {"contacts": {"*": {"rel_pos": {},
+                                              "rel_speed": {}}}}}}
         node = functions.Calibration(matrix, **kwargs)
 
     else:

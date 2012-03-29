@@ -295,6 +295,7 @@ class Node(HierarchicalProducer, HierarchicalConsumer):
     def _consume(self, products, producer):
         raise NotImplementedError()
 
+
 class TunnelNode(Node):
     """It forwards everything it receives to the subscribed consumers."""
     def _consume(self, products, producer):
@@ -355,6 +356,9 @@ class FunctionalNode(Node):
     def __init__(self, args, target=None, template=None, mode=MERGE,
                  productoffer=None, cumulate=None, hz=None, 
                  parent=None, **kwargs):
+        if type(target) not in (type(None), str, tuple, collections.Callable):
+            raise TypeError(
+                "FunctionalNode() target must be a string or a tuple or a Callable or None, not %s"%type(path))
         self._active = True
         self._args = args \
             if args is None or isinstance(args, QPath.QPath) \
@@ -363,7 +367,7 @@ class FunctionalNode(Node):
         for key, value in kwargs.items():
             if key=="request": request = value
             else: raise TypeError(
-                "'%s' is an invalid keyword argument for this function"%key)        
+                "'%s' is an invalid keyword argument for this function"%key)
         super().__init__(productoffer, cumulate, request, hz, parent)
         self._target = target
         self._template = template
@@ -397,6 +401,9 @@ class FunctionalNode(Node):
                     values = self._function(argpaths, argvalues)
                 elif isinstance(self._target, collections.Callable):
                     targets = self._target(argpaths)
+                    values = self._function(argpaths, argvalues)
+                elif isinstance(self._target, tuple):
+                    targets = self._target
                     values = self._function(argpaths, argvalues)
                 else:
                     targets = itertools.repeat(self._target)
