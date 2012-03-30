@@ -7,16 +7,30 @@
 
 <body>
 <div class="title">Boing: tests</div>
-<p>Run unit testing:</p>
+<p>Run all available tests:</p>
+
 <pre>
-&gt; python3 boing/test/run.py [&lt;module&gt;]...
-                          [--help, -h]
+&gt; cd &lt;BOING-DIRECTORY&gt;
+&gt; python3 setup.py test
+</pre>
 
- If no module is specified, all modules are tested; otherwise only the
- specified modules will be executed.
+<p>Run test for a specific <code>boing</code> module:</p>
 
- Available modules:
-  dns_sd, core, json, osc, slip, tcp, udp, utils
+<pre>
+&gt; python3 boing/test/run.py [-h] [MODULE [MODULE ...]]
+
+If no module is specified, all modules are tested; otherwise only the
+specified modules will be executed.
+
+Available modules:
+ dns_sd, core, json, osc, slip, tcp, udp, utils
+
+Positional arguments:
+  MODULE      module to be tested
+
+Optional arguments:
+  -h, --help  show this help message and exit
+
 </pre>
 
 <p><a href="index.html">&lt;&lt; home</a></p>

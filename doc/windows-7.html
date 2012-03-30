@@ -10,20 +10,16 @@
 <!-- -------------------------------------------------------------- -->
 <h1>Python</h1>
 
-<p>Boing need Python version 3.2 or newer; Python releases can be
+<p>Boing needs Python 3.2 or newer. Python releases can be
 found <a href="http://www.python.org/download/releases/">here</a>.</p>
 
-<p>After python is installed it is useful to modify the <code>PATH</code>
-environment variable, so that Windows can find Python binaries without the need
-of specifing all the times the entire path. As an example,
-the <code>PATH</code> variable has been set to:</p>
+<p>After python is installed it is useful to modify
+the <code>PATH</code> environment variable, so that Windows can find
+Python binaries and scripts without the need of specifing all the
+times the entire path. As an example, the <code>PATH</code> variable
+has been set to:</p>
 <pre>
-PATH = &lt;...&gt;;C:\Python32
-</pre>
-<p>To enable Python to find Boing modules, it is also necessary to set the
-environment variable <code>PYTHONPATH</code>.</p>
-<pre>
-PYTHONPATH = &lt;boing-path&gt;\src
+PATH = &lt;...&gt;;C:\Python32;C:\Python32\Scripts
 </pre>
 
 <!-- -------------------------------------------------------------- -->
@@ -54,7 +50,7 @@ mingw-get install gcc g++ mingw32-make</pre>
 PATH = &lt;...&gt;;C:\Qt\4.7.4\bin;</pre>
 
 <!-- -------------------------------------------------------------- -->
-<h1>PyQt</h1>
+<h1>PyQt 4</h1>
 
 <p>Prior to compile PyQt, you will first need to compile and install 
 <a href="http://www.riverbankcomputing.co.uk/software/sip/download">SIP</a>. Boing
@@ -87,18 +83,28 @@ mingw32-make install
 Services for Windows, which can be
 found <a href="http://support.apple.com/kb/DL999">here</a>.
 
-<!-- --------------------------------------------------------------
-<h1>URLs and absolute paths</h1>
+<!-- -------------------------------------------------------------- -->
+<h1>Distribute</h1>
 
-<p>In Boing many tools uses URLs to point services or files. In order to
-specify an absolute path after the service scheme it is necessary to put an
-additional slash '/' before the drive specification, like in the following
-example:</p>
+<p>The
+package <a href="http://packages.python.org/distribute/index.html">distribute</a>
+can be used to install Boing on the system. Download the
+installer script
+<a href="http://python-distribute.org/distribute_setup.py">distribute_setup.py</a>
+and type in a terminal:</p>
+<pre>
+python distribute_setup.py</pre>
+
+<!-- -------------------------------------------------------------- -->
+<h1>Boing</h1>
+
+<p>In order to complete the installation, type in a terminal:</p>
 
 <pre>
-boing -i tuio:///C:/Users/</pre>
+cd &lt;BOING-DIRECTORY&gt;
+python setup.py install
+</pre>
 
--->
 <p><a href="index.html">&lt;&lt; home</a></p>
 </body>
 </html>

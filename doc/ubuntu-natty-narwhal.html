@@ -8,27 +8,24 @@
 <div class="title">Boing on Ubuntu 11.04</div>
 
 <!-- -------------------------------------------------------------- -->
-<h1>Python</h1>
+<h1>Ubuntu packages</h1>
 
-<p>Boing needs Python version 3.2 or newer. To install, type:
-
-<pre>$ sudo apt-get install python3 python3-dev</pre>
-
-<!-- -------------------------------------------------------------- -->
-<h1>Qt 4</h1>
-
-<p>In order to
-install <a href="http://qt.nokia.com/products/library">Qt
-libraries</a>, type:</p>
-
-<pre>$ sudo apt-get install libqt4-dev g++</pre>
+<p>Boing is developed in Python 3.2 using
+the <a href="http://qt.nokia.com/products/library">Qt libraries</a>
+and it requires <code>libdns_sd</code> and <code>libmtdev</code> in
+some modules. It is possible to get all of them from the standard
+packages repositories by typing in a terminal:
+<pre> $ sudo apt-get install g++ libqt4-dev python3-dev python3-setuptools libavahi-compat-libdnssd-dev libmtdev-dev</pre>
 
 <!-- -------------------------------------------------------------- -->
-<h1>PyQt</h1>
+<h1>PyQt 4</h1>
 
-<p>Prior to compile PyQt, you will first need to compile and install 
+<p>PyQt for Python 3 is not available on the packages repositories so
+it necessary to download the sources and compile them. Prior to
+compile PyQt, you will first need to compile and install
 <a href="http://www.riverbankcomputing.co.uk/software/sip/download">SIP</a>. Boing
-has been tested with SIP 4.12.2 and PyQt 4.8.4, which it is also available
+has been tested with SIP 4.12.2 and PyQt 4.8.4, which it are both
+available
 from <a href="http://www.riverbankcomputing.co.uk/software/pyqt/download">Riverbank</a>.
 </p>
 
@@ -40,8 +37,7 @@ from <a href="http://www.riverbankcomputing.co.uk/software/pyqt/download">Riverb
  $ cd sip-4.12.4/
  $ sudo python3 configure.py
  $ sudo make 
- $ sudo make install
-</pre>
+ $ sudo make install</pre>
 
 <p>The same procedure is applied for compiling PyQt:</p>
 <pre>
@@ -51,27 +47,30 @@ from <a href="http://www.riverbankcomputing.co.uk/software/pyqt/download">Riverb
  $ cd PyQt-x11-gpl-4.8.5/
  $ sudo python3 configure.py
  $ sudo make 
- $ sudo make install
-</pre>
+ $ sudo make install</pre>
 
 <!-- -------------------------------------------------------------- -->
-<h1>DNS-SD services</h1>
+<h1>Boing</h1>
 
-<p>Eclectic's <code>dns_sd</code> code uses the <code>libdns_sd</code>
-library, which in Ubuntu is provided by the Avahi Apple Bonjour
-compatibility library. To get it, type the following in a
-terminal:</p>
+<p>In order to complete the installation, open a terminal and
+  type:</p>
 
 <pre>
-sudo apt-get install libavahi-compat-libdnssd-dev
-</pre>
+ $ cd &lt;BOING-DIRECTORY&gt;
+ $ sudo python3 setup.py install</pre>
 
-<p>In order to use the <code>dns_sd</code> functionalities provided by
-such library, the <code>Avahi daemon</code> must be running.</p>
+
+<!-- -------------------------------------------------------------- -->
+<h2>Usage notes</h2>
+
+<p>Boing's <code>dns_sd</code> code uses the <code>libdns_sd</code>
+  library, which in Ubuntu is provided by the Avahi Apple Bonjour
+  compatibility library. In order to use the <code>dns_sd</code>
+  functionalities provided by such library, the <code>Avahi
+  daemon</code> must be running.</p>
 
 <pre>
-sudo avahi-daemon -D
-</pre>
+ $ sudo avahi-daemon -D</pre>
 
 <p>WARNING! Avahi services cannot be found on
 the <code>loopback</code> interface; for this reason when working
@@ -79,16 +78,7 @@ offline, it is necessary to set the IP address of the Ethernet or the
 Wireless interface to a dummy address. To achive this, for example
 type in a terminal:
 <pre>
-  sudo ifconfig eth0 192.168.0.1</pre>
-
-<!-- -------------------------------------------------------------- -->
-
-<h1>mtdev</h1>
-
-<p>Boing provides Python bindings for the linux <code>libmtdev</code>
-library. To get it, type the following in a terminal:</p>
-
-<pre>sudo apt-get install libmtdev-dev</pre>
+  $ sudo ifconfig eth0 192.168.0.1</pre>
 
 <p><a href="index.html">&lt;&lt; home</a></p>
 </body></html>

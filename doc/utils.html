@@ -12,16 +12,16 @@
 <h2>Examples:</h2>
 
 <p>Dump to console all the available products received from the inputs:</p>
-<pre>&gt; python3 test/run.py -i udp://:7777 -o dump:</pre>
+<pre>&gt; boing -i udp://:7777 -o dump:</pre>
 
 <p>Dump the products concerning a specific request<sup>1</sup> and forward it to a tcp socket:</p>
-<pre>&gt; python3 test/run.py -i udp://:7777 -o dump.tcp://[::1]:7777?request=data</pre>
+<pre>&gt; boing -i udp://:7777 -o dump.tcp://[::1]:7777?request=data</pre>
 
 <p>Filter incoming products and the dump them:</p>
-<pre>&gt; python3 test/run.py -i udp://:7777 -o "dump:?request=str&pre=filter:str"</pre>
+<pre>&gt; boing -i udp://:7777 -o "dump:?request=str&pre=filter:str"</pre>
 
 <p>Print statistics of the incoming events (i.e. lag, frequence, sum, tags, etc.):</p>
-<pre> &gt; python3 test/run.py -i udp://:7777 -o stat:</pre>
+<pre> &gt; boing -i udp://:7777 -o stat:</pre>
 
 <p><sup>1</sup>The request of a node defines what the node requires to
 its inputs to produce; it does not means that the only products a

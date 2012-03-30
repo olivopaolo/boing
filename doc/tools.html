@@ -19,18 +19,23 @@ of multi-touch enabled projects:</p>
     <p>Redirect data from multiple inputs to multiple outputs.</p> 
     <p>Inputs and outputs must be defined using <a href="urls.html">URLs</a>.</p>
     <pre>
-&gt; python3 bin/run.py [-i &lt;input&gt;] [-o &lt;output&gt;]
-                     [-h, --help]
+&gt; boing [-h] [-i INPUT [INPUT ...]] [-o OUTPUT [OUTPUT ...]]
+        [-C [HOST:PORT]]
 
-Options:
-  -i &lt;input&gt;
-     Define an input
+Redirects many input sources to many outputs.
 
-  -o &lt;output&gt;
-     Define an output
+optional arguments:
+  -h, --help            
+     Show this help message and exit
 
-  -h, --help
-     Display this help and exit
+  -i INPUT [INPUT ...]  
+     Define the inputs
+
+  -o OUTPUT [OUTPUT ...]
+     Define the outputs
+
+  -C [HOST:PORT]        
+     Activate console
     </pre>
     
     <p>Detailed <a href="utils.html">utilities</a>, <a href="osc.html">OSC</a>, 
