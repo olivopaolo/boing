@@ -1,0 +1,40 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <title>Boing: Developer's guide</title>
+</head>
+
+<body>
+
+<div class="title">Boing: Developer's guide</div>
+
+<h1>Documentation</h1>
+
+<p>Developers can easily deploy Boing networks by defining simple
+Python scripts. The function <code>boing.create(<i>uri</i>)</code>
+can be used to instantiate Boing nodes. The following code can be used
+as an example for instantiating a simple Boing network.</p>
+
+<pre>
+#!/usr/bin/env python3
+import sys
+import PyQt4
+import boing
+
+# Init application
+app = PyQt4.QtGui.QApplication(sys.argv)
+
+# Create nodes
+n1 = boing.create("in.tuio:")
+n2 = boing.create("viz:")
+
+# Link nodes
+n2.subscribeTo(n1)
+
+# Run
+sys.exit(app.exec_())
+</pre>
+
+<p><a href="index.html">&lt;&lt; home</a></p>
+</body></html>

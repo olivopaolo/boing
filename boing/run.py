@@ -15,7 +15,8 @@ import signal
 import sys
 
 from PyQt4 import QtCore, QtGui
-from boing.nodes.NodeLoader import NodeLoader
+
+import boing
 
 # Parse arguments
 parser = argparse.ArgumentParser(
@@ -50,7 +51,7 @@ if not args.output:
 inputs = []
 for url in args.input:
     try:
-        i = NodeLoader(url, "in")
+        i = boing.create(url, "in")
     except Exception:
         traceback.print_exc()
     else:
@@ -58,7 +59,7 @@ for url in args.input:
 outputs = []
 for url in args.output:
     try:
-        o = NodeLoader(url, "out")
+        o = boing.create(url, "out")
     except Exception:
         traceback.print_exc()
     else:

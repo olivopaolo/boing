@@ -20,7 +20,7 @@
 
 <table id="uris">
 <!-- IO DEVICE -->
-<tr><th colspan="3">IO devices</th><th><small>URL query keys<sup>2</sup></small></th></tr>
+<tr><th colspan="3">IO devices</th><th><small>URI query keys<sup>2</sup></small></th></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>I</ossupport></td>
@@ -36,43 +36,43 @@
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>I</ossupport></td>
-  <td><url>file://&lt;absolute-filepath&gt;</url></td>
+  <td><url>in.file://&lt;ABSOLUTE-FILEPATH&gt;</url></td>
   <td><url>uncompress, postend</url></td>
   <td>Absolute filepath (Read Only)</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>O</ossupport></td>
-  <td><url>file://&lt;absolute-filepath&gt;</url></td>
+  <td><url>out.file://&lt;ABSOLUTE-FILEPATH&gt;</url></td>
   <td>&nbsp;</td>
   <td>Absolute filepath (Write Only)</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>I</ossupport></td>
-  <td><url>&lt;relative-filepath&gt;</url></td>
+  <td><url>&lt;RELATIVE-FILEPATH&gt;</url></td>
   <td><url>uncompress, postend</url></td>
   <td>Relative filepath (Read Only)<sup>3</sup></td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>O</ossupport></td>
-  <td><url>&lt;relative-filepath&gt;</url></td>
+  <td><url>&lt;RELATIVE-FILEPATH&gt;</url></td>
   <td>&nbsp;</td>
   <td>Relative filepath (Write Only)<sup>3</sup></td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>I</ossupport></td>
-  <td><url>udp://&lt;host&gt;:&lt;port&gt;</url></td>
+  <td><url>in.udp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
   <td>&nbsp;</td>
   <td>Read from UDP socket</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>O</ossupport></td>
-  <td><url>udp://&lt;host&gt;:&lt;port&gt;</url></td>
+  <td><url>out.udp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
   <td><url>writeend</url></td>
   <td>Write to UDP socket</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>IO</ossupport></td>
-  <td><url>tcp://&lt;host&gt;:&lt;port&gt;</url></td>
+  <td><url>&lt;in|out&gt;.tcp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
   <td>&nbsp;</td>
   <td>Read/Write on TCP socket</td></tr>
 <!-- ENCODINGS -->
@@ -80,65 +80,65 @@
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>IO</ossupport></td>
-  <td><url>slip.&lt;IOdevice&gt;</url></td>
+  <td><url>&lt;in|out&gt;.slip.&lt;IODEVICE&gt;</url></td>
   <td>&nbsp;</td>
   <td>SLIP encoding/decoding</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>IO</ossupport></td>
-  <td><url>osc[.slip].&lt;IOdevice&gt;</url></td>
+  <td><url>&lt;in|out&gt;.osc[.slip].&lt;IODEVICE&gt;</url></td>
   <td>IO device's query keys<url>, rt</url></td>
   <td>OSC encoding/decoding</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>O</ossupport></td>
-  <td><url>osc://&lt;absolute-filepath&gt;</url></td>
+  <td><url>out.osc://&lt;ABSOLUTE-FILEPATH&gt;</url></td>
   <td><url>raw</url></td>
   <td>Record OSC log file</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>I</ossupport></td>
-  <td><url>osc://&lt;absolute-filepath&gt;</url></td>
+  <td><url>in.osc://&lt;ABSOLUTE-FILEPATH&gt;</url></td>
   <td><url>loop, speed</url></td>
   <td>Play OSC log file</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>IO</ossupport></td>
-  <td><url>tuio[.slip].&lt;IOdevice&gt;</url></td>
+  <td><url>&lt;in|out&gt;.tuio[.slip].&lt;IODEVICE&gt;</url></td>
   <td>IO device's query keys<url>, rt</url></td>
   <td>multi-touch event vs. TUIO encoding/decoding</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>O</ossupport></td>
-  <td><url>tuio://&lt;absolute-filepath&gt;</url></td>
+  <td><url>out.tuio://&lt;ABSOLUTE-FILEPATH&gt;</url></td>
   <td><url>raw</url></td>
   <td>Record TUIO log file from multi-touch event encoding</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>I</ossupport></td>
-  <td><url>tuio://&lt;absolute-filepath&gt;</url></td>
+  <td><url>in.tuio://&lt;ABSOLUTE-FILEPATH&gt;</url></td>
   <td><url>loop, speed</url></td>
   <td>Play TUIO log file and apply multi-touch event decoding</td></tr>
 <tr>
   <td><ossupport>L</ossupport></td>
   <td><ossupport>I</ossupport></td>
-  <td><url>mtdev://&lt;absolute-filepath&gt;</url></td>
+  <td><url>mtdev://&lt;ABSOLUTE-FILEPATH&gt;</url></td>
   <td>&nbsp;</td>
-  <td>Multi-touch event decoding from mtdev device</td></tr>
+  <td>Multi-touch event decoding from <code>mtdev</code> device</td></tr>
 <tr>
 <!-- UTILS -->
 <tr><th colspan="3">Utils</th></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>O</ossupport></td>
-  <td><url>dump[.&lt;OutputDevice&gt;]:</url></td>
+  <td><url>dump[.&lt;OUTPUTDEVICE&gt;]:</url></td>
   <td><url>src, dest, depth, request, hz</url></td>
   <td>Dump products to an output device (default stdout)</td>
 </tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>O</ossupport></td>
-  <td><url>stat[.&lt;OutputDevice&gt;]:</url></td>
+  <td><url>stat[.&lt;OUTPUTDEVICE&gt;]:</url></td>
   <td><url>request, hz</url></td>
   <td>Print products statistics to an output device (default stdout)</td>
 </tr>
@@ -154,19 +154,19 @@
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>F</ossupport></td>
-  <td><url>filter:[&lt;query&gt;]</url></td>
+  <td><url>filter:[&lt;QUERY&gt;]</url></td>
   <td><url>request, hz</url></td>
   <td>Discard the products that do not match 'query'</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>F</ossupport></td>
-  <td><url>filterout:[&lt;query&gt;]</url></td>
+  <td><url>filterout:[&lt;QUERY&gt;]</url></td>
   <td><url>hz</url></td>
   <td>Discard the products that match 'query'</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>F</ossupport></td>
-  <td><url>lag:[&lt;msec&gt;]</url></td>
+  <td><url>lag:[&lt;MSEC&gt;]</url></td>
   <td><url>request</url></td>
   <td>Add a lag to each received product</td></tr>
 <tr>
@@ -179,14 +179,14 @@
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>F</ossupport></td>
   <td><url>calib:</url></td>
-  <td><url>matrix, screen, attr, args, request, resultmode</url></td>
-  <td>Apply a matrix transformation to the requested arguments<br>(default <url>$diff.added,updated.contacts..rel_pos,rel_speed</url>)</td></tr>
+  <td><url>matrix, screen, attr, args,<br>request, resultmode</url></td>
+  <td>Apply a 4x4 transformation matrix</td></tr>
 <tr>
   <td><ossupport>LW</ossupport></td>
   <td><ossupport>F</ossupport></td>
-  <td><url>libfilter:</url></td>
-  <td><url>uri, attr, args, request, resultmode</url></td>
-  <td>Filter product data using libfilter</td></tr>
+  <td><url>filtering:</url></td>
+  <td><url>uri, attr, args,<br>request, resultmode</url></td>
+  <td>Filter product data using <code>filtering</code> library</td></tr>
 </table>
 <br>
 <table id="uris">
@@ -234,16 +234,17 @@
   <td>specific hostname</td></tr>
 </table>
 
-<p><sup>1</sup>On Windows, in order to define a file using the scheme
-  <url>file</url> it is necessary to place the
-  character <url>'/'</url> (slash) before the drive letter.<br>
-  (e.g. <url>file:///C:/Windows/explorer.exe</url>)
-</p>
+  <p><sup>1</sup>On Windows, in order to define a file using the scheme
+    <url>file</url> it is necessary to place the
+    character <url>'/'</url> (slash) before the drive letter.<br>
+    (e.g. <url>file:///C:/Windows/explorer.exe</url>)
+  </p>
 
-  <p><sup>2</sup>All input nodes also have the query key <url>pre</url> and
-    all output nodes also have the query key <url>post</url>.</p>
+  <p><sup>2</sup>All input nodes also have the query
+    key <url>pre</url> and all output nodes also have the query
+    key <url>post</url>. All function nodes have both of them.</p>
 
   <p><sup>3</sup>It cannot be used to form composed URLs.</p>
 
-<p><a href="tools.html">&lt;&lt; back</a></p>
+  <p><a href="index.html">&lt;&lt; home</a></p>
 </body></html>

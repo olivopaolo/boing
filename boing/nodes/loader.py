@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# boing/nodes/NodeLoader.py -
+# boing/nodes/loader.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
@@ -38,7 +38,7 @@ if sys.platform=='linux2':
         print("WARNING! Module mtdev is not available.")
 
 
-def NodeLoader(url, mode="", **kwargs):
+def create(url, mode="", **kwargs):
     """Create a new node from the argument "url"."""
     if mode not in ("", "in", "out"): raise ValueError("Invalid mode: %s"%mode)
     url = URL(str(url))
@@ -49,14 +49,14 @@ def NodeLoader(url, mode="", **kwargs):
     if url.scheme.startswith("in."):
         if mode in ("", "in"):
             url = str(url).replace("in.", "", 1)
-            node = NodeLoader(url, "in", **kwargs)
+            return create(url, "in", **kwargs)
         else:
             raise Exception("Requested node is not an output: %s"%str(url))
 
     elif url.scheme.startswith("out."):
         if mode in ("", "out"):
             url = str(url).replace("out.", "", 1)
-            node = NodeLoader(url, "out", **kwargs)
+            return create(url, "out", **kwargs)
         else:
             raise Exception("Requested node is not an input: %s"%str(url))
 
@@ -64,12 +64,12 @@ def NodeLoader(url, mode="", **kwargs):
     # UTILS
     elif url.scheme=="dump":
         url.scheme += ".stdout"
-        return NodeLoader(url, mode, **kwargs)
+        return create(url, mode, **kwargs)
 
     elif url.scheme.startswith("dump."):
         if mode in ("", "out"):
             lower = LowerURL(str(url).replace("dump.", "", 1))
-            node = NodeLoader(lower, "out", **kwargs)
+            node = create(lower, "out", **kwargs)
             args = _filterargs(url, "src", "dest", "depth", "request", "hz")
             node.addPre(debug.DumpNode(**args).addPost(encoding.TextEncoder()))
             node.addPre(FilterOut("str|data"))
@@ -78,12 +78,12 @@ def NodeLoader(url, mode="", **kwargs):
 
     elif url.scheme=="stat":
         url.scheme += ".stdout"
-        return NodeLoader(url, mode, **kwargs)
+        return create(url, mode, **kwargs)
 
     elif url.scheme.startswith("stat."):
         if mode in ("", "out"):
             lower = LowerURL(str(url).replace("stat.", "", 1))
-            node = NodeLoader(lower, "out", **kwargs)
+            node = create(lower, "out", **kwargs)
             args = _filterargs(url, "request", "hz")
             node.addPre(debug.StatProducer(**args).addPost(encoding.TextEncoder()))
             node.addPre(FilterOut("str|data"))
@@ -152,13 +152,13 @@ def NodeLoader(url, mode="", **kwargs):
         if mode=="in":
             lower = LowerURL(str(url).replace("slip.", "", 1))
             lower.query.data["uncompress"] = ""
-            node = NodeLoader(lower, "in", **kwargs)
+            node = create(lower, "in", **kwargs)
             node.addPost(
                 encoding.SlipDecoder().addPost(
                     encoding.TextDecoder()))
         elif mode=="out":
             lower = LowerURL(str(url).replace("slip.", "", 1))
-            node = NodeLoader(lower, "out", **kwargs)
+            node = create(lower, "out", **kwargs)
             node.addPre(encoding.SlipEncoder().addPost(encoding.TextDecoder()))
         elif not mode:
             raise NotImplementedError()
@@ -172,7 +172,7 @@ def NodeLoader(url, mode="", **kwargs):
             url.scheme += ".log"
             url.query.data["uncompress"] = ""
         print("No transport protocol specified in URL, assuming: %s"%url.scheme)
-        return NodeLoader(url, mode, **kwargs)
+        return create(url, mode, **kwargs)
 
     elif url.scheme=="osc.log":
         if mode=="in":
@@ -194,13 +194,13 @@ def NodeLoader(url, mode="", **kwargs):
     elif url.scheme.startswith("osc."):
         if mode=="in":
             lower = LowerURL(str(url).replace("osc.", "", 1))
-            node = NodeLoader(lower, "in", **kwargs)
+            node = create(lower, "in", **kwargs)
             node.addPost(FilterOut("str"))
             args = _filterargs(url, "rt")
             node.addPost(encoding.OscDecoder(**args).addPost(encoding.OscDebug()))
         elif mode=="out":
             lower = LowerURL(str(url).replace("osc.", "", 1))
-            node = NodeLoader(lower, "out", **kwargs)
+            node = create(lower, "out", **kwargs)
             node.addPre(encoding.OscEncoder())
             node.addPre(encoding.OscDebug())
             node.addPre(FilterOut("str|data"))
@@ -225,20 +225,20 @@ def NodeLoader(url, mode="", **kwargs):
         elif not mode:
             raise NotImplementedError()
         print("No transport protocol specified in URL, assuming: %s"%url.scheme)
-        return NodeLoader(url, mode, **kwargs)
+        return create(url, mode, **kwargs)
 
     elif url.scheme.startswith("tuio."):
         if mode=="in":
             lower = LowerURL(str(url).replace("tuio.", "", 1) \
                 if "osc." in url.scheme \
                 else str(url).replace("tuio.", "osc.", 1))
-            node = NodeLoader(lower, "in", **kwargs)
+            node = create(lower, "in", **kwargs)
             node.addPost(encoding.TuioDecoder())
         elif mode=="out":
             lower = LowerURL(str(url).replace("tuio.", "", 1) \
                 if "osc." in url.scheme \
                 else str(url).replace("tuio.", "osc.", 1))
-            node = NodeLoader(lower, "out", **kwargs)
+            node = create(lower, "out", **kwargs)
             node.addPre(encoding.TuioEncoder())
             node.addPre(FilterOut("osc|data|str"))
         elif not mode:
@@ -351,13 +351,13 @@ def NodeLoader(url, mode="", **kwargs):
         if first=="" and partition=="post" and (end=="" or end.isdecimal()):
             posturl = URL(value)
             posturl.query.data.setdefault("resultmode", "merge")
-            node.addPost(NodeLoader(posturl))
+            node.addPost(create(posturl))
         # Pre
         first, partition, end = key.partition("pre")
         if first=="" and partition=="pre" and (end=="" or end.isdecimal()):
             posturl = URL(value)
             posturl.query.data.setdefault("resultmode", "copy")
-            node.addPre(NodeLoader(value))
+            node.addPre(create(value))
 
     return node
 

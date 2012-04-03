@@ -2,12 +2,12 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <link rel="stylesheet" type="text/css" href="style.css">
-  <title>Boing: tools</title>
+  <title>Boing: User guide</title>
 </head>
 
 <body>
 
-<div class="title">Boing: tools</div>
+<div class="title">Boing: User guide</div>
 
 <h1>Documentation</h1>
 
@@ -16,15 +16,13 @@ of multi-touch enabled projects:</p>
 
 <ul>  
   <li>
-    <p>Redirect data from multiple inputs to multiple outputs.</p> 
-    <p>Inputs and outputs must be defined using <a href="urls.html">URLs</a>.</p>
+    <p>Redirect data streams from multiple inputs to multiple outputs.</p> 
+    <p>Inputs and outputs must be defined using <a href="urls.html">URIs</a><sup>1</sup>.</p>
     <pre>
 &gt; boing [-h] [-i INPUT [INPUT ...]] [-o OUTPUT [OUTPUT ...]]
         [-C [HOST:PORT]]
 
-Redirects many input sources to many outputs.
-
-optional arguments:
+ optional arguments:
   -h, --help            
      Show this help message and exit
 
@@ -62,5 +60,9 @@ Options:
   <!--<li><a href="display.html">display device tools</a></li> -->
 </ul>
 
+
+<p><sup>1</sup>URI's <i>in.</i> and <i>out.</i> prefixes can be omitted
+  since it is obvious from the argument option.</p>
+  
 <p><a href="index.html">&lt;&lt; home</a></p>
 </body></html>
