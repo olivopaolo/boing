@@ -302,30 +302,7 @@ class TunnelNode(Node):
         for product in products:
             self._postProduct(product)
 
-
-class Filter(Node):
-    """Filters the received products using a QPath query and it posts
-    the results."""
-    def __init__(self, query, request=Node.TRANSPARENT, hz=None, parent=None):
-        super().__init__(request=request, hz=hz, parent=parent)
-        self.__query = query \
-            if query is None or isinstance(query, QPath.QPath) \
-            else QPath.QPath(query)        
-
-    def query(self):
-        return self.__query
-
-    def setQuery(self, query):
-        self.__query = query \
-            if query is None or isinstance(query, QPath.QPath) \
-            else QPath.QPath(query)        
-
-    def _consume(self, products, producer):
-        for product in products:
-            subset = self.__query.filter(product, deepcopy=False) \
-                if self.__query is not None else None
-            if subset: self._postProduct(subset)
-
+# -------------------------------------------------------------------
 
 class FilterOut(Node):
     """Filters out everything it requires."""
@@ -337,13 +314,14 @@ class FilterOut(Node):
             subset = self.request().filterout(product)
             if subset: self._postProduct(subset)
 
+# -------------------------------------------------------------------
 
 class FunctionalNode(Node):
 
     __EMPTY_ARGS = (tuple(), tuple())
 
     '''
-     - RESULT         the default request is defined as 'args' and it posts 
+     - RESULTONLY     the default request is defined as 'args' and it posts 
                       only the function result if it is requested;
 
      - MERGE          the default request is ANY_PRODUCT and it joins the 
@@ -351,14 +329,14 @@ class FunctionalNode(Node):
                       requested.
 
      - MERGECOPY      '''      
-    RESULT, MERGE, MERGECOPY = (object() for i in range(3))
+    RESULTONLY, MERGE, MERGECOPY = (object() for i in range(3))
 
-    def __init__(self, args, target=None, template=None, mode=MERGE,
+    def __init__(self, args, target=None, template=None, resultmode=MERGE,
                  productoffer=None, cumulate=None, hz=None, 
                  parent=None, **kwargs):
         if type(target) not in (type(None), str, tuple, collections.Callable):
             raise TypeError(
-                "FunctionalNode() target must be a string or a tuple or a Callable or None, not %s"%type(path))
+                "FunctionalNode() target must be a string or a tuple or a Callable or None, not %s"%type(target))
         self._active = True
         self._args = args \
             if args is None or isinstance(args, QPath.QPath) \
@@ -371,7 +349,7 @@ class FunctionalNode(Node):
         super().__init__(productoffer, cumulate, request, hz, parent)
         self._target = target
         self._template = template
-        self._mode = mode
+        self._resultmode = resultmode
         if self._template is not None:
             self._active = False
             self._addTag(self._target, self._template)
@@ -413,9 +391,9 @@ class FunctionalNode(Node):
                     updated = False
                     for target, value in zip(targets, values):
                         if not updated:
-                            if self._mode==FunctionalNode.RESULT:
+                            if self._resultmode==FunctionalNode.RESULTONLY:
                                 result = utils.quickdict()
-                            elif self._mode==FunctionalNode.MERGE:
+                            elif self._resultmode==FunctionalNode.MERGE:
                                 result = product
                             else:
                                 result = copy.deepcopy(product)
@@ -424,19 +402,24 @@ class FunctionalNode(Node):
                         if len(split)==1: result[target] = value
                         else:
                             node = result
-                            for key in split[:-1]: 
+                            for key in split[:-1]:
+                                if isinstance(node, collections.Sequence):
+                                    key = int(key)
                                 node = node[key]
-                            node[split[-1]] = value
+                            key = split[-1] 
+                            if isinstance(node, collections.Sequence):
+                                key = int(key)
+                            node[key] = value
                     if not updated: 
-                        result = None if self._mode==FunctionalNode.RESULT \
+                        result = None if self._resultmode==FunctionalNode.RESULTONLY \
                             else product
                 else:
-                    result = None if self._mode==FunctionalNode.RESULT \
+                    result = None if self._resultmode==FunctionalNode.RESULTONLY \
                         else product
             else:
-                result = None if self._mode==FunctionalNode.RESULT \
+                result = None if self._resultmode==FunctionalNode.RESULTONLY \
                     else product
-            if result is not Node: self._postProduct(result)
+            if result is not None: self._postProduct(result)
         
     def _function(self, paths, values):
         pass

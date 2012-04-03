@@ -1,7 +1,6 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# boing/nodes/multitouch/MtDevDevice.py -
+# boing/extra/mtdev.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #

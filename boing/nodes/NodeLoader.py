@@ -8,7 +8,6 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import os
-import traceback
 import sys
 
 from PyQt4 import QtCore, QtGui
@@ -20,21 +19,31 @@ import boing.nodes.logger as logger
 import boing.net.tcp as tcp
 import boing.net.udp as udp
 import boing.utils.fileutils as fileutils 
+import boing.utils as utils
 
 from boing.core.MappingEconomy import \
-    Node, TunnelNode, Filter, FilterOut, FunctionalNode
+    Node, TunnelNode, FilterOut, FunctionalNode
 from boing.nodes.ioport import DataReader, DataWriter
 from boing.nodes.multitouch.ContactViz import ContactViz
 from boing.utils.url import URL
 
+try:    
+    import boing.extra.filtering as filtering
+except ImportError:
+    print("WARNING! Module filtering is not available.")
+
 if sys.platform=='linux2':
-    from boing.nodes.multitouch.MtDevDevice import MtDevDevice
+    try:    
+        import boing.extra.mtdev as mtdev
+    except ImportError:
+        print("WARNING! Module mtdev is not available.")
 
 
 def NodeLoader(url, mode="", **kwargs):
     """Create a new node from the argument "url"."""
     if mode not in ("", "in", "out"): raise ValueError("Invalid mode: %s"%mode)
     url = URL(str(url))
+    kwargs = utils.quickdict(kwargs)
 
     # -------------------------------------------------------------------
     # IN. AND  OUT. REPLACED USING MODE
@@ -130,7 +139,7 @@ def NodeLoader(url, mode="", **kwargs):
 
     elif url.scheme=="tcp":
         if mode=="in":
-            node = TunnelNode(**kwargs)
+            node = TunnelNode(request="data", **kwargs)
             node.addPost(encoding.TextDecoder())
             server = NodeServer(url.site.host, url.site.port, parent=node)
         elif mode=="out":
@@ -242,12 +251,12 @@ def NodeLoader(url, mode="", **kwargs):
         if sys.platform == "linux2":
             if mode in ("", "in"):
                 kwargs.update(_filterargs(url, "parent"))
-                node = MtDevDevice(str(url.path), **kwargs)
+                node = mtdev.MtDevDevice(str(url.path), **kwargs)
             else:
                 raise Exception("Requested node is not an output: %s"%str(url))
         else:
             raise Exception(
-                "'libmtdev' is not available on this platform: %s", sys.platform)
+                "'libmtdev' is not available on this platform: %s"%sys.platform)
 
     elif url.scheme=="viz":
         if mode in ("", "out"):
@@ -261,7 +270,7 @@ def NodeLoader(url, mode="", **kwargs):
     # FUNCTIONS
     elif url.scheme=="filter" and url.kind==URL.OPAQUE:
         kwargs.update(_filterargs(url, "request", "hz"))
-        node = Filter(url.opaque, **kwargs)
+        node = functions.Filter(url.opaque, **kwargs)
 
     elif url.scheme=="filterout":
         kwargs.update(_filterargs(url, "hz"))
@@ -280,23 +289,56 @@ def NodeLoader(url, mode="", **kwargs):
         matrix = None
         args = _filterargs(url, "matrix", "screen")
         if "matrix" in args: 
-            values = tuple(map(float, args["matrix"].strip().split(",")))
-            matrix = QtGui.QMatrix4x4(*values)
+            values = tuple(map(float, args.matrix.strip().split(",")))
+            kwargs.matrix = QtGui.QMatrix4x4(*values)
         elif "screen" in args:
-            value = args["screen"]
-            if value=="normal": matrix = functions.Calibration.Identity
-            elif value=="left": matrix = functions.Calibration.Left
-            elif value=="inverted": matrix = functions.Calibration.Inverted
-            elif value=="right": matrix = functions.Calibration.Right
-        else: matrix = functions.Calibration.Identity
-        kwargs.update(_filterargs(url, "args", "request"))
+            if args.screen=="normal": 
+                kwargs.matrix = functions.Calibration.Identity
+            elif args.screen=="left": 
+                kwargs.matrix = functions.Calibration.Left
+            elif args.screen=="inverted": 
+                kwargs.matrix = functions.Calibration.Inverted
+            elif args.screen=="right": 
+                kwargs.matrix = functions.Calibration.Right
+        else: kwargs.matrix = functions.Calibration.Identity
+        kwargs.update(_filterargs(url, "args", "request", "resultmode"))
         if "args" not in kwargs:
-            kwargs["args"] = "diff.added,updated.contacts..rel_pos,rel_speed"
-            kwargs["template"] = \
-                {"diff": {"*": 
-                          {"contacts": {"*": {"rel_pos": {},
-                                              "rel_speed": {}}}}}}
-        node = functions.Calibration(matrix, **kwargs)
+            kwargs.template = utils.quickdict()
+            kwargs.args = ""
+            default = "rel_pos|rel_speed|boundingbox.rel_pos"
+            for attr in url.query.data.get("attr", default).split("|"):
+                if kwargs.args: kwargs.args += "|"
+                kwargs.args += "diff.added,updated.contacts.*." + attr
+                # Add attribute to template
+                for action in ("added", "updated"):                    
+                    item = kwargs.template.diff[action].contacts["*"]
+                    for key in attr.split("."):
+                        if not key: break
+                        else:
+                            item = item[key]
+        node = functions.Calibration(**kwargs)
+
+    elif url.scheme=="filtering":
+        kwargs.update(_filterargs(url, "args", "request", "resultmode"))
+        kwargs.setdefault("resultmode", FunctionalNode.MERGECOPY)
+        uri = url.query.data.get("uri", "fltr:/moving/mean?winsize=5")
+        kwargs.functorfactory = filtering.getFunctorFactory(uri)
+        if "args" in kwargs:
+            node = functions.ArgumentFunctor(**kwargs)
+        else:
+            # Using contact diff as default
+            kwargs.template = utils.quickdict()
+            kwargs.args = "diff.removed.contacts"       
+            for attr in url.query.data.get("attr", "rel_pos").split("|"):
+                kwargs.args += "|diff.added,updated.contacts.*." + attr
+                # Add attribute to template
+                for action in ("added", "updated"):                    
+                    item = kwargs.template.diff[action].contacts["*"]
+                    for key in attr.split("."):
+                        if not key: break
+                        else:
+                            item = item[key]
+            node = functions.DiffArgumentFunctor(**kwargs)
 
     else:
         raise Exception("Invalid URL: %s"%url)
@@ -308,10 +350,14 @@ def NodeLoader(url, mode="", **kwargs):
         # Post
         first, partition, end = key.partition("post")
         if first=="" and partition=="post" and (end=="" or end.isdecimal()):
-            node.addPost(NodeLoader(value))
+            posturl = URL(value)
+            posturl.query.data.setdefault("resultmode", "merge")
+            node.addPost(NodeLoader(posturl))
         # Pre
         first, partition, end = key.partition("pre")
         if first=="" and partition=="pre" and (end=="" or end.isdecimal()):
+            posturl = URL(value)
+            posturl.query.data.setdefault("resultmode", "copy")
             node.addPre(NodeLoader(value))
 
     return node
@@ -329,10 +375,20 @@ class NodeServer(tcp.TcpServer):
 
 
 def _filterargs(url, *restrictions):
-    rvalue = {}
+    rvalue = utils.quickdict()
     for key, value in url.query.data.items():
         if not restrictions or key in restrictions:
-            rvalue[key] = _kwstr2value(url.query.data[key])
+            if key=="resultmode":
+                if value.lower()=="merge":
+                    rvalue[key] = FunctionalNode.MERGE
+                elif value.lower()=="copy":
+                    rvalue[key] = FunctionalNode.MERGECOPY
+                elif value.lower()=="result":
+                    rvalue[key] = FunctionalNode.RESULTONLY
+                else:
+                    raise ValueError("Unexpected mode value: %s"%value)
+            else:                
+                rvalue[key] = _kwstr2value(url.query.data[key])
     return rvalue
 
 def _kwstr2value(string):

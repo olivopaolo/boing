@@ -42,14 +42,13 @@ class quickdict(dict):
 
     def __deepcopy__(self, memo):
         ref = id(self)
-        if ref in memo:
-            return memo[ref]
+        if ref in memo: rvalue = memo[ref]
         else:
-            dup = quickdict()
-            memo[ref] = dup
-            for k,v in self.items():
-                dup[k] = copy.deepcopy(v, memo)
-            return dup
+            rvalue = quickdict()
+            memo[ref] = rvalue
+            for key, value in self.items():
+                rvalue[key] = copy.deepcopy(value, memo)
+        return rvalue
 
     def __repr__(self):
         return "quickdict(%s)"%dict.__repr__(self)
@@ -113,47 +112,43 @@ def deepDump(obj, fd, maxdepth=None, indent=4):
 
 def _deepDump(obj, fd, level, maxdepth, indent):
     if isinstance(obj, list):
-        fd.write(" "*(level*indent))
-        fd.write("[")
+        print("%s["%(" "*level*indent), end="", file=fd)
         if maxdepth is None or level<maxdepth:
             for i, value in enumerate(obj):
-                if isinstance(value, collections.Mapping) \
-                        or isinstance(value, list):
+                if (isinstance(value, collections.Mapping) \
+                        or isinstance(value, list)) and value:
                     _deepDump(value, fd, level+1, maxdepth, indent)
                 else:
-                    if i>0: fd.write(" "*(level*indent+1))
-                    fd.write(repr(value))
-                if i<len(obj)-1:
-                    fd.write(",\n")
-                else:
-                    fd.write("]")
+                    if i>0: print(" "*(level*indent+1), end="", file=fd)
+                    print(repr(value), end="", file=fd)
+                if i<len(obj)-1: print(",", file=fd)
+            print("]", end="", file=fd)
         else:
-            fd.write("...]")
+            print("...]", end="", file=fd)
     elif isinstance(obj, collections.Mapping):
-        fd.write(" "*(level*indent))
-        fd.write("{")
+        print("%s{"%(" "*level*indent), end="", file=fd)
+        keys = list(obj.keys())
+        keys.sort()
         if maxdepth is None or level<maxdepth:
-            for i, (key, value) in enumerate(obj.items()):
-                if i>0: fd.write(" "*(level*indent+1))
-                if isinstance(value, collections.Mapping) \
-                        or isinstance(value, list):
-                    fd.write("%s:\n"%repr(key))
+            for i, key in enumerate(keys):
+                value = obj[key]
+                if i>0: print(" "*(level*indent+1), end="", file=fd)
+                if (isinstance(value, collections.Mapping) \
+                        or isinstance(value, list)) and value:
+                    print("%s:"%repr(key), file=fd)
                     _deepDump(value, fd, level+1, maxdepth, indent)
                 else:
-                    fd.write("%s: %s"%(repr(key), repr(value)))
-                if i<len(obj)-1:
-                    fd.write(",\n")
-                else:
-                    fd.write("}")
+                    print("%s: %s"%(repr(key), repr(value)), end="", file=fd)
+                if i<len(obj)-1: print(",", file=fd)
+            print("}", end="", file=fd)
         else:
-            for i, key in enumerate(obj.keys()):
-                if i>0: fd.write(" "*(level*indent+1))
-                fd.write("%s: ..."%repr(key))
+            for i, key in enumerate(keys):
+                if i>0: print(" "*(level*indent+1), end="", file=fd)
+                print("%s: ..."%repr(key), end="", file=fd)
                 if i<len(obj)-1:
-                    fd.write(",\n")
-                else:
-                    fd.write("}")
+                    print(",", file=fd)
+            print("}", end="", file=fd)
     else:
-        fd.write(repr(obj))
-    if level==0: fd.write("\n")
+        print(repr(obj), file=fd)
+    if level==0: print(file=fd)
 

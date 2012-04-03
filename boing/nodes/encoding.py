@@ -27,9 +27,9 @@ import boing.utils.QPath as QPath
 class TextEncoder(FunctionalNode):
     
     def __init__(self, encoding="utf-8", 
-                 mode=FunctionalNode.MERGE, hz=None, parent=None):
+                 resultmode=FunctionalNode.MERGE, hz=None, parent=None):
         # FIXME: set productoffer
-        super().__init__("str", "data", {"data":bytes()}, mode,
+        super().__init__("str", "data", {"data":bytes()}, resultmode,
                          hz=hz, parent=parent)
         self.encoding = encoding
   
@@ -41,9 +41,9 @@ class TextEncoder(FunctionalNode):
 class TextDecoder(FunctionalNode):
     
     def __init__(self, encoding="utf-8", 
-                 mode=FunctionalNode.MERGE, hz=None, parent=None):
+                 resultmode=FunctionalNode.MERGE, hz=None, parent=None):
         # FIXME: set productoffer
-        super().__init__("data", "str", {"str":str()}, mode,
+        super().__init__("data", "str", {"str":str()}, resultmode,
                          hz=hz, parent=parent)
         self.encoding = encoding
         self.errors = "replace"
@@ -57,10 +57,10 @@ class TextDecoder(FunctionalNode):
 
 class SlipEncoder(FunctionalNode):
 
-    def __init__(self, mode=FunctionalNode.MERGE, hz=None, parent=None):
+    def __init__(self, resultmode=FunctionalNode.MERGE, hz=None, parent=None):
         # FIXME: set productoffer
-        super().__init__("data", template={"data":bytearray()}, mode=mode,
-                         hz=hz, parent=parent)
+        super().__init__("data", template={"data":bytearray()}, 
+                         resultmode=resultmode, hz=hz, parent=parent)
 
     def _function(self, paths, values):
         for data in values:
@@ -93,8 +93,8 @@ class SlipDecoder(Node):
 
 class OscEncoder(FunctionalNode):
 
-    def __init__(self, mode=FunctionalNode.MERGE, hz=None, parent=None):
-        super().__init__("osc", "data", {"data": bytearray()}, mode,
+    def __init__(self, resultmode=FunctionalNode.MERGE, hz=None, parent=None):
+        super().__init__("osc", "data", {"data": bytearray()}, resultmode,
                          hz=hz, parent=parent)
         
     def _function(self, paths, values):
@@ -103,9 +103,10 @@ class OscEncoder(FunctionalNode):
 
 class OscDecoder(FunctionalNode):
 
-    def __init__(self, rt=False, mode=FunctionalNode.MERGE, hz=None, parent=None):
+    def __init__(self, rt=False, resultmode=FunctionalNode.MERGE, 
+                 hz=None, parent=None):
         super().__init__("data", ("osc", "timetag"), {"osc": osc.Packet()}, 
-                         mode, hz=hz, parent=parent)
+                         resultmode, hz=hz, parent=parent)
         self._receipttime = rt
     
     def _function(self, paths, values):
@@ -119,8 +120,8 @@ class OscDecoder(FunctionalNode):
 
 class OscDebug(FunctionalNode):
 
-    def __init__(self, mode=FunctionalNode.MERGE, hz=None, parent=None):
-        super().__init__("osc", "str", {"str": str()}, mode,
+    def __init__(self, resultmode=FunctionalNode.MERGE, hz=None, parent=None):
+        super().__init__("osc", "str", {"str": str()}, resultmode,
                          hz=hz, parent=parent)
 
     def _function(self, paths, values):
@@ -138,12 +139,12 @@ class TuioDecoder(FunctionalNode):
     It will not work if inside an OSC bundle there is data from more
     than one source or for more than one TUIO profile."""
 
-    def __init__(self, mode=FunctionalNode.MERGE, hz=None, parent=None):
+    def __init__(self, resultmode=FunctionalNode.MERGE, hz=None, parent=None):
         template = {"diff": {"added":{"contacts":{'0':{'rel_pos':tuple()}}}, 
                              "updated":{"contacts":{}},
                              "removed":{"contacts": {}}},
                     "source": str()}
-        super().__init__("osc", ("diff", "source"), template, mode,
+        super().__init__("osc", ("diff", "source"), template, resultmode,
                          hz=hz, parent=parent)
         """Alive TUIO items."""
         # self.__alive[source][profile] = set of session_ids
@@ -193,61 +194,61 @@ class TuioDecoder(FunctionalNode):
                 source_ids[s_id] = gid
             if profile=="2Dcur":
                 node = utils.quickdict()
-                if tuio.TuioDescriptor.undef_value not in (tobj.x, tobj.y):
-                    node.rel_pos = (tobj.x, tobj.y)
-                if tuio.TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
-                    node.rel_speed = (tobj.X, tobj.Y, 0, 0)
+                if tuio.TuioDescriptor.undef_value not in [tobj.x, tobj.y]:
+                    node.rel_pos = [tobj.x, tobj.y]
+                if tuio.TuioDescriptor.undef_value not in [tobj.X, tobj.Y]:
+                    node.rel_speed = [tobj.X, tobj.Y, 0, 0]
                 diff.updated.contacts[gid] = node
             elif profile in ("25Dcur", "3Dcur"):
                 node = utils.quickdict()
-                node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
+                node.rel_pos = [tobj.x, tobj.y, tobj.z]
+                node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
                 diff.updated.contacts[gid] = node
             elif profile=="2Dblb":
                 node = utils.quickdict()
-                if tuio.TuioDescriptor.undef_value not in (tobj.x, tobj.y):
-                    node.rel_pos = (tobj.x, tobj.y)
-                if tuio.TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
-                    node.rel_speed = (tobj.X, tobj.Y, 0, 0)
-                node.si_angle = (tobj.a, )
-                node.rel_size = (tobj.w, tobj.h)
+                if tuio.TuioDescriptor.undef_value not in [tobj.x, tobj.y]:
+                    node.rel_pos = [tobj.x, tobj.y]
+                if tuio.TuioDescriptor.undef_value not in [tobj.X, tobj.Y]:
+                    node.rel_speed = [tobj.X, tobj.Y, 0, 0]
+                node.si_angle = [tobj.a, ]
+                node.rel_size = [tobj.w, tobj.h]
                 diff.updated.contacts[gid].boundingbox = node
             elif profile=="25Dblb":
                 node = utils.quickdict()
-                node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
-                node.si_angle = (tobj.a, )
-                node.rel_size = (tobj.w, tobj.h)
+                node.rel_pos = [tobj.x, tobj.y, tobj.z]
+                node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
+                node.si_angle = [tobj.a, ]
+                node.rel_size = [tobj.w, tobj.h]
                 diff.updated.contacts[gid].boundingbox = node
             elif profile=="3Dblb":
                 node = ExtensibleEvent()
-                node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
-                node.si_angle = (tobj.a, tobj.b, tobj.c)                
-                node.rel_size = (tobj.w, tobj.h, tobj.d)
+                node.rel_pos = [tobj.x, tobj.y, tobj.z]
+                node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
+                node.si_angle = [tobj.a, tobj.b, tobj.c]                
+                node.rel_size = [tobj.w, tobj.h, tobj.d]
                 diff.updated.contacts[gid].boundingbox = node
             elif profile=="2Dobj":
                 node = utils.quickdict()
-                if tuio.TuioDescriptor.undef_value not in (tobj.x, tobj.y):
-                    node.rel_pos = (tobj.x, tobj.y)
-                if tuio.TuioDescriptor.undef_value not in (tobj.X, tobj.Y):
-                    node.rel_speed = (tobj.X, tobj.Y, 0, 0)
+                if tuio.TuioDescriptor.undef_value not in [tobj.x, tobj.y]:
+                    node.rel_pos = [tobj.x, tobj.y]
+                if tuio.TuioDescriptor.undef_value not in [tobj.X, tobj.Y]:
+                    node.rel_speed = [tobj.X, tobj.Y, 0, 0]
                 node.objclass = tobj.i
-                node.si_angle = (tobj.a, )
+                node.si_angle = [tobj.a, ]
                 diff.updated.contacts[gid] = node
             elif profile=="25Dobj":
                 node = utils.quickdict()
-                node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
+                node.rel_pos = [tobj.x, tobj.y, tobj.z]
+                node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
                 node.objclass = tobj.i
-                node.si_angle = (tobj.a, )
+                node.si_angle = [tobj.a, ]
                 diff.updated.contacts[gid] = node
             elif profile=="3Dobj":
                 node = utils.quickdict()
-                node.rel_pos = (tobj.x, tobj.y, tobj.z)
-                node.rel_speed = (tobj.X, tobj.Y, tobj.Z, 0)
+                node.rel_pos = [tobj.x, tobj.y, tobj.z]
+                node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
                 node.objclass = tobj.i
-                node.si_angle = (tobj.a, tobj.b, tobj.c)
+                node.si_angle = [tobj.a, tobj.b, tobj.c]
                 diff.updated.contacts[gid] = node
         # Remove items that are not alive
         src_profiles = self.__alive.setdefault(source, {})
