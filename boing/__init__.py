@@ -11,3 +11,5 @@
 MAJOR = 0
 MINOR = 2
 VERSION = "%d.%d"%(MAJOR,MINOR)
+
+from boing.nodes.NodeLoader import NodeLoader

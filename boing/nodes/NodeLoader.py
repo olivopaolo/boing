@@ -15,7 +15,6 @@ from PyQt4 import QtCore, QtGui
 import boing.nodes.debug as debug
 import boing.nodes.encoding as encoding
 import boing.nodes.functions as functions
-import boing.nodes.logger as logger
 import boing.net.tcp as tcp
 import boing.net.udp as udp
 import boing.utils.fileutils as fileutils 
@@ -178,16 +177,16 @@ def NodeLoader(url, mode="", **kwargs):
     elif url.scheme=="osc.log":
         if mode=="in":
             kwargs.update(_filterargs(url, "loop", "speed"))
-            node = logger.LogPlayer(fileutils.File(url, uncompress=True), 
-                                    **kwargs)
+            node = encoding.OscLogPlayer(fileutils.File(url, uncompress=True), 
+                                         **kwargs)
             node.addPost(encoding.OscEncoder())
             node.addPost(encoding.OscDebug())
             # FIXME: start should be triggered at outputs ready
             QtCore.QTimer.singleShot(300, node.start)
         elif mode=="out":
             kwargs.update(_filterargs(url, "raw"))
-            node = logger.LogFile(fileutils.File(url, fileutils.File.WriteOnly), 
-                                  **kwargs)
+            node = encoding.OscLogFile(fileutils.File(url, fileutils.File.WriteOnly), 
+                                       **kwargs)
             print("Ctrl-C to stop and close file.")
         elif not mode:
             raise NotImplementedError()
