@@ -41,6 +41,15 @@ sudo python3.2 distribute_setup.py</pre>
  $ cd &lt;BOING-DIRECTORY&gt;
  $ sudo python3.2 setup.py install</pre>
 
+<p>It may be possible that the <code>boing</code> script is not
+  installed into /usr/bin, so it cannot be directly launched from
+  the terminal. It is possible to set the target directory using the
+  option <code>--install-scripts</code>. As an example:</p>
+
+<pre>
+ $ cd &lt;BOING-DIRECTORY&gt;
+ $ sudo python3.2 setup.py install --install-scripts /usr/local/bin</pre>
+
 
 <p><a href="index.html">&lt;&lt; home</a></p>
 </body></html>
