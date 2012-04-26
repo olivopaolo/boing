@@ -19,8 +19,10 @@ from PyQt4 import QtGui
 import boing
 import boing.utils.QPath as QPath
 
-target = os.path.normpath(
-    os.path.join(os.path.split(__file__)[0], "..", "data", "test.txt"))
+
+readable = os.path.abspath(__file__)
+target = os.path.abspath(os.path.normpath(
+    os.path.join(os.path.split(__file__)[0], "..", "data", "test.txt")))
 
 uris = \
     {"stdin":
@@ -70,17 +72,17 @@ uris = \
      "file":
          {"valid":
               {"in": (
-                    "%s"%__file__,
-                    "%s"%os.path.relpath(__file__),
-                    "file://%s"%__file__,
-                    "%s?uncompress"%__file__,
-                    "file://%s?uncompress"%__file__,
-                    "file://%s?uncompress=False"%__file__,
-                    "%s?postend"%__file__,
-                    "file://%s?postend"%__file__,
-                    "file://%s?postend=False"%__file__,
-                    "%s?post=nop:&post1=nop:"%__file__,
-                    "file://%s?post=nop:&post1=nop:"%__file__,
+                    "%s"%readable,
+                    "%s"%os.path.relpath(readable),
+                    "file://%s"%readable,
+                    "%s?uncompress"%readable,
+                    "file://%s?uncompress"%readable,
+                    "file://%s?uncompress=False"%readable,
+                    "%s?postend"%readable,
+                    "file://%s?postend"%readable,
+                    "file://%s?postend=False"%readable,
+                    "%s?post=nop:&post1=nop:"%readable,
+                    "file://%s?post=nop:&post1=nop:"%readable,
                     ),
                "out": (
                     "%s"%target,
@@ -100,11 +102,11 @@ uris = \
                     ("file://[::]/path", ValueError),
                     ("file://[::]:7777/path", ValueError),
                     ("file://[::]:7777/path", ValueError),
-                    ("%s?wrong=wrong"%__file__, ValueError),
-                    ("%s?uncompress=wrong"%__file__, TypeError),
-                    ("%s?postend=wrong"%__file__, TypeError),
-                    ("%s?pre=wrong"%__file__, ValueError),
-                    ("%s#fragment"%__file__, ValueError),
+                    ("%s?wrong=wrong"%readable, ValueError),
+                    ("%s?uncompress=wrong"%readable, TypeError),
+                    ("%s?postend=wrong"%readable, TypeError),
+                    ("%s?pre=wrong"%readable, ValueError),
+                    ("%s#fragment"%readable, ValueError),
                     ),
                "out": (
                     ("file:opaque", ValueError),
@@ -115,8 +117,8 @@ uris = \
                     ("file://[::]:7777/path", ValueError),
                     ("file://[::]:7777/path", ValueError),
                     ("%s?wrong=wrong"%target, ValueError),
-                    ("%s?post=wrong"%__file__, ValueError),
-                    ("%s#fragment"%__file__, ValueError),
+                    ("%s?post=wrong"%readable, ValueError),
+                    ("%s#fragment"%readable, ValueError),
                     ),
                },
           },
@@ -276,15 +278,15 @@ uris = \
      "play":
          {"valid":
               {"in": (
-                    "play://%s"%__file__,
-                    "play://%s?loop"%__file__,
-                    "play://%s?loop=false"%__file__,
-                    "play://%s?speed=1"%__file__,
-                    "play://%s?speed=inf"%__file__,
-                    "play://%s?speed=0"%__file__,
-                    "play://%s?interval=0"%__file__,
-                    "play://%s?interval=2000"%__file__,
-                    "play://%s?post=nop:&post1=nop:"%__file__,
+                    "play://%s"%readable,
+                    "play://%s?loop"%readable,
+                    "play://%s?loop=false"%readable,
+                    "play://%s?speed=1"%readable,
+                    "play://%s?speed=inf"%readable,
+                    "play://%s?speed=0"%readable,
+                    "play://%s?interval=0"%readable,
+                    "play://%s?interval=2000"%readable,
+                    "play://%s?post=nop:&post1=nop:"%readable,
                     ),
                },
           "invalid":
@@ -296,14 +298,14 @@ uris = \
                     ("play://[::]", ValueError),
                     ("play://[::]/path", ValueError),
                     ("play://[::]:7777/path", ValueError),
-                    ("play://%s?wrong=wrong"%__file__, ValueError),
-                    ("play://%s#fragment"%__file__, ValueError),
-                    ("play://%s?loop=wrong"%__file__, TypeError),
-                    ("play://%s?speed=wrong"%__file__, ValueError),
-                    ("play://%s?interval=wrong"%__file__, ValueError),
-                    ("play://%s?pre=wrong"%__file__, ValueError),
+                    ("play://%s?wrong=wrong"%readable, ValueError),
+                    ("play://%s#fragment"%readable, ValueError),
+                    ("play://%s?loop=wrong"%readable, TypeError),
+                    ("play://%s?speed=wrong"%readable, ValueError),
+                    ("play://%s?interval=wrong"%readable, ValueError),
+                    ("play://%s?pre=wrong"%readable, ValueError),
                     ("play.stdin:", ValueError),
-                    ("play.stdin://%s"%__file__, ValueError),
+                    ("play.stdin://%s"%readable, ValueError),
                     ),
                },
           },
@@ -377,7 +379,7 @@ uris["json"] = \
                         "json://:7777",
                         "json://[::]",
                         "json://[::]:7777",
-                        "json://%s"%__file__,
+                        "json://%s"%readable,
                         "json:?noslip",
                         "json:?noslip=false",
                         "json:?post=nop:&post1=nop:",
@@ -450,7 +452,7 @@ uris["osc"] = \
                         "osc://:7777",
                         "osc://[::]",
                         "osc://[::]:7777",
-                        "osc://%s"%__file__,
+                        "osc://%s"%readable,
                         "osc.stdin:",
                         "osc:?noslip",
                         "osc:?noslip=false",
@@ -533,7 +535,7 @@ uris["tuio"] = \
                         "tuio://:7777",
                         "tuio://[::]",
                         "tuio://[::]:7777",
-                        "tuio://%s"%__file__,
+                        "tuio://%s"%readable,
                         "tuio.stdin:",
                         "tuio:?post=nop:&post1=nop:",
                         ),
@@ -729,7 +731,6 @@ class QtTest(unittest.TestCase):
         self.app.exit()
         self.app = None
 
-
 class InTest(QtTest):
     """Test class for urls that have only input behaviour."""        
     def test_not_None(self):
@@ -893,4 +894,4 @@ def suite():
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(suite())

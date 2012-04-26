@@ -34,8 +34,17 @@ class IODevice(QtCore.QObject):
         self.__isatty = fd.isatty() if hasattr(fd, "isatty") else False
         self.__textModeEnabled = isinstance(self.__fd, io.TextIOBase)
 
+    def __del__(self):
+        try:
+            if not self.__isatty: self.__fd.close()
+        except Exception:
+            pass
+
     def fd(self):
         return self.__fd
+
+    def isatty(self):
+        return self.__isatty
 
     def isOpen(self):
         return not self.__fd.closed
@@ -87,8 +96,11 @@ class CommunicationDevice(IODevice):
                                                  activated=self.readyRead)
     
     def __del__(self):
-        self.__notifier.setEnabled(False)
-
+        super().__del__()
+        try:
+            self.__notifier.setEnabled(False)
+        except Exception:
+            pass
 # -------------------------------------------------------------------
 
 def openFile(filepath, mode=IODevice.ReadOnly, uncompress=False):
