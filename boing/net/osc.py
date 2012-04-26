@@ -18,7 +18,7 @@ import datetime
 import struct
 import traceback
 
-import boing.utils.ntp as ntp
+import boing.net.ntp as ntp
 
 # -----------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# boing/utils/ntp.py -
+# boing/net/ntp.py -
 #
 # Author: Nicolas Roussel (nicolas.roussel@inria.fr)
 #

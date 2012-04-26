@@ -13,7 +13,7 @@ import datetime
 import struct
 
 import boing.utils as utils
-import boing.utils.ntp as ntp
+import boing.net.ntp as ntp
 
 class _ProductEncoder(_json.JSONEncoder):
     def default(self, obj):
