@@ -111,12 +111,14 @@ def deepDump(obj, fd, maxdepth=None, indent=4):
     return _deepDump(obj, fd, 0, maxdepth, indent)
 
 def _deepDump(obj, fd, level, maxdepth, indent):
-    if isinstance(obj, list):
+    if isinstance(obj, list) or isinstance(obj, tuple):
         print("%s["%(" "*level*indent), end="", file=fd)
         if maxdepth is None or level<maxdepth:
             for i, value in enumerate(obj):
-                if (isinstance(value, collections.Mapping) \
-                        or isinstance(value, list)) and value:
+                if (isinstance(value, list) or isinstance(value, tuple) \
+                        or isinstance(value, collections.Mapping)) \
+                        and value:
+                    print("", file=fd)
                     _deepDump(value, fd, level+1, maxdepth, indent)
                 else:
                     if i>0: print(" "*(level*indent+1), end="", file=fd)
@@ -133,8 +135,9 @@ def _deepDump(obj, fd, level, maxdepth, indent):
             for i, key in enumerate(keys):
                 value = obj[key]
                 if i>0: print(" "*(level*indent+1), end="", file=fd)
-                if (isinstance(value, collections.Mapping) \
-                        or isinstance(value, list)) and value:
+                if (isinstance(value, list) or isinstance(value, tuple) \
+                        or isinstance(value, collections.Mapping)) \
+                        and value:
                     print("%s:"%repr(key), file=fd)
                     _deepDump(value, fd, level+1, maxdepth, indent)
                 else:

@@ -96,6 +96,8 @@ class ContactWidget(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         self.node = node
         # Setup GUI
+        if not isinstance(antialiasing, bool): raise TypeError(
+            "antialiasing must be boolean, not '%s'"%antialiasing.__class__.__name__)
         self.antialiasing = antialiasing
         self.setWhatsThis("Event &Viz")
         self.sizehint = QtCore.QSize(320,240)

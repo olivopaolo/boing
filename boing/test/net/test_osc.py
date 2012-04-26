@@ -10,6 +10,7 @@
 
 import datetime
 import io
+import itertools
 import unittest
 
 import boing.net.osc as osc
@@ -261,9 +262,12 @@ class TestClasses(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    tests = list(t for t in TestClasses.__dict__ \
-                     if t.startswith("test_"))
-    return unittest.TestSuite(map(TestClasses, tests))    
+    testcases = (
+        TestClasses,
+        )
+    return unittest.TestSuite(itertools.chain(
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 

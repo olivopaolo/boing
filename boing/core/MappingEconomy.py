@@ -107,6 +107,22 @@ class MappingConsumer(SelectiveConsumer):
 
 # -------------------------------------------------------------------
 
+class SelectiveProducer(MappingProducer):
+  
+    def _postProductTo(self, product, consumer):
+        """Posts a product to a target currently subscribed consumer;
+        it returns True if the consumer is interested to the product
+        or False if the product is not requested. Raises Exception if
+        'consumer' is not a currently subscribed consumer."""
+        for ref, record in self._consumers.items():
+            if ref()==consumer:
+                return self._postProductToRecord(product, consumer, record)
+        else:
+            raise Exception(
+                "Cannot post a product to un unsubscribed consumer: %s"%consumer)
+
+# -------------------------------------------------------------------
+
 class HierarchicalProducer(MappingProducer):
 
     class _PostConsumer(MappingConsumer):
@@ -125,14 +141,14 @@ class HierarchicalProducer(MappingProducer):
         self._postConsumer = []
         """Forwards the produced products to the post Nodes before the
         standard forwarding."""
-        self._postProducer = MappingProducer(productoffer)
+        self._postProducer = SelectiveProducer(productoffer)
         self._postProducer.demandChanged.connect(self.demandChanged, 
                                                  QtCore.Qt.QueuedConnection)
         
     def post(self):
         return tuple(self._post)
 
-    def addPost(self, node, mode=QtCore.Qt.QueuedConnection):
+    def addPost(self, node, mode=QtCore.Qt.DirectConnection):
         self._post.append(node)
         if isinstance(node, Producer):
             postconsumer = HierarchicalProducer._PostConsumer(weakref.ref(self))
@@ -199,14 +215,14 @@ class HierarchicalConsumer(MappingConsumer):
         self._preConsumer = []
         """Forwards the received products to the pre Nodes before the
         standard consumption."""
-        self._preProducer = MappingProducer()
+        self._preProducer = SelectiveProducer()
         self._preProducer.demandChanged.connect(self._updateRequestPipeline, 
                                                 QtCore.Qt.QueuedConnection)
 
     def pre(self):
         return tuple(self._pre)
 
-    def addPre(self, node, mode=QtCore.Qt.QueuedConnection):
+    def addPre(self, node, mode=QtCore.Qt.DirectConnection):
         self._pre.insert(0, node)
         if isinstance(node, Producer):
             preconsumer = HierarchicalConsumer._PreConsumer(weakref.ref(self),
@@ -296,7 +312,7 @@ class Node(HierarchicalProducer, HierarchicalConsumer):
         raise NotImplementedError()
 
 
-class TunnelNode(Node):
+class Tunnel(Node):
     """It forwards everything it receives to the subscribed consumers."""
     def _consume(self, products, producer):
         for product in products:

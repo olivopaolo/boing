@@ -287,13 +287,13 @@ class test_DelayedReactive(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():    
-    reactiveobject_tests = (t for t in testReactiveObject.__dict__ \
-                                  if t.startswith("test_"))
-    delayedreactive_tests = (t for t in test_DelayedReactive.__dict__ \
-                                   if t.startswith("test_"))
+    testcases = (
+        testReactiveObject,
+        test_DelayedReactive,
+        )
     return unittest.TestSuite(itertools.chain(
-            map(testReactiveObject, reactiveobject_tests),
-            map(test_DelayedReactive, delayedreactive_tests)))
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 

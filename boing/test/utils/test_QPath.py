@@ -8,6 +8,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import itertools
 import unittest
 
 import boing.utils.QPath as QPath
@@ -394,8 +395,12 @@ class Test_QPath(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():    
-    tests = (t for t in Test_QPath.__dict__ if t.startswith("test_"))
-    return unittest.TestSuite(map(Test_QPath, tests))
+    testcases = (
+        Test_QPath,
+        )
+    return unittest.TestSuite(itertools.chain(
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 

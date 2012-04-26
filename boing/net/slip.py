@@ -12,6 +12,8 @@
 #     Nonstandard for transmission of IP datagrams over serial lines: SLIP
 #     http://tools.ietf.org/html/rfc1055
 
+import collections
+
 END     = 0o300 # indicates end of packet
 ESC     = 0o333 # indicates byte stuffing
 ESC_END = 0o334 # ESC ESC_END means END data byte
@@ -53,6 +55,25 @@ def decode(data, previous=None):
                 decoded.append(c)
         prev = c
     return result, decoded
+
+
+class Encoder(collections.Callable):
+
+    def __call__(self, obj):
+        return encode(obj)
+
+
+class Decoder(collections.Callable):
+
+    def __init__(self):
+        self._slipbuffer = None
+
+    def reset(self):
+        self._slipbuffer = None
+        
+    def __call__(self, obj):
+        items, self._slipbuffer = decode(obj, self._slipbuffer)
+        return items         
 
 # -----------------------------------------------------------------
 

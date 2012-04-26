@@ -15,10 +15,11 @@ from PyQt4 import QtCore, QtGui
 
 from boing.core.MappingEconomy import Node, FunctionalNode
 import boing.utils as utils
+import boing.utils.QPath as QPath
 
 
 class ArgumentFunction(FunctionalNode):
-    """The node function is set from a constructor parameter."""
+    """The node's function is set from a constructor parameter."""
 
     def __init__(self, function, *args, **kwargs):
         FunctionalNode.__init__(self, *args, **kwargs)

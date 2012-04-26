@@ -2,26 +2,36 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <link rel="stylesheet" type="text/css" href="style.css">
-  <title>Boing: Utilities examples</title>
+  <title>Boing: Generic utilities examples</title>
 </head>
 
 <body>
 
-<div class="title">Boing: Utilities examples</div>
+<div class="title">Boing: Generic utilities examples</div>
 
 <h2>Examples:</h2>
 
 <p>Dump to console all the available products received from the inputs:</p>
-<pre>&gt; boing -i udp://:7777 -o dump:</pre>
+<pre>boing -i bridge: -o dump:</pre>
 
-<p>Dump the products concerning a specific request<sup>1</sup> and forward it to a tcp socket:</p>
-<pre>&gt; boing -i udp://:7777 -o dump.tcp://[::1]:7777?request=data</pre>
+<p>Dump requested<sup>1</sup> products to a TCP socket:</p>
+<pre>boing -i bridge: -o dump.tcp://[::1]:7777?request=data</pre>
 
-<p>Filter incoming products and the dump them:</p>
-<pre>&gt; boing -i udp://:7777 -o "dump:?request=str&pre=filter:str"</pre>
+<p>Dump only the products that match a query filter:</p>
+<pre>boing -i bridge: -o dump:?filter=str</pre>
 
-<p>Print statistics of the incoming events (i.e. lag, frequence, sum, tags, etc.):</p>
-<pre> &gt; boing -i udp://:7777 -o stat:</pre>
+<p>Print statistics (i.e. lag, frequence, sum, tags, etc.) of the products from two sources:</p>
+<pre>boing -i udp://:0 tcp://:0  -o stat:</pre>
+
+<p>Record to file the incoming events:</p>
+<pre>boing -i bridge: -o log:///tmp/log.bz2</pre>
+
+<p>Replay a log file a forward it to a socket:</p>
+<pre>boing -i play:///tmp/log.bz2 -o udp://[::1]:7777</pre>
+
+<p>Add a lag (1000 ms) to product stream:</p>
+<pre>boing -i bridge:?post=lag:1000 -o bridge:</pre>
+
 
 <p><sup>1</sup>The request of a node defines what the node requires to
 its inputs to produce; it does not means that the only products a

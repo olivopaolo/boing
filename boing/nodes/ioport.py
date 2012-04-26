@@ -18,6 +18,8 @@ class DataReader(HierarchicalProducer):
         super().__init__(parent=parent)
         self.__input = inputdevice
         self.__input.readyRead.connect(self._postData)
+        if not isinstance(postend, bool): raise TypeError(
+            "postend must be boolean, not '%s'"%postend.__class__.__name__)
         self.postend = postend
 
     def _postData(self):
@@ -37,6 +39,8 @@ class BaseDataWriter(HierarchicalConsumer):
         super().__init__(request="str" if outputdevice.isTextModeEnabled() \
                              else "data", hz=hz)
         self.__output = outputdevice
+        if not isinstance(writeend, bool): raise TypeError(
+            "writeend must be boolean, not '%s'"%writeend.__class__.__name__)
         self.writeend = writeend
     
     def _consume(self, products, producer):

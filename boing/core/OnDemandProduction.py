@@ -102,18 +102,6 @@ class OnDemandProducer(Producer):
         for ref, record in self._consumers.items():
             self._postProductToRecord(product, ref(), record)
 
-    def _postProductTo(self, product, consumer):
-        """Posts a product to a target currently subscribed consumer;
-        it returns True if the consumer is interested to the product
-        or False if the product is not requested. Raises Exception if
-        'consumer' is not a currently subscribed consumer."""
-        for ref, record in self._consumers.items():
-            if ref()==consumer:
-                return self._postProductToRecord(product, consumer, record)
-        else:
-            raise Exception(
-                "Cannot post a product to un unsubscribed consumer: %s"%consumer)
-
     def _postProductToRecord(self, product, consumer, record):
         rvalue = self.test(record.request, product)
         if rvalue:

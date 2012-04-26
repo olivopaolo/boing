@@ -8,6 +8,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import itertools
 import socket
 import sys
 import unittest
@@ -161,8 +162,12 @@ class Testdns_sd(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    tests = (t for t in Testdns_sd.__dict__ if t.startswith("test_"))
-    return unittest.TestSuite(map(Testdns_sd, tests))
+    testcases = (
+        Testdns_sd,
+        )
+    return unittest.TestSuite(itertools.chain(
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 

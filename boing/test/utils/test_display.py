@@ -8,6 +8,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import itertools
 import sys
 import unittest
 
@@ -140,8 +141,12 @@ class TestDisplayDevice(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    tests = (t for t in TestDisplayDevice.__dict__ if t.startswith("test_"))
-    return unittest.TestSuite(map(TestDisplayDevice, tests))    
+    testcases = (
+        TestDisplayDevice,
+        )
+    return unittest.TestSuite(itertools.chain(
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 

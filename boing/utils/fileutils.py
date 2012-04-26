@@ -96,6 +96,8 @@ def openFile(filepath, mode=IODevice.ReadOnly, uncompress=False):
     True and 'filepath' points to a compressed archive, the
     correspondent python module will be used to obtain the file
     descriptor."""
+    if not isinstance(uncompress, bool): raise TypeError(
+        "uncompress must be boolean, not '%s'"%uncompress.__class__.__name__)
     if mode&IODevice.ReadOnly:
         if mode&IODevice.Append: pymode = "r+b"
         elif mode&IODevice.WriteOnly: pymode = "w+b"

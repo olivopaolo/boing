@@ -76,6 +76,10 @@ class URL_site(object):
         if self.port: result = result + ':' + str(self.port)
         return result
 
+    def __bool__(self):
+        return bool(self.host) or self.port!=0 \
+            or bool(self.user) or bool(self.password)
+
 # ---------------------------------------------------------------------
 
 class URL_path(collections.UserList):
@@ -98,6 +102,9 @@ class URL_path(collections.UserList):
             # instead of returning "/C:\\", return "C:\"
             result = result[1:]
         return result
+
+    def __bool__(self):
+        return self.absolute or bool(self.data)
 
 # ---------------------------------------------------------------------
 
@@ -249,6 +256,7 @@ class URL(object):
                    and (not self.path.absolute)):
                 self.kind = URL.OPAQUE
                 self.opaque = aString
+                self.path = URL_path('')
 
     def __str__(self):
         result = ''
@@ -263,6 +271,9 @@ class URL(object):
             if query: result += '?' + query
             if self.fragment: result += '#' + self.fragment
         return result
+
+    def __copy__(self):
+        return URL(str(self))
 
     def debug(self):
         kind = {

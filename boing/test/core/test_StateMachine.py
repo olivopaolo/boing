@@ -63,9 +63,12 @@ class TestStateMachine(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():    
-    tests = list(t for t in TestStateMachine.__dict__ \
-                   if t.startswith("test_"))
-    return unittest.TestSuite(map(TestStateMachine, tests))
+    testcases = (
+        TestStateMachine,
+        )
+    return unittest.TestSuite(itertools.chain(
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 

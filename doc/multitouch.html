@@ -12,19 +12,16 @@
 <h2>Examples:</h2>
 
 <p>Filter multi-touch events to keep only the positional information:</p>
-<pre>&gt; boing -i "tuio:?post=filter:diff.*.contacts.*.rel_pos|diff.removed" -o viz:</pre>
-
-<p>Add a lag (1000 ms) to multi-touch events:</p>
-<pre>&gt; boing -i tuio:?post=lag:1000 -o viz:</pre>
+<pre>boing -i "bridge:?post=filter:diff.*.contacts.*.rel_pos|diff.removed" -o viz:</pre>
 
 <p>Calibrate a multi-touch source by rotating it left:</p>
-<pre>&gt; boing -i tuio:?post=calib:?screen=left -o viz:</pre>
+<pre>boing -i bridge:?post=calib:?screen=left -o viz:</pre>
 
 <p>Calibrate a multi-touch source by rotating right the position information only:</p>
-<pre>&gt; boing -i "tuio:?post='calib:?screen=left&amp;attr=rel_pos'" -o viz:</pre>
+<pre>boing -i bridge:?post="calib:?screen=left&amp;attr=rel_pos" -o viz:</pre>
 
 <p>Calibrate a multi-touch source by applying a 4x4 transformation matrix:</p>
-<pre>&gt; boing -i tuio:?post=calib:?matrix=0,-1,0,1,1,0,0,0,0,0,1,0,0,0,0,1 -o viz:</pre>
+<pre>boing -i bridge:?post=calib:?matrix=0,-1,0,1,1,0,0,0,0,0,1,0,0,0,0,1 -o viz:</pre>
 
 <p><a href="users.html">&lt;&lt; back</a></p>
 </body></html>

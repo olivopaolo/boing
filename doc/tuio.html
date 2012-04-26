@@ -6,7 +6,6 @@
 </head>
 
 <body>
-
 <div class="title">Boing: TUIO examples</div>
 
 <p>General documentation on TUIO can be found
@@ -17,26 +16,27 @@
 
 <p>Show multi-touch events of a TUIO stream received on a UDP socket
 (default port 3333):</p>
-<pre>&gt; boing -i tuio: -o viz:</pre>
+<pre>boing -i tuio: -o viz:</pre>
 
-<p>Record to a file a TUIO stream received on a UDP socket:</p>
-<pre>&gt; boing -i tuio://:3334 -o osc:///tmp/log.osc.bz2</pre>
+<p>Record to a file a TUIO stream received on a different UDP socket:</p>
+<pre>boing -i tuio://:3334 -o log:///tmp/log</pre>
 
-<p>Replay a TUIO log to an UDP socket:</p>
-<pre>&gt; boing -i tuio:///tmp/log.osc.bz2 -o udp://[::1]:7777</pre>
+<p>Replay a TUIO log to an TCP socket:</p>
+<pre>boing -i log:///tmp/log -o tuio.tcp://[::1]:7777</pre>
 
-<p>Replay a TUIO log (at double speed and loop enabled) to a TCP
+<p>Replay a TUIO log (at double speed and loop enabled) to an UDP
 socket and show it locally (antialised at 30 fps):</p>
-<pre>&gt; boing -i "tuio:///tmp/log.osc.bz2?speed=2&amp;loop" -o slip.tcp://[::1]:7777 "viz:?antialiasing&fps=30"</pre>
+<pre>boing -i "log:///tmp/log?speed=2&amp;loop" -o tuio://[::1]:7777 "viz:?antialiasing&fps=30"</pre>
 
 <p>Convert mtdev events to TUIO and send them through a socket (administrator privileges may be required to read from device node):</p>
-<pre>&gt; boing -i mtdev:///dev/input/event5 -o tuio://[::1]:3333</pre>
+<pre>boing -i mtdev:///dev/input/event5 -o tuio://[::1]</pre>
 
-<p>Merge a TUIO stream and a mtdev device into a single TUIO stream and print it on the stdout:</p>
-<pre>&gt; boing -i mtdev:///dev/input/event5 tuio: -o tuio.stdout:</pre>
+<p>Merge two TUIO streams into a single TUIO stream, then show and record it:</p>
+<pre>boing -i tuio://:3334 tuio://:3335 -o viz: log:///tmp/log</pre>
 
-<p><sup>1</sup>TUIO packets read/written on TCP sockets or files
-  are supposed to be SLIP encoded/decoded.</p>
+<p><sup>1</sup>SLIP encoding is added by default for OSC packages
+written or read on TCP sockets or files. Use the URI attribute
+'noslip' to avoid default behaviour.</p>
 
 <p><a href="users.html">&lt;&lt; back</a></p>
 </body></html>

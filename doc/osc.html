@@ -13,23 +13,25 @@
 at <a href="http://opensoundcontrol.org/">http://opensoundcontrol.org/</a></p>
 
 <h2>Examples:</h2>
-<p>Record to a file an OSC stream received on a UDP socket:</p>
-<pre>&gt; boing -i osc://:7777 -o osc:///tmp/log.osc.bz2</pre>
+
+<p>Print to console decoded OSC received on a UDP socket:</p>
+<pre>boing -i osc://:7777</pre>
 
 <p>Record to a file an OSC stream received on a TCP socket<sup>1</sup>:</p>
-<pre>&gt; boing -i osc.slip.tcp://:7777 -o osc:///tmp/log.osc.bz2</pre>
+<pre>boing -i osc.tcp://:7777 -o log:///tmp/log</pre>
 
 <p>Replay an OSC log to an UDP socket:</p>
-<pre>&gt; boing -i osc:///tmp/log.osc.bz2 -o udp://[::1]:7777</pre>
+<pre>boing -i play:///tmp/log -o osc://[::1]:7777</pre>
 
 <p>Replay an OSC log (at double speed and loop enabled) to a TCP socket:</p>
-<pre>&gt; boing -i "osc:///tmp/log.osc.bz2?speed=2&amp;loop" -o slip.tcp://[::1]:7777</pre>
+<pre>boing -i "osc:///tmp/log?speed=2&amp;loop" -o osc.tcp://[::1]:7777</pre>
 
-<p>Print the raw content of an OSC log:</p>
-<pre>&gt; boing -i osc.slip.file:///tmp/log.osc.bz2</pre>
-
-<p><sup>1</sup>OSC packets read/written on TCP sockets or files
-  are supposed to be SLIP encoded/decoded.</p>
+<!--<p>Print the raw content of an OSC log:</p>
+<pre>boing -i osc.slip.file:///tmp/log.osc.bz2</pre>
+-->
+<p><sup>1</sup>SLIP encoding is added by default for OSC packages
+written or read on TCP sockets or files. Use the URI attribute
+'noslip' to avoid default behaviour.</p>
 
 <p><a href="users.html">&lt;&lt; back</a></p>
 </body></html>

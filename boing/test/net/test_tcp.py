@@ -478,11 +478,13 @@ class TestTcpServer(QtCore.QObject, unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    servertests = (t for t in TestTcpServer.__dict__ if t.startswith("test_"))
-    sockettests = (t for t in TestTcpSocket.__dict__ if t.startswith("test_"))
+    testcases = (
+        TestTcpSocket,
+        TestTcpServer,
+        )
     return unittest.TestSuite(itertools.chain(
-        map(TestTcpSocket, sockettests),
-        map(TestTcpServer, servertests)))
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 

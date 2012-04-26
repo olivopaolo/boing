@@ -1,7 +1,8 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+
 # -*- coding: utf-8 -*-
 #
-# test/boing.py -
+# boing/run.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
@@ -10,6 +11,7 @@
 
 import argparse
 import itertools
+import logging
 import traceback
 import signal
 import sys
@@ -25,9 +27,17 @@ parser.add_argument("-i", dest="input", nargs="+", default=[],
                     help="define the inputs")
 parser.add_argument("-o", dest="output", nargs="+", default=[],
                     help="define the outputs")
-parser.add_argument("-C", dest="console", nargs="?", default=False, const="std:",
-                    metavar="HOST:PORT", help="Activate console")
+parser.add_argument("-C", dest="console", nargs="?", default=False, 
+                    const="std:", metavar="HOST:PORT", 
+                    help="Activate console")
+parser.add_argument("-L", dest="logging_level",
+                    default="INFO", metavar="LEVEL", 
+                    help="Set logging level")
+parser.add_argument("-T", dest="traceback", nargs="?", type=int, 
+                    default=0, const=99, metavar="INTEGER", 
+                    help="Set exceptions traceback depth")
 args = parser.parse_args()
+logging.basicConfig(level=logging.getLevelName(args.logging_level))
 
 # Init application
 QtGui.QApplication.setStyle(QtGui.QStyleFactory.create("plastique"))
@@ -40,11 +50,11 @@ signal.signal(signal.SIGINT, lambda *args: app.quit())
 # Check minimal resources
 if not args.input and args.console!="std:":
     default = "stdin:"
-    print("Using default input:", default)    
+    logging.info("Using default input: %s"%default)    
     args.input.append(default)
 if not args.output:
     default = "stdout:"
-    print("Using default output:", default)
+    logging.info("Using default output: %s"%default)
     args.output.append(default)
 
 # Create nodes
@@ -52,20 +62,22 @@ inputs = []
 for url in args.input:
     try:
         i = boing.create(url, "in")
-    except Exception:
-        traceback.print_exc()
+    except Exception as exc:
+        logging.error(exc)
+        if args.traceback: traceback.print_exc(args.traceback)
     else:
         inputs.append(i)
 outputs = []
 for url in args.output:
     try:
         o = boing.create(url, "out")
-    except Exception:
-        traceback.print_exc()
+    except Exception as exc:
+        logging.error(exc)
+        if args.traceback: traceback.print_exc(args.traceback)
     else:
         outputs.append(o)
-if not inputs: print("WARNING: No input nodes.")
-if not outputs: print("WARNING: No output nodes.")
+if not inputs: logging.warning("No input nodes.")
+if not outputs: logging.warning("No output nodes.")
 
 # Connect inputs to outputs
 for input_, output in itertools.product(inputs, outputs):
@@ -91,9 +103,9 @@ if args.console:
         if not port:
             raise ValueError("Invalid console URL: %s"%args.console)
         consoleserver = tcp.TcpServer(host, port, newConnection=newConnection)
-        print("Boing's console listening at %s."%consoleserver.url())
+        logging.info("Boing's console listening at %s."%consoleserver.url())
 
 # Run
 rvalue = app.exec_()
-print("Exiting...")
+logging.debug("Exiting...")
 sys.exit(rvalue)

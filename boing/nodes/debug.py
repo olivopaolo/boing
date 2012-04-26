@@ -29,9 +29,13 @@ class DumpNode(Node):
     def __init__(self, src=False, dest=False, depth=None, 
                  request=OnDemandProducer.ANY_PRODUCT, hz=None, parent=None):
         Node.__init__(self, request=request, hz=hz, parent=parent)
+        if not isinstance(src, bool): raise TypeError(
+            "src must be boolean, not '%s'"%src.__class__.__name__)
         self.dumpsrc = src
+        if not isinstance(dest, bool): raise TypeError(
+            "dest must be boolean, not '%s'"%dest.__class__.__name__)
         self.dumpdest = dest
-        self.depth = depth
+        self.depth = None if depth is None else int(depth) 
 
     def _consume(self, products, producer):
         stream = io.StringIO()
@@ -112,8 +116,8 @@ class StatProducer(Node):
                  hz=1, inhz=None, parent=None):
         #FIXME: set productoffer
         Node.__init__(self, request=request, hz=inhz)
-        self.__timer = QtCore.QTimer(timeout=self.__produce)
-        self.__timer.start(1000/hz)
+        self.__timer = QtCore.QTimer(timeout=self.__produce)        
+        self.__timer.start(1000/float(hz))
         self._inittime = datetime.datetime.now()
         self.__stat = {}
         self._update = False

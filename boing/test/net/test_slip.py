@@ -10,6 +10,7 @@
 
 import datetime
 import io
+import itertools
 import unittest
 
 import boing.net.slip as slip
@@ -62,9 +63,12 @@ class TestSlip(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    tests = list(t for t in TestSlip.__dict__ \
-                     if t.startswith("test_"))
-    return unittest.TestSuite(map(TestSlip, tests))    
+    testcases = (
+        TestSlip,
+        )    
+    return unittest.TestSuite(itertools.chain(
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 

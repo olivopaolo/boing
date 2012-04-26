@@ -62,8 +62,7 @@ class QPath(object):
         pass
     
     def __init__(self, path):
-        if path is None: 
-            raise TypeError(
+        if path is None: raise TypeError(
                 "QPath() argument must be a string, not %s"%type(path))
         self._path = str(path)
         self._norm = QPath._normalize(self._path)

@@ -93,8 +93,13 @@ class TcpSocket(QTcpSocket):
 def TcpConnection(url, family=None):
     """Raises Exception if host cannot be resolved."""
     if not isinstance(url, URL): url = URL(url)
-    socket = TcpSocket()
-    socket.connect(url.site.host, url.site.port, family)
+    if not url.site.host: 
+        raise ValueError("Target host is mandatory: %s"%url)
+    elif url.site.port==0: 
+        raise ValueError("Target port is mandatory: %s"%url)
+    else:
+        socket = TcpSocket()
+        socket.connect(url.site.host, url.site.port, family)
     return socket
 
 # -------------------------------------------------------------------

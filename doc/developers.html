@@ -11,10 +11,10 @@
 
 <h1>Documentation</h1>
 
-<p>Developers can easily deploy Boing networks by defining simple
+<p>Developers can easily deploy Boing networks writing simple
 Python scripts. The function <code>boing.create(<i>uri</i>)</code>
 can be used to instantiate Boing nodes. The following code can be used
-as an example for instantiating a simple Boing network.</p>
+as a template for instantiating a simple Boing network.</p>
 
 <pre>
 #!/usr/bin/env python3
@@ -26,7 +26,7 @@ import boing
 app = PyQt4.QtGui.QApplication(sys.argv)
 
 # Create nodes
-n1 = boing.create("in.tuio:")
+n1 = boing.create("in:bridge:")
 n2 = boing.create("viz:")
 
 # Link nodes

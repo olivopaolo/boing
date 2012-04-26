@@ -597,13 +597,14 @@ class TestUdpSender(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def suite():
-    sockettests = (t for t in TestUdpSocket.__dict__ if t.startswith("test_"))
-    sendertests = (t for t in TestUdpSender.__dict__ if t.startswith("test_"))
-    listenertests = (t for t in TestUdpListener.__dict__ if t.startswith("test_"))
+    testcases = (
+        TestUdpSocket,
+        TestUdpListener,
+        TestUdpSender,
+        )
     return unittest.TestSuite(itertools.chain(
-            map(TestUdpSocket, sockettests),
-            map(TestUdpSender, sendertests),
-            map(TestUdpListener, listenertests)))
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 

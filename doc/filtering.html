@@ -12,22 +12,22 @@
 <h2>Examples:</h2>
 
 <p>Filter contacts' position of a multi-touch source:</p>
-<pre>&gt; boing -i tuio:?post=filtering:?uri=fltr:/moving/mean?winsize=5 -o viz:</pre>
+<pre>boing -i bridge:?post=filtering:?uri=fltr:/moving/mean?winsize=5 -o viz:</pre>
 
 <p>Filter contacts' bounding box size of a multi-touch source:</p>
-<pre>&gt; boing -i "tuio:?post='filtering:?uri=fltr:/exponential/single?alpha=0.9&amp;attr=boundingbox.rel_size'" -o viz:</pre>
+<pre>boing -i "bridge:?post='filtering:?uri=fltr:/exponential/single?alpha=0.9&amp;attr=boundingbox.rel_size'" -o viz:</pre>
 
 <p>Display contact's raw data and filtered data on separate windows:</p>
-<pre>&gt; boing -i tuio: -o viz:?pre=filtering: viz:</pre>
+<pre>boing -i bridge: -o viz:?pre=filtering: viz:</pre>
 
 <p>Add noise to the contacts' position of a multi-touch source:</p>
-<pre>&gt; boing -i "tuio:?post=filtering:?uri=noise:numpy.random.normal(0.0,0.01)" -o viz:</pre>
+<pre>boing -i "bridge:?post=filtering:?uri=noise:numpy.random.normal(0.0,0.01)" -o viz:</pre>
 
 <p>Add noise to the X coordinate only of the contacts' position:</p>
-<pre>&gt; boing -i "tuio:?post='filtering:?uri=noise:numpy.random.normal(0.0,0.03)&amp;attr=rel_pos[0]'" -o viz:</pre>
+<pre>boing -i "bridge:?post='filtering:?uri=noise:numpy.random.normal(0.0,0.03)&amp;attr=rel_pos[0]'" -o viz:</pre>
 
 <p>Add noise and then filter the contacts' position:</p>
-<pre>&gt; boing -i "tuio:?post=filtering:?uri=noise:numpy.random.normal(0.0,0.01)&amp;post1=filtering:" -o viz:</pre>
+<pre>boing -i "bridge:?post=filtering:?uri=noise:numpy.random.normal(0.0,0.01)&amp;post1=filtering:" -o viz:</pre>
 
 <p><a href="users.html">&lt;&lt; back</a></p>
 </body></html>

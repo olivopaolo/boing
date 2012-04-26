@@ -18,7 +18,7 @@ class Observable(QtCore.QObject):
     trigger = QtCore.pyqtSignal(QtCore.QObject)
     
     def __init__(self, parent=None):
-        QtCore.QObject.__init__(self, parent)
+        super().__init__(parent)
         self.__observers = set()
 
     def __del__(self):
@@ -31,6 +31,9 @@ class Observable(QtCore.QObject):
                     self.trigger.disconnect(reactiveobject._react)
                 except TypeError: pass
                 reactiveobject._checkRef()
+        # Unless the __del__ method may not be invoked
+        for child in tuple(self.children()):
+            child.setParent(None)
 
     def observers(self):
         """Return an iterator over the current observing ReactiveObject."""
@@ -91,7 +94,7 @@ class ReactiveObject(object):
         for observable in self.observed():
             # Notify of the subscribed Observables that they have a None 
             # reference
-            observable._checkRef()
+            if observable is not None: observable._checkRef()
 
     def observed(self):
         """Return an iterator over the current observed Observables."""
@@ -143,7 +146,7 @@ class DelayedReactive(ReactiveObject):
         immediately done at react time, so that the DelayedReactive actually
         works the same as a ReactiveObject."""
         ReactiveObject.__init__(self)
-        self.__hz = hz
+        self.__hz = None if hz is None else float(hz)
         if self.__hz: 
             self.timer = QtCore.QTimer()
             self.timer.timeout.connect(self.__timeout)
