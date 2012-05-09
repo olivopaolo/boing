@@ -1,294 +1,309 @@
-<html><head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<link rel="stylesheet" type="text/css" href="style.css" />
-<title>Boing: URI guide</title>
-</head>
-<body><div class="title">Boing: URI guide</div>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <title>Boing: URI guide</title>
+  </head>
+  <body>
+    <div class="title">Boing: URI guide</div>
+    <p>
+      <b>Platform</b><br />
+      O = Mac OS X, L = Linux, W = Windows<a href="#1"><sup>1</sup></a>
+    </p>
+    <p>
+      <b>Mode</b><br />
+      I = Input, O = Output, F = Function
+    </p>
 
-<p>
-<table id="uris">
-<tr><th>Platform</th></tr>
-<tr>
-  <td>L = Linux<sup>&nbsp;</sup></td><td>W =
-  Windows<a href="#1"><sup>1</sup></a></td></tr>
-</table>
-<table id="uris">
-<tr><th>Mode</th></tr>
-<tr>
-  <td>I = Input</td><td>O = Output</td><td>F = Function</td></tr>
-</table>
-</p>
+    <table id="uris">
+      <!-- FUNCTIONS -->
+      <tr>
+	<th colspan="3">&nbsp;</th>
+	<th><small>URI query keys<a href="#2"><sup>2</sup></a></small></th>
+      </tr>
+      <tr>
+	<th colspan="3">Node URIs</th>
+      </tr>
+      <!-- Data redirection -->
+      <tr><th colspan="3"><small>Data Redirection</small></th></tr>
+      <!-- <tr> -->
+      <!-- 	<td><ossupport>OLW</ossupport></td> -->
+      <!-- 	<td><ossupport>I</ossupport></td> -->
+      <!-- 	<td><url>in:remote://&lt;HOST&gt;:&lt;PORT&gt;</url></td> -->
+      <!-- 	<td>&nbsp;</td> -->
+      <!-- 	<td>&nbsp;</td> -->
+      <!-- </tr> -->
+      <!-- <tr> -->
+      <!-- 	<td><ossupport>OLW</ossupport></td> -->
+      <!-- 	<td><ossupport>O</ossupport></td> -->
+      <!-- 	<td><url>out:remote:[//&lt;HOST&gt;:&lt;PORT&gt;]</url></td> -->
+      <!-- 	<td>&nbsp;</td> -->
+      <!-- 	<td>&nbsp;</td> -->
+      <!-- </tr> -->
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>&lt;in|out&gt;:bridge:[//&lt;HOST&gt;:&lt;PORT&gt;]</url></td>
+	<td>&nbsp;</td>
+	<td>Listen/Forward data on the default bridge
+	  (i.e. <url>json.udp://:7898</url>)<a href="#3"><sup>3</sup></a></td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>&lt;in|out&gt;:[&lt;ENCODINGS&gt;.]&lt;IODEVICE&gt;</url></td>
+	<td>&nbsp;</td>
+	<td>Data bridge using custom input device and
+	  decodings<a href="#3"><sup>3</sup></a><a href="#4"><sup>4</sup></a></td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><url><!--&lt;in|out&gt;:-->play[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
+	<td><url>loop, speed, interval</url></td>
+	<td>Replay data from log file (default <url>json</url>)</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>O</ossupport></td>
+	<td><url><!--&lt;in|out&gt;:-->log[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
+	<td>&nbsp;</td>
+	<td>Record data to log file (default <url>json</url>)</td></tr>
 
-<table id="uris">
-<!-- FUNCTIONS -->
-<tr><th colspan="3">&nbsp;</th><th><small>URI query
-keys<a href="#2"><sup>2</sup></a></small></th></tr>
-<tr><th colspan="3">Node URIs</th></tr>
-<!-- Data redirection -->
-<tr><th colspan="3"><small>Data Redirection</small></th></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>&lt;in|out&gt;:bridge:[//&lt;HOST&gt;:&lt;PORT&gt;]</url></td>
-  <td>&nbsp;</td>
-  <td>Listen/Forward data on the default bridge
-  (i.e. <url>json.udp://:7898</url>)<a href="#3"><sup>3</sup></a></td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>&lt;in|out&gt;:[&lt;ENCODINGS&gt;.]&lt;IODEVICE&gt;</url></td>
-  <td>&nbsp;</td>
-  <td>Data bridge using custom input device and
-    decodings<a href="#3"><sup>3</sup></a><a href="#4"><sup>4</sup></a></td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><url><!--&lt;in|out&gt;:-->play[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
-  <td><url>loop, speed, interval</url></td>
-  <td>Replay data from log file (default <url>json</url>)</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>O</ossupport></td>
-  <td><url><!--&lt;in|out&gt;:-->log[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
-  <td>&nbsp;</td>
-  <td>Record data to log file (default <url>json</url>)</td></tr>
+      <!-- Data Processing -->
+      <tr><th colspan="3"><small>Data Processing</small></th></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>nop:</url></td>
+	<td>&nbsp;</td>
+	<td>No operation node</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>O</ossupport></td>
+	<td><url>dump&lt;&lt;OUTPUT-DEVICE&gt;|:&gt;</url></td>
+	<td><url>request, filter, src, dest, depth</url></td>
+	<td>Dump products to an output device (default stdout:)</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>O</ossupport></td>
+	<td><url>stat&lt;&lt;OUTPUT-DEVICE&gt;|:&gt;</url></td>
+	<td><url>request, filter, hz</url></td>
+	<td>Print products statistics to an output device (default stdout)</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>O</ossupport></td>
+	<td><url>viz:</url></td>
+	<td><url>antialiasing, fps</url></td>
+	<td>Display multi-touch contacts</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>F</ossupport></td>
+	<td><url>filter:[&lt;QUERY&gt;]</url></td>
+	<td>&nbsp;</td>
+	<td>Discard the products that do not match 'query'</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>F</ossupport></td>
+	<td><url>filterout:[&lt;QUERY&gt;]</url></td>
+	<td>&nbsp;</td>
+	<td>Discard the products that match 'query'</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>F</ossupport></td>
+	<td><url>lag:[&lt;MSEC&gt;]</url></td>
+	<td>&nbsp;</td>
+	<td>Add a lag to each received product</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>F</ossupport></td>
+	<td><url>timekeeper:</url></td>
+	<td>&nbsp;</td>
+	<td>Mark each received product with a timetag</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>F</ossupport></td>
+	<td><url>calib:</url></td>
+	<td><url>matrix, screen, attr, args,<br>request, resultmode</url></td>
+	<td>Apply a 4x4 transformation matrix</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>F</ossupport></td>
+	<td><url>filtering:</url></td>
+	<td><url>uri, attr, args,<br>request, resultmode</url></td>
+	<td>Filter product data using <code>filtering</code> library</td></tr>
+      <!-- IO devices -->
+      <tr><th colspan="3">IO devices</th></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><url>stdin:</url></td>
+	<td>&nbsp;</td>
+	<td>Standard input</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>O</ossupport></td>
+	<td><url>stdout:</url></td>
+	<td>&nbsp;</td>
+	<td>Standard output</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><url>[file://]&lt;ABSOLUTE-FILEPATH&gt;</url></td>
+	<td><url>uncompress, postend</url></td>
+	<td>Absolute filepath (Read Only)</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>O</ossupport></td>
+	<td><url>[file://]&lt;ABSOLUTE-FILEPATH&gt;</url></td>
+	<td>&nbsp;</td>
+	<td>Absolute filepath (Write Only)</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><url>&lt;RELATIVE-FILEPATH&gt;</url></td>
+	<td><url>uncompress, postend</url></td>
+	<td>Relative filepath (Read Only)<a href="#5"><sup>5</sup></a></td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>O</ossupport></td>
+	<td><url>&lt;RELATIVE-FILEPATH&gt;</url></td>
+	<td>&nbsp;</td>
+	<td>Relative filepath (Write Only)<a href="#5"><sup>5</sup></a></td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><url>udp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
+	<td>&nbsp;</td>
+	<td>Read from UDP socket</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>O</ossupport></td>
+	<td><url>udp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
+	<td><url>writeend</url></td>
+	<td>Write to UDP socket</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>tcp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
+	<td>&nbsp;</td>
+	<td>Read/Write on TCP socket</td></tr>
 
-<!-- Data Processing -->
-<tr><th colspan="3"><small>Data Processing</small></th></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>nop:</url></td>
-  <td>&nbsp;</td>
-  <td>No operation node</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>O</ossupport></td>
-  <td><url>dump&lt;&lt;OUTPUT-DEVICE&gt;|:&gt;</url></td>
-  <td><url>request, filter, src, dest, depth</url></td>
-  <td>Dump products to an output device (default stdout:)</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>O</ossupport></td>
-  <td><url>stat&lt;&lt;OUTPUT-DEVICE&gt;|:&gt;</url></td>
-  <td><url>request, filter, hz</url></td>
-  <td>Print products statistics to an output device (default stdout)</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>O</ossupport></td>
-  <td><url>viz:</url></td>
-  <td><url>antialiasing, fps</url></td>
-  <td>Display multi-touch contacts</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>F</ossupport></td>
-  <td><url>filter:[&lt;QUERY&gt;]</url></td>
-  <td>&nbsp;</td>
-  <td>Discard the products that do not match 'query'</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>F</ossupport></td>
-  <td><url>filterout:[&lt;QUERY&gt;]</url></td>
-  <td>&nbsp;</td>
-  <td>Discard the products that match 'query'</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>F</ossupport></td>
-  <td><url>lag:[&lt;MSEC&gt;]</url></td>
-  <td>&nbsp;</td>
-  <td>Add a lag to each received product</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>F</ossupport></td>
-  <td><url>timekeeper:</url></td>
-  <td>&nbsp;</td>
-  <td>Mark each received product with a timetag</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>F</ossupport></td>
-  <td><url>calib:</url></td>
-  <td><url>matrix, screen, attr, args,<br>request, resultmode</url></td>
-  <td>Apply a 4x4 transformation matrix</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>F</ossupport></td>
-  <td><url>filtering:</url></td>
-  <td><url>uri, attr, args,<br>request, resultmode</url></td>
-  <td>Filter product data using <code>filtering</code> library</td></tr>
-<!-- IO devices -->
-<tr><th colspan="3">IO devices</th></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><url>stdin:</url></td>
-  <td>&nbsp;</td>
-  <td>Standard input</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>O</ossupport></td>
-  <td><url>stdout:</url></td>
-  <td>&nbsp;</td>
-  <td>Standard output</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><url>[file://]&lt;ABSOLUTE-FILEPATH&gt;</url></td>
-  <td><url>uncompress, postend</url></td>
-  <td>Absolute filepath (Read Only)</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>O</ossupport></td>
-  <td><url>[file://]&lt;ABSOLUTE-FILEPATH&gt;</url></td>
-  <td>&nbsp;</td>
-  <td>Absolute filepath (Write Only)</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><url>&lt;RELATIVE-FILEPATH&gt;</url></td>
-  <td><url>uncompress, postend</url></td>
-  <td>Relative filepath (Read Only)<a href="#5"><sup>5</sup></a></td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>O</ossupport></td>
-  <td><url>&lt;RELATIVE-FILEPATH&gt;</url></td>
-  <td>&nbsp;</td>
-  <td>Relative filepath (Write Only)<a href="#5"><sup>5</sup></a></td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><url>udp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
-  <td>&nbsp;</td>
-  <td>Read from UDP socket</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>O</ossupport></td>
-  <td><url>udp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
-  <td><url>writeend</url></td>
-  <td>Write to UDP socket</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>tcp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
-  <td>&nbsp;</td>
-  <td>Read/Write on TCP socket</td></tr>
+      <!-- Encodings -->
+      <tr><th colspan="3">Encodings</th></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>slip</url></td>
+	<td>&nbsp;</td>
+	<td>Bytestream from/to <a href="http://www.cse.iitb.ac.in/~bestin/btech-proj/slip/x365.html">SLIP</a></td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><url>json</url></td>
+	<td><url>noslip</url></td>
+	<td><a href="http://www.json.org/">JSON</a> to products</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>O</ossupport></td>
+	<td><url>json</url></td>
+	<td><url>request, filter, noslip</url></td>
+	<td>Products to <a href="http://www.json.org/">JSON</a></td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>osc</url></td>
+	<td><url>rt, noslip</url></td>
+	<td>Bytestream from/to <a href="http://opensoundcontrol.org/">OSC</a></td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>tuio[.osc]</url></td>
+	<td>&nbsp;</td>
+	<td>Multi-touch events from/to <a href="http://www.tuio.org/">TUIO</a></td></tr>
+      <tr>
+	<td><ossupport>L</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><url>mtdev</url></td>
+	<td>&nbsp;</td>
+	<td>Multi-touch events from <code>mtdev</code>
+	  device<a href="#6"><sup>6</sup></a></td></tr>
+    </table>
+    <br>
 
-<!-- Encodings -->
-<tr><th colspan="3">Encodings</th></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>slip</url></td>
-  <td>&nbsp;</td>
-  <td>Bytestream from/to <a href="http://www.cse.iitb.ac.in/~bestin/btech-proj/slip/x365.html">SLIP</a></td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><url>json</url></td>
-  <td><url>noslip</url></td>
-  <td><a href="http://www.json.org/">JSON</a> to products</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>O</ossupport></td>
-  <td><url>json</url></td>
-  <td><url>request, filter, noslip</url></td>
-  <td>Products to <a href="http://www.json.org/">JSON</a></td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>osc</url></td>
-  <td><url>rt, noslip</url></td>
-  <td>Bytestream from/to <a href="http://opensoundcontrol.org/">OSC</a></td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>tuio[.osc]</url></td>
-  <td>&nbsp;</td>
-  <td>Multi-touch events from/to <a href="http://www.tuio.org/">TUIO</a></td></tr>
-<tr>
-  <td><ossupport>L</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><url>mtdev</url></td>
-  <td>&nbsp;</td>
-  <td>Multi-touch events from <code>mtdev</code>
-  device<a href="#6"><sup>6</sup></a></td></tr>
-</table>
-<br>
+    <table id="uris">
+      <!-- Host-->
+      <tr><th colspan="3">Host</th></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><i>empty</i></td>
+	<td>same as any address IPv6</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><url>0.0.0.0</url></td>
+	<td>IPv4 any address</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>I</ossupport></td>
+	<td><url>[::]</url></td>
+	<td>IPv6 any address</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>127.0.0.1</url></td>
+	<td>IPv4 loopback</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>[::1]</url></td>
+	<td>IPv6 loopback</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>x.x.x.x</url></td>
+	<td>specific IPv4 address</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>[x:x:x:x:x:x:x:x]</url></td>
+	<td>specific IPv6 address</td></tr>
+      <tr>
+	<td><ossupport>OLW</ossupport></td>
+	<td><ossupport>IO</ossupport></td>
+	<td><url>hostname</url></td>
+	<td>specific hostname</td></tr>
+    </table>
 
-<table id="uris">
-<!-- Host-->
-<tr><th colspan="3">Host</th></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><i>empty</i></td>
-  <td>same as any address IPv6</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><url>0.0.0.0</url></td>
-  <td>IPv4 any address</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>I</ossupport></td>
-  <td><url>[::]</url></td>
-  <td>IPv6 any address</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>127.0.0.1</url></td>
-  <td>IPv4 loopback</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>[::1]</url></td>
-  <td>IPv6 loopback</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>x.x.x.x</url></td>
-  <td>specific IPv4 address</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>[x:x:x:x:x:x:x:x]</url></td>
-  <td>specific IPv6 address</td></tr>
-<tr>
-  <td><ossupport>LW</ossupport></td>
-  <td><ossupport>IO</ossupport></td>
-  <td><url>hostname</url></td>
-  <td>specific hostname</td></tr>
-</table>
+    <p><a name="1"><sup>1</sup></a>On Windows, in order to define a file
+      using the scheme <url>file</url> it is necessary to place the
+      character <url>'/'</url> (slash) before the drive letter.<br>
+      (e.g. <url>file:///C:/Windows/explorer.exe</url>)
+    </p>
 
-  <p><a name="1"><sup>1</sup></a>On Windows, in order to define a file
-  using the scheme <url>file</url> it is necessary to place the
-  character <url>'/'</url> (slash) before the drive letter.<br>
-  (e.g. <url>file:///C:/Windows/explorer.exe</url>)
-  </p>
+    <p><a name="2"><sup>2</sup></a> The available query keys are
+      obtained from the union of the available query keys of all the uri
+      components. As an example, the uri <url>out:bridge:</url> is by
+      default translated to <url>out:json.udp://[::1]:7898</url>, so it
+      owns the query keys of the json encoder (request, filter) and of
+      the udp socket node (writeend). Moreover, all input nodes also
+      have the query
+      keys <url>pre</url>, <url>pre1</url>, <url>pre2...</url> and
+      all output nodes also have the query
+      keys <url>post</url>, <url>post1</url>, <url>post2...</url> All
+      function nodes have both of them.</p>
 
-  <p><a name="2"><sup>2</sup></a> The available query keys are
-    obtained from the union of the available query keys of all the uri
-    components. As an example, the uri <url>out:bridge:</url> is by
-    default translated to <url>out:json.udp://[::1]:7898</url>, so it
-    owns the query keys of the json encoder (request, filter) and of
-    the udp socket node (writeend). Moreover, all input nodes also
-    have the query
-    keys <url>pre</url>, <url>pre1</url>, <url>pre2...</url> and
-    all output nodes also have the query
-    keys <url>post</url>, <url>post1</url>, <url>post2...</url> All
-    function nodes have both of them.</p>
+    <p><a name="3"><sup>3</sup><i>in:</i> and <i>out:</i> prefixes can
+	be omitted when using <code>boing</code> command line
+	script, since it is obvious from the argument option.</p>
 
-  <p><a name="3"><sup>3</sup><i>in:</i> and <i>out:</i> prefixes can
-      be omitted when using <code>boing</code> command line
-      script, since it is obvious from the argument option.</p>
+    <p><a name="4"><sup>4</sup></a>Some encodings have default
+      input/output devices (e.g. <url>in:tuio:</url> is by default translated into
+      <url>in:tuio.udp://[::]:3333</url>).
 
-  <p><a name="4"><sup>4</sup></a>Some encodings have default
-    input/output devices (e.g. <url>in:tuio:</url> is by default translated into
-    <url>in:tuio.udp://[::]:3333</url>).
+    <p><a name="5"><sup>5</sup></a>It cannot be used to form composed URLs.</p>
 
-  <p><a name="5"><sup>5</sup></a>It cannot be used to form composed URLs.</p>
+    <p><a name="6"><sup>6</sup></a><code>mtdev</code> decoding only
+      works on linux device files (e.g. <url>/dev/input/event6</url>).</p>
 
-  <p><a name="6"><sup>6</sup></a><code>mtdev</code> decoding only
-    works on linux device files (e.g. <url>/dev/input/event6</url>).</p>
-
-  <p><a href="index.html">&lt;&lt; home</a></p>
-</body></html>
+    <p><a href="index.html">&lt;&lt; home</a></p>
+  </body>
+</html>
