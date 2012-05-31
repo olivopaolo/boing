@@ -100,10 +100,10 @@ class QPath(object):
     def items(self, obj):
         self._target = obj
         self._resultType = "ITEMS"
-        self._result = ([], [])
+        self._result = []
         for path in self._norm:
             self._trace(path, obj, "$")
-        rvalue = self._result
+        rvalue = tuple(self._result)
         self._tearDown()
         return rvalue
    
@@ -169,8 +169,7 @@ class QPath(object):
                 self._result.append(path)
             elif self._resultType=="ITEMS":
                 path = path[path.find(";")+1:]
-                self._result[0].append(path.replace(";","."))
-                self._result[1].append(value)
+                self._result.append((path.replace(";","."), value))
             elif self._resultType=="FILTER":
                 if path=="$":  
                     self._result = value if not self._deepcopy \

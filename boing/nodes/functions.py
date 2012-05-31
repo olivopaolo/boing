@@ -30,30 +30,6 @@ class ArgumentFunction(FunctionalNode):
     def _function(self, *args, **kwargs):
         self.__argfunction(*args, **kwargs)
 
-
-class Filter(Node):
-    """Filters the received products using a QPath query and it posts
-    the results."""
-    def __init__(self, query, request=Node.TRANSPARENT, hz=None, parent=None):
-        super().__init__(request=request, hz=hz, parent=parent)
-        self.__query = query \
-            if query is None or isinstance(query, QPath.QPath) \
-            else QPath.QPath(query)        
-
-    def query(self):
-        return self.__query
-
-    def setQuery(self, query):
-        self.__query = query \
-            if query is None or isinstance(query, QPath.QPath) \
-            else QPath.QPath(query)        
-
-    def _consume(self, products, producer):
-        for product in products:
-            subset = self.__query.filter(product, deepcopy=False) \
-                if self.__query is not None else None
-            if subset: self._postProduct(subset)
-
 # -------------------------------------------------------------------
 
 class Lag(Node):

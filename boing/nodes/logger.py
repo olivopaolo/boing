@@ -28,7 +28,7 @@ uic.compileUiDir(os.path.dirname(__file__))
 from boing.nodes.uiRecorder import Ui_recorder
 #from boing.nodes.uiUrlDialog import Ui_UrlDialog
 
-
+'''
 class ProductBuffer(QtCore.QObject):
 
     """Emitted anytime the product buffer changes."""
@@ -507,7 +507,7 @@ class Recorder(HierarchicalConsumer, QtCore.QObject):
             if self.urldialog.exec_():
                 self.buffer.forwardTo(self.urldialog.url.text())
 
-        '''
+        
 
 # -------------------------------------------------------------------
 

@@ -9,6 +9,10 @@
 
 import collections
 import copy
+import itertools
+import sys
+
+from PyQt4 import QtCore
 
 class quickdict(dict):
 
@@ -155,3 +159,71 @@ def _deepDump(obj, fd, level, maxdepth, indent):
         print(repr(obj), file=fd)
     if level==0: print(file=fd)
 
+# -------------------------------------------------------------------
+
+class Console(QtCore.QObject):
+
+    def __init__(self, inputdevice, outputdevice, 
+                 nohelp=False, parent=None):
+        super().__init__(parent)
+        self.__input = inputdevice
+        self.__input.readyRead.connect(self.__exec)
+        self.__output = outputdevice
+        self.prologue = "Boing console\n"
+        self.linebegin = "> "
+        self.__cmd = dict()
+        if not nohelp: 
+            self.addCommand("help", Console.__help, 
+                            help="Display available commands.", 
+                            cmd=self.__cmd, fd=self.__output)
+        if self.__output.isOpen(): self._startUp()
+        elif hasattr(self.__output, "connected"):
+            self.__output.connected.connect(self._startUp)
+    
+    def inputDevice(self):
+        return self.__input
+
+    def outputDevice(self):
+        return self.__output
+
+    def addCommand(self, name, func, help="", *args, **kwargs):
+        self.__cmd[name] = (help, func, args, kwargs) 
+
+    def __exec(self):
+        data = self.__input.read()
+        text = data if self.__input.isTextModeEnabled() else data.decode()
+        command, *rest = text.partition("\n")
+        if command:
+            if command in self.__cmd:
+                help, func, args, kwargs = self.__cmd[command]
+                func(*args, **kwargs)
+            else:
+                self.__output.write("%s: command not found"%command)
+                self.__output.flush()
+        self.__output.write(self.linebegin)
+        self.__output.flush()
+
+    def _startUp(self):
+        self.__output.write(self.prologue)
+        if "help" in self.__cmd:
+            self.__output.write("Type 'help' for the command guide.\n")
+        self.__output.write(self.linebegin)
+        self.__output.flush()
+
+    @staticmethod
+    def __help(cmd, fd=sys.stdout):
+        for name, record in cmd.items():
+            help, *rest = record
+            fd.write(" %s                %s\n"%(name, help))
+        fd.write("\n")
+
+# -------------------------------------------------------------------
+
+def assertIsInstance(obj, *valid):
+    classes = tuple(map(lambda t: type(None) if t is None else t, valid))
+    if not isinstance(obj, classes): raise TypeError(
+        "Expected type %s, not '%s'"%(
+            " or ".join(map(lambda t: "None" if t is type(None) else t.__name__, 
+                            classes)), 
+            type(obj).__name__))
+    return obj

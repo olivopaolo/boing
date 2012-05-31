@@ -14,8 +14,9 @@ def additional_tests(modules=[]):
 
     tests = []
     if not modules or 'core' in modules:
-        from boing.test.core import test_ReactiveObject
-        tests += test_ReactiveObject.suite()
+        from boing.test.core import test_observer, test_economy
+        tests += test_observer.suite()
+        tests += test_economy.suite()
     if not modules or 'net' in modules:
         from boing.test.net import test_dns_sd
         tests += test_dns_sd.suite()
