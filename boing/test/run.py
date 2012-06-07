@@ -34,7 +34,8 @@ def additional_tests(modules=[]):
         from boing.test.nodes import test_loader
         tests += test_loader.suite()
     if not modules or 'utils' in modules:
-        from boing.test.utils import test_QPath, test_display
+        from boing.test.utils import test_QPath, test_display, test__init__
+        tests += test__init__.suite()
         tests += test_QPath.suite()
         tests += test_display.suite()
 
