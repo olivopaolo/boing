@@ -874,9 +874,9 @@ class WiseWorker(_PropagatingWorker):
     ''' 
 
     class _Forcing: pass
-    ACTIVATED = Forcing()
-    DEACTIVATED = Forcing()
-    NONE = Forcing()
+    ACTIVATED = _Forcing()
+    DEACTIVATED = _Forcing()
+    NONE = _Forcing()
 
     TUNNELING = object()
     """Use *TUNNELING* as the worker Offer, when the worker is
