@@ -10,22 +10,15 @@
 import collections
 import datetime
 import math
-import os
-import weakref
 
 from PyQt4 import QtCore, QtGui, uic
 
-import boing
-
-import boing.utils as utils
-import boing.utils.fileutils as fileutils
-from boing.core.MappingEconomy \
-    import HierarchicalProducer, HierarchicalConsumer, Node
-from boing.core.OnDemandProduction import OnDemandProducer
+from boing import Offer, Product, Producer
+from boing.utils import fileutils
 
 # Compile all .ui files in this directory
-uic.compileUiDir(os.path.dirname(__file__))
-from boing.nodes.uiRecorder import Ui_recorder
+#uic.compileUiDir(os.path.dirname(__file__))
+#from boing.nodes.uiRecorder import Ui_recorder
 #from boing.nodes.uiUrlDialog import Ui_UrlDialog
 
 '''
@@ -452,7 +445,7 @@ class Recorder(HierarchicalConsumer, QtCore.QObject):
             self.graph.setContextMenuPolicy(QtCore.Qt.NoContextMenu if active \
                                                 else QtCore.Qt.CustomContextMenu)
 
-        '''def menuOn(self):
+        def menuOn(self):
             if self.stopplay.isChecked():
                 self.stopplay.setChecked(False)
                 self.menustop = True
@@ -460,9 +453,9 @@ class Recorder(HierarchicalConsumer, QtCore.QObject):
         def menuOff(self):
             if self.menustop and not self.graph.urldialog.isVisible():
                 self.stopplay.setChecked(True)
-                self.menustop = False'''
+                self.menustop = False
 
-        '''DelayedReactive.__init__(self)
+        DelayedReactive.__init__(self)
             QtGui.QWidget.__init__(self, parent)
             self.setFocusPolicy(QtCore.Qt.StrongFocus)
             self.buffer = buffer_
@@ -505,32 +498,29 @@ class Recorder(HierarchicalConsumer, QtCore.QObject):
             self.urldialog.url.setText("")
             self.urldialog.url.setFocus(QtCore.Qt.OtherFocusReason)
             if self.urldialog.exec_():
-                self.buffer.forwardTo(self.urldialog.url.text())
-
-        
+                self.buffer.forwardTo(self.urldialog.url.text())'''
 
 # -------------------------------------------------------------------
 
-class BasePlayer(HierarchicalProducer):
+class Player(Producer):
 
     @staticmethod
     def PostSender(player, obj):
-        player._postProduct(obj)
+        player.postProduct(obj)
 
     @staticmethod
     def ProductSender(player, obj):
         for product in obj.products:
-            if player._tag("timetag"):
-                product["timetag"] = player._date if player._date is not None \
-                    else datetime.datetime.now()
-            player._postProduct(product)
+            product["timetag"] = player._date if player._date is not None \
+                else datetime.datetime.now()
+            player.postProduct(product)
 
     started = QtCore.pyqtSignal()
     stopped = QtCore.pyqtSignal()
     
     def __init__(self, parser, sender, speed=1.0, loop=False, interval=1000, 
-                 parent=None):
-        super().__init__(parent=parent)
+                 offer=Offer(Product.UNDEFINED), parent=None):
+        super().__init__(offer, parent=parent)
         self._parser = parser
         self._sender = sender
         if not isinstance(loop, bool): raise TypeError(
@@ -546,7 +536,6 @@ class BasePlayer(HierarchicalProducer):
         self._running = False
         self._date = None # Datetime when the next item should be sent.
         self.playcnt = 0
-        self._addTag("timetag", {"timetag": datetime.datetime.now()})
 
     def start(self):
         if not self._running:
@@ -610,7 +599,7 @@ class BasePlayer(HierarchicalProducer):
                 self.__waittimer.start(msec)
 
 
-class FilePlayer(BasePlayer):
+class FilePlayer(Player):
 
     class FileParser(collections.Callable):
         def __init__(self, decoder=None):
@@ -627,9 +616,10 @@ class FilePlayer(BasePlayer):
             return rvalue
 
     def __init__(self, filepath,
-                 parser=FileParser(), sender=BasePlayer.PostSender, 
-                 speed=1.0, loop=False, interval=1000, parent=None):
-        super().__init__(parser, sender, speed, loop, interval, parent)
+                 parser=FileParser(), sender=Player.PostSender, 
+                 speed=1.0, loop=False, interval=1000, 
+                 offer=Offer(Product.UNDEFINED), parent=None):
+        super().__init__(parser, sender, speed, loop, interval, offer, parent)
         self.__fd = fileutils.File(filepath, uncompress=True)
 
     def file(self):
@@ -640,9 +630,9 @@ class FilePlayer(BasePlayer):
         if self.__fd.isOpen(): self.__fd.seek(0)
 
 
-'''class BufferPlayer(BasePlayer):
+'''class BufferPlayer(Player):
       
-    class ListParse(BasePlayer.BaseFunctor):
+    class ListParse(Player.BaseFunctor):
         def __init__(self, player):
             super().__init__(player)
             self.player.started.connect(self._playerStarted)
@@ -658,7 +648,7 @@ class FilePlayer(BasePlayer):
                 rvalue = True
             return rvalue
 
-    def __init__(self, buffer, parse=ListParse, sendout=BasePlayer.PostSendOut, 
+    def __init__(self, buffer, parse=ListParse, sendout=Player.PostSendOut, 
                  speed=1.0, loop=False, parent=None):
         super().__init__(parse, sendout, speed, loop, parent)
         self._buffer = buffer

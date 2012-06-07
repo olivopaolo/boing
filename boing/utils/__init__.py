@@ -7,12 +7,29 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+from code import InteractiveConsole
 import collections
 import copy
+import io
 import itertools
 import sys
 
 from PyQt4 import QtCore
+
+from boing.net import tcp
+from boing.utils.url import URL
+from boing.utils.fileutils import IODevice, CommunicationDevice
+
+def assertIsInstance(obj, *valid):
+    classes = tuple(map(lambda t: type(None) if t is None else t, valid))
+    if not isinstance(obj, classes): raise TypeError(
+        "Expected type %s, not '%s'"%(
+            " or ".join(map(lambda t: "None" if t is type(None) else t.__name__, 
+                            classes)), 
+            type(obj).__name__))
+    return obj
+
+# -------------------------------------------------------------------
 
 class quickdict(dict):
 
@@ -111,119 +128,134 @@ def deepremove(obj, other, diff=False):
 
 # -------------------------------------------------------------------
 
-def deepDump(obj, fd, maxdepth=None, indent=4):
-    return _deepDump(obj, fd, 0, maxdepth, indent)
+def deepDump(obj, fd=sys.stdout, maxdepth=None, indent=2, end="\n", sort=True):
+    return _deepDump(obj, fd, 1, maxdepth, indent, end, sort)
 
-def _deepDump(obj, fd, level, maxdepth, indent):
+def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
+    b = " "*(level*indent)
     if isinstance(obj, list) or isinstance(obj, tuple):
-        print("%s["%(" "*level*indent), end="", file=fd)
-        if maxdepth is None or level<maxdepth:
+        print("[", end="", file=fd)
+        if not obj:
+            print("]", end=end, file=fd)
+        elif maxdepth is None or level<maxdepth:
+            if len(obj)>1: print(end=end, file=fd)
             for i, value in enumerate(obj):
+                if len(obj)>1: print(b, end="", file=fd)
                 if (isinstance(value, list) or isinstance(value, tuple) \
                         or isinstance(value, collections.Mapping)) \
                         and value:
-                    print("", file=fd)
-                    _deepDump(value, fd, level+1, maxdepth, indent)
+                    _deepDump(value, fd, level+1, maxdepth, indent, end, sort)
                 else:
-                    if i>0: print(" "*(level*indent+1), end="", file=fd)
                     print(repr(value), end="", file=fd)
-                if i<len(obj)-1: print(",", file=fd)
+                if len(obj)>1: print(",", end="", file=fd)
+                if i<len(obj)-1: 
+                    print(end=end, file=fd)
+                elif len(obj)>1:
+                    print(end+" "*((level-1)*indent), end="", file=fd)
             print("]", end="", file=fd)
         else:
             print("...]", end="", file=fd)
     elif isinstance(obj, collections.Mapping):
-        print("%s{"%(" "*level*indent), end="", file=fd)
-        keys = list(obj.keys())
-        keys.sort()
+        print("{", end="", file=fd)
+        if sort:
+            keys = list(obj.keys())
+            keys.sort()
+        else: 
+            keys = obj.keys()
+        if not obj:
+            print("}", end=end, file=fd)            
         if maxdepth is None or level<maxdepth:
+            if len(obj)>1: print(end=end, file=fd)
             for i, key in enumerate(keys):
+                if len(obj)>1: print(b, end="", file=fd)
                 value = obj[key]
-                if i>0: print(" "*(level*indent+1), end="", file=fd)
                 if (isinstance(value, list) or isinstance(value, tuple) \
                         or isinstance(value, collections.Mapping)) \
                         and value:
-                    print("%s:"%repr(key), file=fd)
-                    _deepDump(value, fd, level+1, maxdepth, indent)
+                    print("%s: "%repr(key), end="", file=fd)
+                    _deepDump(value, fd, level+1, maxdepth, indent, end, sort)
                 else:
                     print("%s: %s"%(repr(key), repr(value)), end="", file=fd)
-                if i<len(obj)-1: print(",", file=fd)
+                if len(obj)>1: print(",", end="", file=fd)
+                if i<len(obj)-1: 
+                    print(end=end, file=fd)
+                elif len(obj)>1:
+                    print(end+" "*((level-1)*indent), end="", file=fd)
             print("}", end="", file=fd)
         else:
-            for i, key in enumerate(keys):
-                if i>0: print(" "*(level*indent+1), end="", file=fd)
-                print("%s: ..."%repr(key), end="", file=fd)
-                if i<len(obj)-1:
-                    print(",", file=fd)
-            print("}", end="", file=fd)
+            print("...}", end="", file=fd)
     else:
-        print(repr(obj), file=fd)
-    if level==0: print(file=fd)
+        print(repr(obj), end="", file=fd)
+    if level==0: print(end=end, file=fd)
 
 # -------------------------------------------------------------------
 
-class Console(QtCore.QObject):
+class Console(InteractiveConsole, QtCore.QObject):
+    """Interactive Python console running along the Qt eventloop."""
 
-    def __init__(self, inputdevice, outputdevice, 
-                 nohelp=False, parent=None):
-        super().__init__(parent)
-        self.__input = inputdevice
-        self.__input.readyRead.connect(self.__exec)
-        self.__output = outputdevice
-        self.prologue = "Boing console\n"
-        self.linebegin = "> "
-        self.__cmd = dict()
-        if not nohelp: 
-            self.addCommand("help", Console.__help, 
-                            help="Display available commands.", 
-                            cmd=self.__cmd, fd=self.__output)
-        if self.__output.isOpen(): self._startUp()
+    class _FileCacher:
+        """Cache the stdout text so we can analyze it before writing it"""
+        def __init__(self): self.reset()
+        def reset(self): self.out = []
+        def write(self,line): 
+            self.out.append(line)
+        def flush(self):
+            output = ''.join(self.out)
+            self.reset()
+            return output
+
+    ps1 = ">>> "
+    ps2 = "... "
+
+    def __init__(self, inputdevice, outputdevice, banner="",
+                 locals=None, parent=None):
+        InteractiveConsole.__init__(self, locals=locals)
+        QtCore.QObject.__init__(self, parent)
+        # Backup of the current stdout
+        self._backup = sys.stdout
+        self._cache = Console._FileCacher()
+        self.__in = inputdevice
+        self.__in.readyRead.connect(self._readAndPush)
+        self.__out = outputdevice
+        self.banner = banner
+        if self.__out.isOpen(): self._writeBanner()
         elif hasattr(self.__output, "connected"):
-            self.__output.connected.connect(self._startUp)
-    
-    def inputDevice(self):
-        return self.__input
+            self.__out.connected.connect(self._writeBanner())
 
-    def outputDevice(self):
-        return self.__output
+    def _readAndPush(self):
+        """Read from the input device and interpret the command"""
+        data = self.__in.read()
+        if not data:
+            print()
+            QtCore.QCoreApplication.instance().quit()
+        else:
+            text = data if self.__in.isTextModeEnabled() else data.decode()
+            self.push(text)
 
-    def addCommand(self, name, func, help="", *args, **kwargs):
-        self.__cmd[name] = (help, func, args, kwargs) 
+    def pushStdout(self):
+        """Replace standard output, so that the current console's
+        output can be redirected."""
+        self._backup = sys.stdout
+        sys.stdout = self._cache
 
-    def __exec(self):
-        data = self.__input.read()
-        text = data if self.__input.isTextModeEnabled() else data.decode()
-        command, *rest = text.partition("\n")
-        if command:
-            if command in self.__cmd:
-                help, func, args, kwargs = self.__cmd[command]
-                func(*args, **kwargs)
-            else:
-                self.__output.write("%s: command not found"%command)
-                self.__output.flush()
-        self.__output.write(self.linebegin)
-        self.__output.flush()
+    def pullStdout(self): 
+        """Restore previous stdout."""
+        sys.stdout = self._backup
 
-    def _startUp(self):
-        self.__output.write(self.prologue)
-        if "help" in self.__cmd:
-            self.__output.write("Type 'help' for the command guide.\n")
-        self.__output.write(self.linebegin)
-        self.__output.flush()
+    def push(self, line):
+        """Pass *line* to the Python interpreter."""
+        self.pushStdout()
+        more = super().push(line)
+        self.pullStdout()
+        self.write(Console.ps2 if more else self._cache.flush()+Console.ps1)
+        return more
 
-    @staticmethod
-    def __help(cmd, fd=sys.stdout):
-        for name, record in cmd.items():
-            help, *rest = record
-            fd.write(" %s                %s\n"%(name, help))
-        fd.write("\n")
-
-# -------------------------------------------------------------------
-
-def assertIsInstance(obj, *valid):
-    classes = tuple(map(lambda t: type(None) if t is None else t, valid))
-    if not isinstance(obj, classes): raise TypeError(
-        "Expected type %s, not '%s'"%(
-            " or ".join(map(lambda t: "None" if t is type(None) else t.__name__, 
-                            classes)), 
-            type(obj).__name__))
-    return obj
+    def _writeBanner(self):
+        self.write(self.banner)
+        self.write(Console.ps1)
+            
+    def write(self, text):
+        """Write *text* to the output device."""
+        self.__out.write(text if self.__out.isTextModeEnabled() \
+                                   else text.encode())
+        self.__out.flush()

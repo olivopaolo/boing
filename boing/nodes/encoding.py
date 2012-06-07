@@ -14,9 +14,10 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing.core import Offer, Request, Product, Functor
+from boing import Offer, Request, Product, Functor
+from boing.nodes.logger import FilePlayer
 from boing.net import json, osc, slip, tuio
-from boing.utils import assertIsInstance, deepupdate
+from boing.utils import assertIsInstance, deepupdate, quickdict
 
 # -------------------------------------------------------------------
 # TEXT
@@ -45,7 +46,7 @@ class TextDecoder(Functor):
     def _process(self, sequence, producer):
         for operands in sequence:
             for name, value in operands:
-                yield ("str", value.decode(self.encoding, self.errors))
+                yield (("str", value.decode(self.encoding, self.errors)), )
             
 # -------------------------------------------------------------------
 # SLIP
@@ -67,7 +68,7 @@ class SlipDecoder(Functor):
 
     def __init__(self, parent=None):
         super().__init__(Request("data"), Offer(Product(data=bytearray())),
-                         Functor.MERGECOPY, parent=parent)
+                         Functor.RESULTONLY, parent=parent)
         self._slipbuffer = None
 
     def _process(self, sequence, producer):
@@ -85,114 +86,120 @@ class SlipDecoder(Functor):
 
 class JsonEncoder(Functor):
 
-    def __init__(self, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request.ANY, Offer(Product(str=str())), blender, 
-                         parent=parent)
+    def __init__(self, wrap=False, 
+                 request=Request.ANY, blender=Functor.MERGECOPY, parent=None):
+        super().__init__(request, Offer(Product(str=str())), 
+                         blender, parent=parent)
+        self.wrap = assertIsInstance(wrap, bool)
 
     def _process(self, sequence, producer):
-        for operands in sequence:
-            record = Product(products=(Product(operands), ), 
-                             timetag=datetime.datetime.now())
-            yield (("str", json.encode(record)),)
+        if self.wrap:
+            products = tuple(map(Product, sequence))
+            yield (("str", json.encode(Product(timetag=datetime.datetime.now(), 
+                                               products=products))), )
+        else:
+            for operands in sequence:
+                yield (("str", json.encode(Product(operands))),)
 
 
 class JsonDecoder(Functor):
 
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request("str"), Offer.UNDEFINED, blender, 
-                         parent=parent)
+        super().__init__(Request("str"), Offer(Product.UNDEFINED), 
+                         blender, parent=parent)
 
     def _process(self, sequence, producer):
         for operands in sequence:            
             for name, value in operands:
-                record = json.decode(value)
-                for product in record.products:
-                    yield product.items()
+                if value:
+                    product = json.decode(value)
+                    yield product.items() if hasattr(product, "items") \
+                        else (("array", product), )
 
-'''
-class JsonLogPlayer(logger.FilePlayer):
 
-    def __init__(self, filename, *args, **kwargs):
+class JsonLogPlayer(FilePlayer):
+
+    def __init__(self, filename, **kwargs):
         super().__init__(filename, 
-                         logger.FilePlayer.FileParser(JsonLogPlayer.__Decoder()), 
-                         logger.BasePlayer.ProductSender,
-                         *args, **kwargs)
+                         FilePlayer.FileParser(JsonLogPlayer._Decoder()), 
+                         FilePlayer.ProductSender,
+                         **kwargs)
         self.stopped.connect(self._parser.decoder.unslip.reset)
     
-    class __Decoder(collections.Callable):
+    class _Decoder(collections.Callable):
         def __init__(self):
             self.unslip = slip.Decoder()
 
         def __call__(self, encoded):
             return tuple(json.decode(obj.decode()) for obj in self.unslip(encoded))
         
-            
 # -------------------------------------------------------------------
 # OSC
 
-class OscEncoder(FunctionalNode):
+class OscEncoder(Functor):
 
     def __init__(self, wrap=False, rt=False,
-                 resultmode=FunctionalNode.MERGE, hz=None, parent=None):
-        super().__init__("osc", "data", {"data": bytearray()}, resultmode,
-                         hz=hz, parent=parent)
-        if not isinstance(wrap, bool): raise TypeError(
-            "wrap must be boolean, not '%s'"%wrap.__class__.__name__)
-        self.wrap = wrap
-        if not isinstance(rt, bool): raise TypeError(
-            "rt must be boolean, not '%s'"%rt.__class__.__name__)
-        self.rt = rt
+                 blender=Functor.RESULTONLY, parent=None):
+        super().__init__(Request("osc"), Offer(Product(data=bytearray())), 
+                         blender, parent=parent)
+        self.wrap = assertIsInstance(wrap, bool)
+        self.rt = assertIsInstance(rt, bool)
         
-    def _function(self, paths, values):
+    def _process(self, sequence, producer):
         now = datetime.datetime.now()
-        bundle = osc.Bundle(now if not self.rt else values[0].timetag,
-                            values[0].elements)
-        packet = osc.EncodedPacket(bundle)
-        if self.wrap: packet = osc.Bundle(now, (packet,))
-        yield packet.encode()
+        for operands in sequence:
+            for name, value in operands:
+                bundle = osc.Bundle(now if not self.rt else value.timetag,
+                                    value.elements)
+                packet = osc.EncodedPacket(bundle.encode())
+                if self.wrap: packet = osc.Bundle(now, (packet,))
+                yield (('data', packet.encode()), )
+                
 
+class OscDecoder(Functor):
 
-class OscDecoder(FunctionalNode):
-
-    def __init__(self, rt=False, resultmode=FunctionalNode.MERGE, 
-                 hz=None, parent=None):
-        super().__init__("data", ("osc", "timetag"), {"osc": osc.Packet()}, 
-                         resultmode, hz=hz, parent=parent)
-        if not isinstance(rt, bool): raise TypeError(
-            "rt must be boolean, not '%s'"%rt.__class__.__name__)
-        self._receipttime = rt
+    def __init__(self, rt=False, blender=Functor.MERGECOPY, parent=None):
+        super().__init__(Request("data"), 
+                         Offer(Product(osc=osc.Packet(), 
+                                       timetag=datetime.datetime.now())),
+                         blender, parent=parent)
+        self._receipttime = assertIsInstance(rt, bool)
     
-    def _function(self, paths, values):
-        data = values[0]
-        if data: 
-            packet = osc.decode(data)
-            yield packet
-            yield packet.timetag if not self._receipttime \
-                else datetime.datetime.now()
+    def _process(self, sequence, producer):
+        for operands in sequence:
+            for name, value in operands:
+                if value:
+                    packet = osc.decode(value)
+                    yield (('osc', packet), 
+                           ('timetag', packet.timetag if not self._receipttime \
+                                else datetime.datetime.now()))
 
+class OscDebug(Functor):
 
-class OscDebug(FunctionalNode):
+    def __init__(self, blender=Functor.MERGECOPY, parent=None):
+        super().__init__(Request("osc"), Offer(Product(str=str())), 
+                         blender, parent=parent)
 
-    def __init__(self, resultmode=FunctionalNode.MERGE, hz=None, parent=None):
-        super().__init__("osc", "str", {"str": str()}, resultmode,
-                         hz=hz, parent=parent)
-
-    def _function(self, paths, values):
+    def _process(self, sequence, producer):
         stream = io.StringIO()
-        values[0].debug(stream)
-        yield stream.getvalue()
+        for operands in sequence:
+            for name, value in operands:
+                value.debug(stream)
+        yield (('str', stream.getvalue()), )
 
 
-class OscLogPlayer(logger.FilePlayer):
+class OscLogPlayer(FilePlayer):
 
-    def __init__(self, filename, *args, **kwargs):
+    def __init__(self, filename, **kwargs):
         super().__init__(filename, 
-                         logger.FilePlayer.FileParser(OscLogPlayer.__Decoder()), 
-                         OscLogPlayer.__Sender(),
-                         *args, **kwargs)
+                         FilePlayer.FileParser(OscLogPlayer._Decoder()), 
+                         OscLogPlayer._Sender(),
+                         offer=Offer(Product(osc=osc.Packet(), 
+                                             timetag=datetime.datetime.now())),
+                         **kwargs)
         self.stopped.connect(self._parser.decoder.unslip.reset)
     
-    class __Decoder(collections.Callable):
+    class _Decoder(collections.Callable):
         def __init__(self):
             self.unslip = slip.Decoder()
 
@@ -200,33 +207,26 @@ class OscLogPlayer(logger.FilePlayer):
             unslipped = self.unslip(encoded)
             return tuple(osc.decode(obj) for obj in unslipped)
 
-    class __Sender(collections.Callable):
+    class _Sender(collections.Callable):
         def __call__(self, player, obj):
             for packet in obj.elements:
                 packet.timetag = player._date if player._date is not None \
                     else datetime.datetime.now()
-                product = quickdict()
-                product.osc = packet
-                if player._tag("timetag"): product.timetag = packet.timetag
-                player._postProduct(product)
-    
+                player.postProduct(Product(osc=packet, timetag=packet.timetag))
+
 # -------------------------------------------------------------------
 # TUIO
 
-class TuioDecoder(FunctionalNode):
+class TuioDecoder(Functor):
     """Based on the TUIO 1.1 Protocol Specification
     http://www.tuio.org/?specification
     
     It will not work if inside an OSC bundle there is data from more
     than one source or for more than one TUIO profile."""
 
-    def __init__(self, resultmode=FunctionalNode.MERGE, hz=None, parent=None):
-        template = {"diff": {"added":{"contacts":{'0':{'rel_pos':tuple()}}}, 
-                             "updated":{"contacts":{}},
-                             "removed":{"contacts": {}}},
-                    "source": str()}
-        super().__init__("osc", ("diff", "source"), template, resultmode,
-                         hz=hz, parent=parent)
+    def __init__(self, blender=Functor.MERGECOPY, parent=None):
+        super().__init__(Request("osc"), Offer(TuioDecoder.getTemplate()),
+                         blender, parent=parent)
         """Alive TUIO items."""
         # self.__alive[source][profile] = set of session_ids
         self.__alive = {}
@@ -237,12 +237,10 @@ class TuioDecoder(FunctionalNode):
         self.__idpairs = {}
         self.__idcount = 0
 
-    def _function(self, paths, values):
-        for packet in values:
-            event = self.__handleOsc(packet)
-            if event is not None: 
-                for item in event: 
-                    yield item
+    def _process(self, sequence, producer):
+        for operands in sequence:
+            for name, value in operands:
+                yield tuple(self.__handleOsc(value))
   
     def __handleOsc(self, packet):
         source = fseq = profile = None
@@ -266,7 +264,6 @@ class TuioDecoder(FunctionalNode):
                     desc[tobj.s] = tobj
         # TODO: old bundles rejection based on fseq
         # Update the contacts with the bundle information
-        diff = quickdict()
         for s_id, tobj in desc.items():
             source_ids = self.__idpairs.setdefault(source, {})
             gid = source_ids.get(s_id)
@@ -279,12 +276,12 @@ class TuioDecoder(FunctionalNode):
                     node.rel_pos = [tobj.x, tobj.y]
                 if tuio.TuioDescriptor.undef_value not in [tobj.X, tobj.Y]:
                     node.rel_speed = [tobj.X, tobj.Y, 0, 0]
-                diff.updated.contacts[gid] = node
+                yield "diff.updated.contacts.%s"%gid, node
             elif profile in ("25Dcur", "3Dcur"):
                 node = quickdict()
                 node.rel_pos = [tobj.x, tobj.y, tobj.z]
                 node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
-                diff.updated.contacts[gid] = node
+                yield "diff.updated.contacts.%s"%gid, node
             elif profile=="2Dblb":
                 node = quickdict()
                 if tuio.TuioDescriptor.undef_value not in [tobj.x, tobj.y]:
@@ -293,21 +290,21 @@ class TuioDecoder(FunctionalNode):
                     node.rel_speed = [tobj.X, tobj.Y, 0, 0]
                 node.si_angle = [tobj.a, ]
                 node.rel_size = [tobj.w, tobj.h]
-                diff.updated.contacts[gid].boundingbox = node
+                yield "diff.updated.contacts.%s.boundingbox"%gid, node
             elif profile=="25Dblb":
                 node = quickdict()
                 node.rel_pos = [tobj.x, tobj.y, tobj.z]
                 node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
                 node.si_angle = [tobj.a, ]
                 node.rel_size = [tobj.w, tobj.h]
-                diff.updated.contacts[gid].boundingbox = node
+                yield "diff.updated.contacts.%s.boundingbox"%gid, node
             elif profile=="3Dblb":
-                node = ExtensibleEvent()
+                node = quickdict()
                 node.rel_pos = [tobj.x, tobj.y, tobj.z]
                 node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
                 node.si_angle = [tobj.a, tobj.b, tobj.c]                
                 node.rel_size = [tobj.w, tobj.h, tobj.d]
-                diff.updated.contacts[gid].boundingbox = node
+                yield "diff.updated.contacts.%s.boundingbox"%gid, node
             elif profile=="2Dobj":
                 node = quickdict()
                 if tuio.TuioDescriptor.undef_value not in [tobj.x, tobj.y]:
@@ -316,21 +313,21 @@ class TuioDecoder(FunctionalNode):
                     node.rel_speed = [tobj.X, tobj.Y, 0, 0]
                 node.objclass = tobj.i
                 node.si_angle = [tobj.a, ]
-                diff.updated.contacts[gid] = node
+                yield "diff.updated.contacts.%s"%gid, node
             elif profile=="25Dobj":
                 node = quickdict()
                 node.rel_pos = [tobj.x, tobj.y, tobj.z]
                 node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
                 node.objclass = tobj.i
                 node.si_angle = [tobj.a, ]
-                diff.updated.contacts[gid] = node
+                yield "diff.updated.contacts.%s"%gid, node
             elif profile=="3Dobj":
                 node = quickdict()
                 node.rel_pos = [tobj.x, tobj.y, tobj.z]
                 node.rel_speed = [tobj.X, tobj.Y, tobj.Z, 0]
                 node.objclass = tobj.i
                 node.si_angle = [tobj.a, tobj.b, tobj.c]
-                diff.updated.contacts[gid] = node
+                yield "diff.updated.contacts.%s"%gid, node
         # Remove items that are not alive
         src_profiles = self.__alive.setdefault(source, {})
         alive_old = src_profiles.get(profile, set())
@@ -346,32 +343,50 @@ class TuioDecoder(FunctionalNode):
             if not keep:
                 gid = self.__idpairs.get(source, {}).pop(s_id, None)
                 if gid is not None:
-                    diff.removed.contacts[gid] = None
+                    yield "diff.removed.contacts.%s"%gid, None
         src_profiles[profile] = alive
-        return (diff, source) if diff else None
+        yield "source", source
 
     def __nextId(self):
         value = self.__idcount
         self.__idcount += 1
         return str(value)
 
+    @staticmethod
+    def getTemplate():
+        template = quickdict()
+        contact = template.diff.added.contacts[0]
+        contact.rel_pos = tuple()
+        contact.rel_speed = tuple()
+        contact.rel_accel = tuple()
+        contact.si_angle = tuple()
+        contact.objclass = tuple()
+        contact.boundingbox.rel_pos = tuple()
+        contact.boundingbox.rel_speed = tuple()
+        contact.boundingbox.si_angle = tuple()
+        contact.boundingbox.rel_size = tuple()
+        template.diff.updated.contacts[0] = contact
+        template.diff.removed.contact[0] = None
+        template.source = str()
+        return template
 
-class TuioEncoder(Node):
+
+class TuioEncoder(Functor):
     """Convert contact events into OSC/TUIO packets."""
-    def __init__(self, request="diff.*.contacts|source|timetag", 
-                 hz=None, parent=None):
-        super().__init__(request=request, hz=hz, parent=parent)
+    def __init__(self, request=Request("diff.*.contacts|source|timetag"), 
+                 blender=Functor.RESULTONLY, hz=None, parent=None):
+        super().__init__(request, Offer(Product(osc=osc.Packet)), blender,
+                         hz=hz, parent=parent)
         # self._tuiostate[observable-ref][source][profile] = [fseq, {s_id: TuioDescriptor}]
         self._tuiostate = {}
-        self._addTag("osc", {"osc": osc.Packet()})
     
     def _checkRefs(self):
-        Node._checkRefs(self)
+        super()._checkRefs()
         self._tuiostate = dict(((k,v) for k,v in self._tuiostate.items() \
                                     if k() is not None))
 
     def _removeObservable(self, observable):
-        Node._removeObservable(self, observable)
+        super()._removeObservable(observable)
         for ref in self._tuiostate.keys():
             if ref() is observable:
                 del self._tuiostate[ref] ; break
@@ -388,9 +403,8 @@ class TuioEncoder(Node):
         return rvalue
 
     def _consume(self, products, producer):
-        if self._tag("osc"):
-            for product in products:
-                if "diff" in product: self._encodeEvent(product, producer)
+        for product in products:
+            if "diff" in product: self._encodeEvent(product, producer)
                     
 
     def _encodeEvent(self, event, producer):
@@ -594,6 +608,4 @@ class TuioEncoder(Node):
             profilestate[0] += 1
             forward = quickdict()
             forward.osc = osc.Bundle(event.get("timetag"), msgs)
-            self._postProduct(forward)
-
-'''
+            self.postProduct(forward)

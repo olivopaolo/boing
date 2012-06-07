@@ -13,118 +13,32 @@ This module contains classes implementing the Observer design pattern.
 
 import collections
 import sip
+import sys
 import weakref
 
 from PyQt4 import QtCore
 
+from boing.core.graph import Node
 from boing.utils import assertIsInstance
 
-class Observable(object):
+class Observable(QtCore.QObject, Node):
 
-    def observers(self):
-        """Return an iterator over the subscribed observers."""
-        raise NotImplementedError
+    # FIXME: Add unittest for these signals
+    observerAdded = QtCore.pyqtSignal(QtCore.QObject)
+    observerRemoved = QtCore.pyqtSignal(QtCore.QObject)
 
-    def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection):
-        """Subscribe a new *observer*; return true if *observer* has been
-        correctly added, false otherwise."""
-        raise NotImplementedError
+    class _ObserverRecord(QtCore.QObject):
 
-    def removeObserver(self, observer):
-        """Unsubscribe *observer*; return true if *observer* has been
-        correcty found and removed, false otherwise."""
-        raise NotImplementedError
+        trigger = QtCore.pyqtSignal(QtCore.QObject)
 
-    def clear(self):
-        """Unsubscribe all registered observers."""
-        raise NotImplementedError
-
-    def notify(self):
-        """Activate the trigger."""
-        raise NotImplementedError()
-
-
-class StandardObservable(QtCore.QObject, Observable):
-
-    trigger = QtCore.pyqtSignal(QtCore.QObject)
-    """Qt signal used to trigger the observers."""
-    
-    def __init__(self, parent=None):
-        QtCore.QObject.__init__(self, parent)
-        Observable.__init__(self)
-        self.__observers = set()
-
-    def __del__(self):
-        for ref in self.__observers:
-            # Notify of the subscribed observers that they have a None 
-            # reference.
-            observer = ref()
-            if observer is not None:
-                try:
-                    self.trigger.disconnect(observer._reactSlot)
-                except TypeError: pass
-                observer._checkRefs()
-        # To make sure that the children's '__del__' method is invoked.
-        for child in tuple(self.children()):
-            child.setParent(None)
-
-    def observers(self):
-        return (ref() for ref in self.__observers)
-
-    def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection):
-        assertIsInstance(observer, Observer)
-        if observer in self.observers(): 
-            rvalue = False
-        else:
-            self.__observers.add(weakref.ref(observer))
-            observer._addObservable(self)
+        def __init__(self, observer, mode):
+            super().__init__()
             self.trigger.connect(observer._reactSlot, mode)
-            rvalue = True
-        return rvalue
 
-    def removeObserver(self, observer):
-        for ref in self.__observers:
-            if ref() is observer:
-                self.trigger.disconnect(observer._reactSlot)
-                observer._removeObservable(self)
-                self.__observers.remove(ref)
-                return True
-        else: return False
-
-    def clear(self):
-        for observer in self.observers():
-            self.trigger.disconnect(observer._reactSlot)
-            observer._removeObservable(self)
-        self.__observers.clear()
-
-    def notify(self):
-        """Notify all the registered observers."""
-        self.trigger.emit(self)
-            
-    def _checkRefs(self):
-        """Discard all invalid weak references."""
-        self.__observers = set(filter(lambda o: o() is not None, self.__observers))
-
-    def deleteLater(self):
-        # Clear registered observers prior to deleting the object.
-        self.clear()
-        super().deleteLater()
-
-
-class _ObserverRecord(QtCore.QObject):
-    
-    trigger = QtCore.pyqtSignal(QtCore.QObject)
-    
-    def __init__(self, observer, mode):
-        super().__init__()
-        self.trigger.connect(observer._reactSlot, mode)
-
-
-class SelectiveObservable(QtCore.QObject, Observable):
 
     def __init__(self, parent=None):
         QtCore.QObject.__init__(self, parent)
-        Observable.__init__(self)
+        Node.__init__(self)
         self.__observers = dict()
 
     def __del__(self):
@@ -138,37 +52,47 @@ class SelectiveObservable(QtCore.QObject, Observable):
             # To make sure that the children's '__del__' method is invoked.
             for child in tuple(self.children()):
                 child.setParent(None)
+        Node.__del__(self)
 
     def observers(self):
+        """Return an iterator over the subscribed observers."""
         return (ref() for ref in self.__observers.keys())
 
-    def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection):
+    def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection, child=False):
+        """Subscribe a new *observer*; return true if *observer* has been
+        correctly added, false otherwise."""
         assertIsInstance(observer, Observer)
         if observer in self.observers(): 
             rvalue = False
         else:
             observer._addObservable(self)
             self.__observers[weakref.ref(observer)] = \
-                _ObserverRecord(observer, mode)
+                Observable._ObserverRecord(observer, mode)
+            if child: observer.setParent(self)
+            self.observerAdded.emit(observer)
             rvalue = True
         return rvalue
 
     def removeObserver(self, observer):
+        """Unsubscribe *observer*; return true if *observer* has been
+        correcty found and removed, false otherwise."""
         ref = self._getRef(observer)
         if ref is None: rvalue = False
         else:
             record = self.__observers.pop(ref)
             record.trigger.disconnect(observer._reactSlot)
             observer._removeObservable(self)
+            self.observerRemoved.emit(observer)
             rvalue = True
         return rvalue
 
     def clear(self):
+        """Unsubscribe all registered observers."""
         for observer in tuple(self.observers()):
             self.removeObserver(observer)
 
     def notify(self, *restrictions):
-        """FIXME"""
+        """Activate the trigger."""
         records = self.__observers.values() if not restrictions \
             else (record for ref, record in self.__observers.items() \
                       if ref() in restrictions)
@@ -213,13 +137,36 @@ class SelectiveObservable(QtCore.QObject, Observable):
         self.clear()
         super().deleteLater()
 
+    def _debugSiblings(self):
+        rvalue = super()._debugSiblings()
+        rvalue.update(observers=tuple(self.observers()))
+        return rvalue
 
-class Observer(object):
-    
-    def __init__(self, react=None, hz=None):
+# -------------------------------------------------------------------
+
+class Observer(QtCore.QObject, Node):
+
+    # FIXME: Add unittest for these signals
+    class _InternalQObject(QtCore.QObject):
+        observableAdded = QtCore.pyqtSignal(QtCore.QObject)
+        observableRemoved = QtCore.pyqtSignal(QtCore.QObject)
+
+    @property
+    def observableAdded(self):
+        return self.__internal.observableAdded
+
+    @property
+    def observableRemoved(self):
+        return self.__internal.observableRemoved
+
+    def __init__(self, react=None, hz=None, parent=None):        
         """FIXME: 'hz' defines the refresh frequency; if is is None, refresh is
         immediately done at react time, so that the DelayedReactive actually
         works the same as a ReactiveObject."""
+        if not sip.ispycreated(self): 
+            QtCore.QObject.__init__(self, parent)
+            Node.__init__(self)
+        self.__internal = Observer._InternalQObject()
         self.__observed = set()
         self.__queue = set()
         self.__timer = QtCore.QTimer(timeout=self._update)
@@ -228,21 +175,26 @@ class Observer(object):
         self._customreact = assertIsInstance(react, None, collections.Callable)
         
     def __del__(self):
-        for obs in self.observed():
-            # Notify of the subscribed Observables that they have a None 
-            # reference
-            if obs is not None: obs._checkRefs()
+        if not sip.isdeleted(self):
+            for obs in self.observed():
+                # Notify of the subscribed Observables that they have a None 
+                # reference
+                if obs is not None: obs._checkRefs()
+        Node.__del__(self)
 
     def observed(self):
         """Return an iterator over the observables it is subscribed to."""
         return (ref() for ref in self.__observed)
 
-    def subscribeTo(self, observable, mode=QtCore.Qt.QueuedConnection):
+    def subscribeTo(self, observable, mode=QtCore.Qt.QueuedConnection,
+                    child=False):
         """Subscribe to *observable* in order to react to its
         triggers. Return true if subscription has been done, false
         otherwise."""
         assertIsInstance(observable, Observable)
-        return observable.addObserver(self, mode)
+        rvalue = observable.addObserver(self, mode)
+        if rvalue and child: observable.setParent(self)
+        return rvalue
 
     def unsubscribeFrom(self, observable):
         """Unsubscribe from *observable*; return true if subscription
@@ -279,6 +231,7 @@ class Observer(object):
 
     def _addObservable(self, observable):
         self.__observed.add(weakref.ref(observable))
+        self.observableAdded.emit(observable)
 
     def _removeObservable(self, observable):
         for ref in self.__observed:
@@ -286,6 +239,7 @@ class Observer(object):
                 # Remove from queue if present
                 self.__queue.discard(ref)
                 self.__observed.remove(ref)
+                self.observableRemoved.emit(observable)
                 break
 
     def _update(self):
@@ -299,3 +253,8 @@ class Observer(object):
         f = lambda o: o() is not None
         self.__observed = set(filter(f, self.__observed))
         self.__queue = set(filter(f, self.__queue))
+
+    def _debugSiblings(self):
+        rvalue = super()._debugSiblings()
+        rvalue.update(observed=tuple(self.observed()))
+        return rvalue

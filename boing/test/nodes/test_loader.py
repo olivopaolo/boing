@@ -29,7 +29,6 @@ uris = \
          {"valid":
               {"in": (
                     "stdin:",
-                    "stdin:?post=nop:&post1=nop:",
                     ),
                },
           "invalid":
@@ -42,7 +41,6 @@ uris = \
                     ("stdin://[::]/path", ValueError),
                     ("stdin://[::]:7777/path", ValueError),
                     ("stdin:?wrong=wrong", ValueError),
-                    ("stdin:?pre=uri", ValueError),
                     ("stdin:#fragment", ValueError),
                     ),
                },
@@ -51,7 +49,6 @@ uris = \
          {"valid":
               {"out": (
                     "stdout:",
-                    "stdout:?pre=nop:&pre1=nop:",
                     ),
                },
           "invalid":
@@ -64,7 +61,6 @@ uris = \
                     ("stdout://[::]/path", ValueError),
                     ("stdout://[::]:7777/path", ValueError),
                     ("stdout:?wrong=wrong", ValueError),
-                    ("stdout:?post=nop:", ValueError),
                     ("stdout:#fragment", ValueError),
                     ),
                },
@@ -81,16 +77,11 @@ uris = \
                     "%s?postend"%readable,
                     "file://%s?postend"%readable,
                     "file://%s?postend=False"%readable,
-                    "%s?post=nop:&post1=nop:"%readable,
-                    "file://%s?post=nop:&post1=nop:"%readable,
                     ),
                "out": (
                     "%s"%target,
                     "%s"%os.path.relpath(target),
                     "file://%s"%target,
-                    "%s?pre=nop:&pre1=nop:"%target,
-                    "%s?pre=nop:&pre1=nop:"%os.path.relpath(target),
-                    "file://%s?pre=nop:&pre1=nop:"%target,
                     ),
                },
           "invalid":
@@ -105,7 +96,6 @@ uris = \
                     ("%s?wrong=wrong"%readable, ValueError),
                     ("%s?uncompress=wrong"%readable, TypeError),
                     ("%s?postend=wrong"%readable, TypeError),
-                    ("%s?pre=wrong"%readable, ValueError),
                     ("%s#fragment"%readable, ValueError),
                     ),
                "out": (
@@ -117,7 +107,6 @@ uris = \
                     ("file://[::]:7777/path", ValueError),
                     ("file://[::]:7777/path", ValueError),
                     ("%s?wrong=wrong"%target, ValueError),
-                    ("%s?post=wrong"%readable, ValueError),
                     ("%s#fragment"%readable, ValueError),
                     ),
                },
@@ -129,13 +118,11 @@ uris = \
                     "udp://:0",
                     "udp://:7777",
                     "udp://[::]",
-                    "udp:?post=nop:&post1=nop:",
                     ),
                "out": (
                     "udp://[::1]:7777",
                     "udp://[::1]:7777?writeend",
                     "udp://[::1]:7777?writeend=False",
-                    "udp://[::1]:7777?pre=nop:&pre1=nop:",
                     ),
                },
           "invalid":
@@ -147,7 +134,6 @@ uris = \
                     ("udp://[::]:7777/path", ValueError),
                     ("udp:./relative", ValueError),
                     ("udp:?wrong=wrong", ValueError),
-                    ("udp:?pre=wrong", ValueError),
                     ("udp:#fragment", ValueError),
                     ),
                "out": (
@@ -162,7 +148,6 @@ uris = \
                     ("udp:./relative", ValueError),
                     ("udp://[::1]:7777?wrong=wrong", ValueError),
                     ("udp://[::1]:7777?writeend=wrong", TypeError),
-                    ("udp://[::1]:7777?post=wrong", ValueError),
                     ("udp://[::1]:7777#fragment", ValueError),
                     ),
                },
@@ -174,12 +159,10 @@ uris = \
                     "tcp://:0",
                     "tcp://:7777",
                     "tcp://[::]",
-                    "tcp:?post=nop:&post1=nop:"
                     ),
                "out":
                    (
                     "tcp://[::1]:7777",
-                    "tcp://[::1]:7777?pre=nop:&pre1=nop:",
                     ),
                },
           "invalid":
@@ -191,7 +174,6 @@ uris = \
                     ("tcp://[::]:7777/path", ValueError),
                     ("tcp:./relative", ValueError),
                     ("tcp:?wrong=wrong", ValueError),
-                    ("tcp:?pre=wrong", ValueError),
                     ("tcp:#fragment", ValueError),
                     ),
                "out":
@@ -206,7 +188,6 @@ uris = \
                     ("tcp:///absolute", ValueError),
                     ("tcp:./relative", ValueError),
                     ("tcp://[::1]:7777?wrong=wrong", ValueError),
-                    ("tcp://[::1]:7777?post=wrong", ValueError),
                     ("tcp://[::1]:7777#fragment", ValueError),
                    ),
                },
@@ -250,16 +231,39 @@ uris = \
           },
      "log":
          {"valid":
-              {"out": (
+              {"in": (
+                    "log://%s"%readable,
+                    "log://%s?loop"%readable,
+                    "log://%s?loop=false"%readable,
+                    "log://%s?speed=1"%readable,
+                    "log://%s?speed=inf"%readable,
+                    "log://%s?speed=0"%readable,
+                    "log://%s?interval=0"%readable,
+                    "log://%s?interval=2000"%readable,
+                    ),
+               "out": (
                     "log://%s"%target,
                     "log://%s?request=query"%target,
-                    "log://%s?filter=query"%target,
-                    "log://%s?request=query&filter=query"%target,
-                    "log://%s?pre=nop:&pre1=nop:"%target,
                     ),
                },
           "invalid":
-              {"out": (
+              {"in": (
+                    ("log:", ValueError),
+                    ("log:opaque", ValueError),
+                    ("log:./relative", ValueError),
+                    ("log://:7777", ValueError),
+                    ("log://[::]", ValueError),
+                    ("log://[::]/path", ValueError),
+                    ("log://[::]:7777/path", ValueError),
+                    ("log://%s?wrong=wrong"%readable, ValueError),
+                    ("log://%s#fragment"%readable, ValueError),
+                    ("log://%s?loop=wrong"%readable, TypeError),
+                    ("log://%s?speed=wrong"%readable, ValueError),
+                    ("log://%s?interval=wrong"%readable, ValueError),
+                    ("log.stdin:", ValueError),
+                    ("log.stdin://%s"%readable, ValueError),
+                    ),
+               "out": (
                     ("log:", ValueError),
                     ("log:opaque", ValueError),
                     ("log:./relative", ValueError),
@@ -268,44 +272,9 @@ uris = \
                     ("log://[::]/path", ValueError),
                     ("log://[::]:7777/path", ValueError),
                     ("log://%s?wrong=wrong"%target, ValueError),
-                    ("log://%s?post=wrong"%target, ValueError),
                     ("log://%s#fragment"%target, ValueError),
                     ("log.stdout://%s"%target, ValueError),
                     ("log.stdout:", ValueError),
-                    ),
-               },
-          },
-     "play":
-         {"valid":
-              {"in": (
-                    "play://%s"%readable,
-                    "play://%s?loop"%readable,
-                    "play://%s?loop=false"%readable,
-                    "play://%s?speed=1"%readable,
-                    "play://%s?speed=inf"%readable,
-                    "play://%s?speed=0"%readable,
-                    "play://%s?interval=0"%readable,
-                    "play://%s?interval=2000"%readable,
-                    "play://%s?post=nop:&post1=nop:"%readable,
-                    ),
-               },
-          "invalid":
-              {"in": (
-                    ("play:", ValueError),
-                    ("play:opaque", ValueError),
-                    ("play:./relative", ValueError),
-                    ("play://:7777", ValueError),
-                    ("play://[::]", ValueError),
-                    ("play://[::]/path", ValueError),
-                    ("play://[::]:7777/path", ValueError),
-                    ("play://%s?wrong=wrong"%readable, ValueError),
-                    ("play://%s#fragment"%readable, ValueError),
-                    ("play://%s?loop=wrong"%readable, TypeError),
-                    ("play://%s?speed=wrong"%readable, ValueError),
-                    ("play://%s?interval=wrong"%readable, ValueError),
-                    ("play://%s?pre=wrong"%readable, ValueError),
-                    ("play.stdin:", ValueError),
-                    ("play.stdin://%s"%readable, ValueError),
                     ),
                },
           },
@@ -315,7 +284,6 @@ uris = \
                     "viz:",
                     "viz:?antialiasing",
                     "viz:?fps=70",
-                    "viz:?pre=nop:&pre1=nop:",
                     ),
                },
           "invalid":
@@ -330,7 +298,6 @@ uris = \
                     ("viz://[::]:7777/path", ValueError),
                     ("viz:#fragment", ValueError),
                     ("viz:?wrong=wrong", ValueError),
-                    ("viz:?post=wrong", ValueError),
                     ("viz:?antialiasing=wrong", TypeError),                    
                     ),
                },
@@ -382,7 +349,6 @@ uris["json"] = \
                         "json://%s"%readable,
                         "json:?noslip",
                         "json:?noslip=false",
-                        "json:?post=nop:&post1=nop:",
                         ),
                     )),
           "out": list(itertools.chain(
@@ -399,8 +365,6 @@ uris["json"] = \
                         "json://[::1]:7777?noslip",
                         "json://[::1]:7777?noslip=false",
                         "json://[::1]:7777?request=query",
-                        "json://[::1]:7777?filter=query",
-                        "json://[::1]:7777?pre=nop:&pre1=nop:",
                         )
                     )),
           },
@@ -418,8 +382,6 @@ uris["json"] = \
                         ("json:?wrong=wrong", ValueError),
                         ("json:?noslip=wrong", TypeError),
                         ("json:?request=query", ValueError),
-                        ("json:?filter=query", ValueError),
-                        ("json:?pre=query", ValueError),
                         ),
                     )),
           "out": list(itertools.chain(
@@ -432,7 +394,6 @@ uris["json"] = \
                         ("json://:7777", ValueError),
                         ("json://[::1]:7777?wrong=wrong", ValueError),
                         ("json://[::1]:7777?noslip=wrong", TypeError),
-                        ("json://[::1]:7777?post=wrong", ValueError),
                         ),
                     )),
           },
@@ -458,7 +419,6 @@ uris["osc"] = \
                         "osc:?noslip=false",
                         "osc:?rt",
                         "osc:?rt=false",
-                        "osc:?post=nop:&post1=nop:",
                         ),
                     )),
           "out": list(itertools.chain(
@@ -476,7 +436,6 @@ uris["osc"] = \
                         "osc://[::1]:7777?noslip=false",                        
                         "osc://[::1]:7777?rt",
                         "osc://[::1]:7777?rt=false",                        
-                        "osc://[::1]:7777?pre=nop:&pre1=nop:",
                         )
                     )),
           },
@@ -497,7 +456,6 @@ uris["osc"] = \
                         ("osc:?wrong=wrong", ValueError),
                         ("osc:?noslip=wrong", TypeError),
                         ("osc:?rt=wrong", TypeError),
-                        ("osc:?pre=wrong", ValueError),
                         ),
                     )),
           "out": list(itertools.chain(
@@ -514,7 +472,6 @@ uris["osc"] = \
                         ("osc://[::1]:7777?wrong=wrong", ValueError),
                         ("osc://[::1]:7777?noslip=wrong", TypeError),
                         ("osc://[::1]:7777?rt=wrong", TypeError),
-                        ("osc://[::1]:7777?post=wrong", ValueError),
                         ),
                     )),
           },
@@ -537,7 +494,6 @@ uris["tuio"] = \
                         "tuio://[::]:7777",
                         "tuio://%s"%readable,
                         "tuio.stdin:",
-                        "tuio:?post=nop:&post1=nop:",
                         ),
                     )),
           "out": list(itertools.chain(
@@ -562,7 +518,6 @@ uris["tuio"] = \
                         "tuio://[::1]?noslip=false",
                         "tuio://%s?noslip"%target,
                         "tuio://%s?noslip=false"%target,
-                        "tuio://[::1]?pre=nop:&pre1=nop:",
                         )
                     )),
           },
@@ -581,7 +536,6 @@ uris["tuio"] = \
                         ("tuio://[::]:7777/path", ValueError),
                         ("tuio:./relative", ValueError),
                         ("tuio:?wrong=wrong", ValueError),
-                        ("tuio:?pre=wrong", ValueError),
                         ("tuio.osc:opaque", ValueError),
                         ("tuio.osc://:7777/path", ValueError),
                         ("tuio.osc://[::]/path", ValueError),
@@ -598,7 +552,6 @@ uris["tuio"] = \
                         ("tuio:", ValueError),
                         ("tuio://:7777", ValueError),
                         ("tuio://[::1]?wrong=wrong", ValueError),
-                        ("tuio://[::1]?post=wrong", ValueError),
                         ("tuio.osc:", ValueError),
                         ("tuio.osc://:7777", ValueError),
                         ("tuio.udp:", ValueError),
@@ -643,7 +596,6 @@ uris["dump"] = \
                         "dump://%s"%target,
                         "dump://[::1]:7777",
                         "dump:?request=query",
-                        "dump:?filter=query",
                         "dump:?src",
                         "dump:?src=false",
                         "dump:?dest",
@@ -687,9 +639,6 @@ uris["stat"] = \
                         "stat://%s"%target,
                         "stat://[::1]:7777",
                         "stat:?request=query",
-                        "stat:?filter=query",
-                        "stat:?hz=10",
-                        "stat:?hz=inf",
                         "stat:?fps=10",
                         )
                     )),
@@ -707,7 +656,6 @@ uris["stat"] = \
                         ("stat://:7777", ValueError),
                         ("stat://[::1]", ValueError),
                         ("stat:?wrong=wrong", ValueError),
-                        ("stat:?hz=wrong", ValueError),
                     ))),
           },
      }
@@ -840,15 +788,9 @@ class TestBridge(IOTest):
 
 # -------------------------------------------------------------------
 # Log
-class TestLog(OutTest):
+class TestLog(IOTest):
     def __init__(self, *args, **kwargs):
         super().__init__("log", *args, **kwargs)
-
-# -------------------------------------------------------------------
-# Play
-class TestPlay(InTest):
-    def __init__(self, *args, **kwargs):
-        super().__init__("play", *args, **kwargs)
 
 # -------------------------------------------------------------------
 # Dump
@@ -878,15 +820,14 @@ def suite():
         TestUdp, 
         TestTcp,
         TestSlip,
-        # TestOsc,
-        # TestJson,
-        # TestTuio,
+        TestOsc,
+        TestJson,
+        TestTuio,
         # TestBridge,
-        # TestLog,
-        # TestPlay,
+        TestLog,
         TestDump,
         TestStat,
-        # TestViz,
+        TestViz,
         )
     return unittest.TestSuite(itertools.chain(
             *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \

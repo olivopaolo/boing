@@ -10,8 +10,7 @@
 import collections
 import copy
 
-import boing.utils as utils
-from boing.core.MappingEconomy import Node
+from boing import utils
 
 class StateMachine(object):
     """It has a dictionary as state."""
@@ -49,7 +48,7 @@ class StateMachine(object):
             if "removed" in diff: utils.deepremove(self._state, diff["removed"])
         return rvalue
     
-
+'''
 class StateNode(Node, StateMachine):
     """Everytime the state changes, the diff is posted as a product."""
 
@@ -98,3 +97,4 @@ if __name__ == '__main__':
     rvalue = app.exec_()
     print("Final state:", m.state())
     sys.exit(rvalue)
+'''

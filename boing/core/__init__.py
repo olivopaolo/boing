@@ -7,27 +7,22 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-import copy
-import itertools
-
 from boing.core import economy
-from boing.core import querypath
-from boing.utils import quickdict
+from boing.utils import quickdict as _quickdict
 
-# Facade pattern to make things easier.
+class Product(economy.Product, _quickdict):
+    
+    def __repr__(self):
+        return "Product(%s)"%",".join(
+            "%s=%s"%(k, repr(v)) for k, v in self.items())
 
-Product = quickdict
 
-Offer = economy.Offer
+# -------------------------------------------------------------------
+# FIXME: Develop QPath.set
 
-Request = querypath.QRequest
-
-Producer = economy.Producer
-
-Consumer = economy.Consumer
-
-Functor = economy.Functor
-
+import collections as _collections
+import copy as _copy
+import itertools as _itertools
 
 def _merge(previous, items):
     rvalue = previous
@@ -38,41 +33,36 @@ def _merge(previous, items):
             else:
                 node = rvalue
                 for key in split[:-1]:
-                    if isinstance(node, collections.Sequence):
+                    if isinstance(node, _collections.Sequence):
                         key = int(key)
                     node = node[key]
                 key = split[-1] 
-                if isinstance(node, collections.Sequence):
+                if isinstance(node, _collections.Sequence):
                     key = int(key)
                 node[key] = value
     return rvalue
 
-class ConcreteMerge(Functor.MergeBlender):
-
-    @staticmethod    
-    def blend(products, results):
-        for product, items in itertools.zip_longest(products, results):
+class _ConcreteMerge(economy.Functor.MergeBlender):
+    def blend(self, products, results):
+        for product, items in _itertools.zip_longest(products, results):
             yield _merge(product, items)
 
+class _ConcreteMergeCopy(economy.Functor.MergeBlender):    
+    def __repr__(self): return "Blender.MERGECOPY"
 
-class ConcreteMergeCopy(Functor.MergeBlender):    
-
-    @staticmethod    
-    def blend(products, results):
-        for product, items in itertools.zip_longest(products, results):
+    def blend(self, products, results):
+        for product, items in _itertools.zip_longest(products, results):
             yield  product if not items \
-                else _merge(copy.deepcopy(product), items)
+                else _merge(_copy.deepcopy(product), items)
 
-
-class ConcreteResultOnly(Functor.ResultOnlyBlender):    
-
-    @staticmethod    
-    def blend(products, results):
+class _ConcreteResultOnly(economy.Functor.ResultOnlyBlender):    
+    def blend(self, products, results):
         for items in filter(None, results):
             yield _merge(Product(), items)
 
 
-Functor.MERGE = ConcreteMerge
-Functor.MERGECOPY = ConcreteMergeCopy
-Functor.RESULTONLY = ConcreteResultOnly
+economy.Functor.MERGE = _ConcreteMerge()
+economy.Functor.MERGECOPY = _ConcreteMergeCopy()
+economy.Functor.RESULTONLY = _ConcreteResultOnly()
 
+# -------------------------------------------------------------------

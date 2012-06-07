@@ -16,65 +16,60 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing.core.observer import SelectiveObservable, Observer
 from boing.utils import assertIsInstance
 
 # -------------------------------------------------------------------
 # Offer
 
-class _BaseOffer(collections.Sequence):
-    pass
+class Product: pass
 
-class _UndefinedOffer(_BaseOffer):
+class _UndefinedProduct(Product):
+    def __repr__(self):
+        return "Product.UNDEFINED"
+Product.UNDEFINED = _UndefinedProduct()
 
-    def __contains__(self, item):
-        return False
-
-    def __getitem__(self, key):
-        raise KeyError(key)
-
-    def __iter__(self):
-        return iter(tuple())
-
-    def __len__(self):
-        return 0
-
-    def __str__(self):
-        return "Offer.UNDEFINED"
-
-    def __eq__(self, other):
-        return other is Offer.UNDEFINED
-
-    def __ne__(self, other):
-        return not self==other
-
-class Offer(tuple, _BaseOffer):
+class Offer(tuple):
     
     def __new__(cls, *args, iter=None):
         """Offer can be direcly defined passing the products,
         e.g. Offer(p1, p2), or passing an iterable to the keyword
         argument *iter*, e.g. Offer(iter=[p1, p2])."""
+        l = lambda item: item is not None
         if iter is not None:
             if args: raise ValueError()
             else:
-                rvalue = tuple.__new__(cls, iter)
+                rvalue = tuple.__new__(cls, filter(l, iter))
         else:
-            rvalue = tuple.__new__(cls, args)
+            rvalue = tuple.__new__(cls, filter(l, args))
         return rvalue
 
-    def __str__(self):
+    def __repr__(self): 
         return "Offer(%s)"%", ".join(str(i) for i in self)
 
     def __add__(self, other):
-        assertIsInstance(other, Offer)
-        return Offer(iter=itertools.chain(self, other))
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Offer):
+            rvalue = Offer(iter=itertools.chain(
+                    self, filter(lambda item: item not in self, other)))
+        else:
+            rvalue = NotImplemented
+        return rvalue
 
-Offer.UNDEFINED = _UndefinedOffer()
+    def __radd__(self, other):
+        return self if other is None else NotImplemented
 
 # -------------------------------------------------------------------
 # Request
 
-class Request(metaclass=abc.ABCMeta):
+class RequestMeta(abc.ABCMeta):
+
+    def __instancecheck__(self, instance):
+        return instance is Request.ANY \
+            or instance is Request.NONE \
+            or super().__instancecheck__(instance)
+
+class Request(metaclass=RequestMeta):
     """Implements the Composite Pattern. Requests instances are immutable."""
 
     @abc.abstractmethod
@@ -83,22 +78,21 @@ class Request(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def items(self, product):
-        raise NotImplementedError()
+    def items(self, product): raise NotImplementedError()
 
     @abc.abstractmethod
-    def filter(self, product):
-        raise NotImplementedError()
+    def filter(self, product): raise NotImplementedError()
 
     @abc.abstractmethod
-    def filterout(self, product):
-        raise NotImplementedError()
+    def filterout(self, product): raise NotImplementedError()
 
     @abc.abstractmethod
-    def __eq__(self, other):
-        raise NotImplementedError()
+    def __hash__(self): raise NotImplementedError()
 
-    def __ne__(self, other):
+    @abc.abstractmethod
+    def __eq__(self, other): raise NotImplementedError()
+
+    def __ne__(self, other): 
         return not self==other
         
     def __add__(self, other):
@@ -112,11 +106,11 @@ class Request(metaclass=abc.ABCMeta):
             "Expected type Request, not '%s'"%type(other).__name__)
         return rvalue
 
-    @abc.abstractmethod
-    def __hash__(self):
-        raise NotImplementedError()
 
 class _AnyRequest(Request):
+
+    def __init__(self):
+        pass
             
     def test(self, product):
         return True
@@ -148,10 +142,13 @@ class _AnyRequest(Request):
     def __hash__(self):
         return hash(True)
 
-    def __str__(self):
+    def __repr__(self):
         return "Request.ANY"
 
 class _NoneRequest(Request):
+
+    def __init__(self):
+        pass
             
     def test(self, product):
         return False
@@ -177,7 +174,7 @@ class _NoneRequest(Request):
     def __hash__(self):
         return hash(False)
 
-    def __str__(self):
+    def __repr__(self):
         return "Request.NONE"
 
 Request.ANY = _AnyRequest()
@@ -189,7 +186,9 @@ class _CompositeRequest(Request):
         super().__init__()
         self._children = set()
         for req in requests:
-            if isinstance(req, _CompositeRequest):
+            if req is Request.NONE:
+                continue
+            elif isinstance(req, _CompositeRequest):
                 self._children.update(req._children)
             elif isinstance(req, Request):
                 self._children.add(req)
@@ -220,6 +219,7 @@ class _CompositeRequest(Request):
 
     def __eq__(self, other):
         return isinstance(other, _CompositeRequest) \
+            and other not in (Request.ANY, Request.NONE) \
             and self._children==other._children
 
     def __hash__(self):
@@ -239,8 +239,8 @@ class FunctorRequest(Request):
             raise NotImplementedError()
 
     def items(self, product):
-        return tuple() if not self.test(product) else \
-            product.items() if hasattr(product, "items") else (product, )
+        return tuple() if not self.test(product) \
+            else product.items() if hasattr(product, "items") else (product, )
 
     def filter(self, product):
         return copy.copy(product) if self.test(product) else None
@@ -249,47 +249,45 @@ class FunctorRequest(Request):
         return copy.copy(product) if not self.test(product) else None
 
     def __eq__(self, other):
-        return isinstance(other, FunctorRequest) and \
-            self._customtest==other._customtest
+        return isinstance(other, FunctorRequest) \
+            and other not in (Request.ANY, Request.NONE) \
+            and self._customtest==other._customtest
 
     def __hash__(self):
         return hash(self._customtest)
 
 # -------------------------------------------------------------------
-# Selectives
+# Producer
 
-class Producer(SelectiveObservable):
+from boing.core.observer import Observable, Observer
+
+class Producer(Observable):
+
+    class CONFIGURABLE:          
+        def setOffer(self, offer):
+            if self._offer!=offer:
+                self._offer = offer
+                self.offerChanged.emit()
 
     demandChanged = QtCore.pyqtSignal()
     offerChanged = QtCore.pyqtSignal()
     demandedOfferChanged = QtCore.pyqtSignal()
 
     def __init__(self, offer, tags=None, store=None, retrieve=None, 
-                 parent=None, **kwargs):
+                 parent=None):
         super().__init__(parent)
         self._aggregatedemand = Request.NONE
-        self._offer = assertIsInstance(offer, _BaseOffer)
+        self._offer = assertIsInstance(offer, Offer)
         self._demandedoffer = Offer()
         self._tags = assertIsInstance(dict() if tags is None else tags, dict)
         self._activetags = set()
         self.demandChanged.connect(self._refreshDemandedOffer)
         self.offerChanged.connect(self._refreshDemandedOffer)
-        self._customstore = assertIsInstance(store, None, collections.Callable)
-        self._customretrieve = assertIsInstance(retrieve, None, collections.Callable)
-        # Connect slot passed as kwargs
-        for key, value in kwargs.items():
-            if key=="demandChanged": demandChanged = value
-            elif key=="offerChanged": offerChanged = value
-            elif key=="demandedOfferChanged": demandedOfferChanged = value
-            else: raise TypeError(
-                "'%s' is an invalid keyword argument for this function"%key)
-        if "demandChanged" in locals(): 
-            self.demandChanged.connect(demandChanged)
-        if "demandedOfferChanged" in locals(): 
-            self.demandedOfferChanged.connect(demandedOfferChanged)
-        if "offerChanged" in locals(): 
-            self.offerChanged.connect(offerChanged)
-
+        self._customstore = assertIsInstance(store, 
+                                             None, collections.Callable)
+        self._customretrieve = assertIsInstance(retrieve, 
+                                                None, collections.Callable)
+        
     def aggregateDemand(self):
         """Return the union of all the subscribed consumers' requests."""
         return self._aggregatedemand
@@ -298,11 +296,6 @@ class Producer(SelectiveObservable):
         """Return the producer's offer."""
         return self._offer
 
-    def setOffer(self, offer):
-        if self._offer!=offer:
-            self._offer = offer
-            self.offerChanged.emit()
-
     def demandedOffer(self):
         """Return the producer's demanded offer."""
         return self._demandedoffer
@@ -310,8 +303,7 @@ class Producer(SelectiveObservable):
     def meetsRequest(self, request):
         """Return True if the product's offer meets *request*."""
         assertIsInstance(request, Request)
-        return True if self.offer() is Offer.UNDEFINED \
-            else any(map(request.test, self.offer()))
+        return request is Request.NONE or any(map(request.test, self.offer()))
 
     def isRequested(self, product=None, **kwargs):
         """FIXME: Return True if any of the subscribed consumers requires
@@ -334,7 +326,6 @@ class Producer(SelectiveObservable):
             if isinstance(obs, Consumer):
                 cumulate += obs.request()
                 if cumulate is Request.ANY: break
-        #print(self, "_refreshAggregateDemand - ", self._aggregatedemand, cumulate)
         if self._aggregatedemand!=cumulate:
             self._aggregatedemand = cumulate
             self.demandChanged.emit()
@@ -343,7 +334,6 @@ class Producer(SelectiveObservable):
         """Update the demanded offerer using the current aggregate demand"""
         
         refresh = Offer(iter=filter(self._aggregatedemand.test, self.offer()))
-        #print(self, "_refreshDemandedOffer - ", self._demandedoffer, refresh)
         if self._demandedoffer!=refresh:
             self._demandedoffer = refresh
             self._activetags = set(tag for tag, request in self._tags.items() \
@@ -351,8 +341,8 @@ class Producer(SelectiveObservable):
                                                   self._demandedoffer)))
             self.demandedOfferChanged.emit()
             
-    def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection):
-        rvalue = super().addObserver(observer, mode)
+    def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection, child=False):
+        rvalue = super().addObserver(observer, mode, child)
         if rvalue and isinstance(observer, Consumer):
             observer.requestChanged.connect(self._refreshAggregateDemand, 
                                             QtCore.Qt.QueuedConnection)
@@ -390,7 +380,7 @@ class Producer(SelectiveObservable):
     def _filterRecords(self, product):
         """Return an iterator over the record of each observer that
         must be triggerer due of having to post *product*."""
-        for ref, record in self._SelectiveObservable__observers.items():
+        for ref, record in self._Observable__observers.items():
             observer = ref()
             if not isinstance(observer, Consumer) \
                     or observer.request().test(product) \
@@ -431,34 +421,63 @@ class Producer(SelectiveObservable):
         record.products = list()
         self._deliverProducts(products, consumer)
 
-class Consumer(Observer):
+    def __add__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Composite):
+            # Let the Composite '__radd__' method be used
+            rvalue = NotImplemented
+        elif isinstance(other, Worker):
+            other.subscribeTo(self, child=True)
+            rvalue = _CompositeProducer(other)
+        elif isinstance(other, Consumer):
+            # Warning: such composite is closed
+            self.addObserver(other)
+            composite = Composite()
+            other.setParent(composite)
+            self.setParent(composite)
+            rvalue = composite
+        else:
+            rvalue = NotImplemented
+        return rvalue
+
+    def __radd__(self, other):
+        return self if other is None else NotImplemented
+
+    def _debugData(self):
+        rvalue = super()._debugData()
+        rvalue["offer"] = self.offer()
+        rvalue["demandedOffer"] = self.demandedOffer()
+        rvalue["aggregateDemand"] = self.aggregateDemand()
+        return rvalue
+
+# -------------------------------------------------------------------
+# Consumer
+
+class Consumer(Observer):    
+
+    class CONFIGURABLE:
+        def setRequest(self, request):
+            """Set a new product request."""
+            if self._request!=request:
+                self._request = assertIsInstance(request, Request)
+                self.requestChanged.emit()
 
     class _InternalQObject(QtCore.QObject):
         requestChanged = QtCore.pyqtSignal()
 
-    def __init__(self, request, consume=None, hz=None, **kwargs):
-        super().__init__(hz=hz)
-        self.__internal = Consumer._InternalQObject()
-        self.__request = assertIsInstance(request, Request)
-        self._customconsume = assertIsInstance(consume, None, collections.Callable)
-        for key, value in kwargs.items():
-            if key=="requestChanged": slot = value
-            else: raise TypeError(
-                "'%s' is an invalid keyword argument for this function"%key)
-        if "slot" in locals(): self.requestChanged.connect(slot)
-    
-    def request(self):
-        return self.__request
-
-    def setRequest(self, request):
-        """Set a new product request."""
-        if self.__request!=request:
-            self.__request = assertIsInstance(request, Request)
-            self.requestChanged.emit()
-
     @property
     def requestChanged(self):
         return self.__internal.requestChanged
+
+    def __init__(self, request, consume=None, hz=None, parent=None):
+        super().__init__(hz=hz, parent=parent)
+        self.__internal = Consumer._InternalQObject()
+        self._request = assertIsInstance(request, Request)
+        self.__consume = assertIsInstance(consume, None, collections.Callable)
+    
+    def request(self):
+        return self._request
 
     def _react(self, observable):
         if isinstance(observable, Producer): 
@@ -472,231 +491,373 @@ class Consumer(Observer):
     def _consume(self, products, producer):
         """The consumer normally must not modify the received
         products, because they could be shared with other consumers."""        
-        return self._customconsume(self, products, producer) \
-            if self._customconsume is not None \
+        return self.__consume(self, products, producer) \
+            if self.__consume is not None \
             else None
-        
+
+    def __add__(self, other):
+        return self if other is None else NotImplemented
+
+    def __radd__(self, other):
+        return self if other is None else NotImplemented
+
+    def _debugData(self):
+        rvalue = super()._debugData()
+        rvalue["request"] = self.request()
+        return rvalue
+
 # -------------------------------------------------------------------
-# Hierarchical 
+# Request and offer propagation
 
-'''class HierarchicalProducer(Producer):
+class _PropagatingProducer(Producer):
 
-    class _PostProducer(Producer):
-        def __init__(self, owner):
-            super().__init__(Offer())
-            self._owner = owner
+    class CONFIGURABLE:          
+        def setOffer(self, offer):
+            if self._offer!=offer:
+                self._offer = offer
+                self._propagateOffer()
 
-        def offer(self):
-            return self._owner._innerOffer()
-
-    class _PostConsumer(Consumer):
-        def __init__(self, owner):
-            super().__init__(Request.NONE)
-            self._owner = owner
-
-        def request(self):
-            return self._owner.aggregateDemand()
-
-        def _consume(self, products, producer):
-            for product in products:
-                self._owner.postProduct(product)
-
-    _innerOfferChanged = QtCore.pyqtSignal()
-
-    def __init__(self, offer, *args, **kwargs):
-        super().__init__(offer, *args, **kwargs)
-        # FIXME: Replace self._post to self._posts
-        self._post = []
-        # Post producer
-        self._postProducer = self._PostProducer(weakref.proxy(self))
-        self._postProducer.demandChanged.connect(self._refreshPostDemand)
-        self._innerOfferChanged.connect(self._postProducer.offerChanged)
-        self._postProducer.offerChanged.connect(self.offerChanged)
-        # Post consumer
-        self._postConsumer = self._PostConsumer(weakref.proxy(self))
-        self.demandChanged.connect(self._postConsumer.requestChanged)
-        
-    def posts(self):
-        return iter(self._post)
-
-    def addPost(self, post, mode=QtCore.Qt.DirectConnection):
-        self._post.append(post)
-        if isinstance(post, Producer):
-            postconsumer = HierarchicalProducer._PostConsumer(weakref.proxy(self))
-            postconsumer.subscribeTo(post, mode=mode)
-            self._postConsumers.append(postconsumer)
-        else:
-            self._postConsumers.append(None)
-        self._postProducer.addObserver(post, mode=mode)
-        return self
-
-    def setOffer(self, offer):
-        if super().offer()!=offer:
-            self._offer = offer
-            self._innerOfferChanged.emit()
-
-    def _innerOffer(self):
-        return super().offer()
-
-    def _cumulatePostDemand(self):
-        cumulate = self.aggregateDemand()
-        for post, consumer in zip(reversed(self._post), 
-                                  reversed(self._postConsumers)):
-            if consumer is not None: consumer.setRequest(cumulate)
-            cumulate += post.request()
-            # FIXME! CANNOT HANDLE THIS!
-            #if isinstance(post, FilterOut):
-            #    cumulate = QPath.subtract(cumulate, post.request())
-
-    def isRequested(self, product=None, **kwargs):
-        """A product is requested if it is demanded from one of the
-        subscribed consumers or one of the posts."""
-        rvalue = super().isRequested(product, **kwargs)
-        return self._postProducer.isRequested(product) \
-            if not rvalue and product is not None else rvalue
-
-    def _refreshPostDemand(self):
-        pass
+    def __init__(self, consumer, offer, tags=None, store=None, retrieve=None, 
+                 parent=None):
+        super().__init__(offer, tags, store, retrieve, parent)
+        self._cumulatedoffer = offer
+        self.__cons = assertIsInstance(consumer, None, Consumer)
+        if self.__cons is not None:
+            self.__cons.observableAdded.connect(self.__followOffer)
+            self.__cons.observableRemoved.connect(self.__unfollowOffer)
 
     def offer(self):
-        return self._postProducer.offer() if not self._post \
-            else self._post[-1].offer()
+        return self._cumulatedoffer
+
+    def isPropagatingOffer(self):
+        return True
+
+    def _selfOffer(self):
+        return super().offer()
+
+    def _consumer(self):
+        return self.__cons
+
+    def _setConsumer(self, consumer):
+        if self.__cons is not None:
+            self.__cons.observableAdded.disconnect(self.__followOffer)
+            self.__cons.observableRemoved.disconnect(self.__unfollowOffer)
+        self.__cons = consumer
+        self.__cons.observableAdded.connect(self.__followOffer)
+        self.__cons.observableRemoved.connect(self.__unfollowOffer)
+
+    def _propagateOffer(self):
+        if self._consumer() is not None:
+            updated = \
+                sum((obs.offer() for obs in self._consumer().observed() \
+                         if isinstance(obs, Producer)),
+                    self._selfOffer()) \
+                if self.isPropagatingOffer() \
+                else self._selfOffer()
+            if self.offer()!=updated:
+                self._cumulatedoffer = updated
+                self.offerChanged.emit()
+
+    def __followOffer(self, observable):
+        if isinstance(observable, Producer):
+            # Observed consumer's offer influence self wise offer
+            observable.offerChanged.connect(self._propagateOffer, 
+                                            QtCore.Qt.QueuedConnection)
+            self._propagateOffer()
+
+    def __unfollowOffer(self, observable):
+        if isinstance(observable, Producer):
+            observable.offerChanged.disconnect(self._propagateOffer)
+            self._propagateOffer()
+
+
+class _PropagatingConsumer(Consumer):
+
+    class CONFIGURABLE(Consumer.CONFIGURABLE):
+        def setRequest(self, request):
+            """Set a new product request."""
+            if self._request!=request:
+                self._request = assertIsInstance(request, Request)
+                self._propagateRequest()
+    
+    def __init__(self, producer, request, consume=None, hz=None, parent=None):
+        super().__init__(request, consume, hz, parent)
+        self._cumulatedrequest = request
+        self.__prod = assertIsInstance(producer, None, Producer)
+        if self.__prod is not None:
+            # demandedOffer and aggregateDemand influence the cumulated request
+            self.__prod.demandedOfferChanged.connect(self._propagateRequest, 
+                                                     QtCore.Qt.QueuedConnection)
+            self.__prod.demandChanged.connect(self._propagateRequest, 
+                                              QtCore.Qt.QueuedConnection)
+        self.requestChanged.connect(self._propagateRequest)
         
-    def postProduct(self, product):
-        return super().postProduct(product) if not self._post \
-            else self._postProducer.postProduct(product)
+    def request(self):
+        return self._cumulatedrequest
 
-    def _postPipeline(self, products, current=None):
-        for product in products:
-            stop = False
-            i = 0 if current is None else self._post.index(current)+1
-            while not stop:
-                post = self._post[i] if i<len(self._post) else None
-                if post is None:
-                    stop = True
-                    # Standard production
-                    super().postProduct(product)
-                elif isinstance(post, Observer):
-                    if self._postProducer.postProductTo(product, post) \
-                            and isinstance(post, Node): 
-                        stop = True
-                i += 1'''
+    def isPropagatingRequest(self):
+        return True
 
-'''
-class HierarchicalConsumer(Consumer):
+    def _selfRequest(self):
+        return super().request()
 
-    class _PreConsumer(Consumer):
-        def __init__(self, consumer, request):
-            super().__init__(request)
-            self._consumer = consumer
+    def _producer(self):
+        return self.__prod
 
-        def _consume(self, products, producer):
-            self._consumer._prePipeline(products, producer, isPre=True)
+    def _setProducer(self, producer):
+        if self.__prod is not None:
+            self.__prod.demandedOfferChanged.disconnect(self._propagateRequest)
+            self.__prod.demandChanged.disconnect(self._propagateRequest)
+        self.__prod = producer
+        self.__prod.demandedOfferChanged.connect(self._propagateRequest,
+                                                 QtCore.Qt.QueuedConnection)
+        self.__prod.demandChanged.connect(self._propagateRequest,
+                                          QtCore.Qt.QueuedConnection)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._baserequest = self._Consumer__request
-        """List of the registered pre nodes."""
-        self._pre = []
-        self._preconsumers = []
-        """Forwards the received products to the pre Nodes before the
-        standard consumption."""
-        self._preProducer = _CustomerProducer(offer=Offer.UNDEFINED)
-        self._preProducer.demandChanged.connect(self._updateRequestPipeline, 
-                                                QtCore.Qt.QueuedConnection)
-
-    def pres(self):
-        return iter(self._pre)
-
-    def addPre(self, pre, mode=QtCore.Qt.DirectConnection):
-        self._pre.insert(0, pre)
-        if isinstance(pre, Producer):
-            preconsumer = HierarchicalConsumer._PreConsumer(weakref.proxy(self),
-                                                            self._baserequest)
-            preconsumer.subscribeTo(pre, mode=mode)
-            self._preconsumers.insert(0, preconsumer)
-        else:
-            self._preconsumers.insert(0, None)
-        self._preProducer.addObserver(pre, mode=mode)
-        return self
-
-    def _updateRequestPipeline(self):
-        cumulate = self._baserequest
-        for pre, consumer in zip(reversed(self._pre), 
-                                 reversed(self._preconsumers)):
-            if consumer is not None: consumer.setRequest(cumulate)
-            # Cumulate request and subtract filterout
-            cumulate = cumulate + pre.request()
-            # FIXME! CANNOT HANDLE THIS!
-            #if isinstance(pre, FilterOut):
-            #    cumulate = QPath.subtract(cumulate, pre.request())
-        super().setRequest(cumulate)
-
-    def setRequest(self, request):
-        self._baserequest = request
-        self._updateRequestPipeline()
-
-    def productsDelivery(self, products, producer=None):
-        self._prePipeline(products, producer)
-
-    def _prePipeline(self, products, producer, isPre=False):
-        i = 0 if not isPre else self._pre.index(producer)+1
-        if i>=len(self._pre):  
-            # Standard consumption                
-            self._consume(products, producer)
-        else:
-            for product in products:
-                stop = False
-                while not stop:                    
-                    if i>=len(self._pre):
-                        stop = True
-                        # Standard consumption                
-                        self._consume((product, ), producer)
-                    else:
-                        pre = self._pre[i] 
-                        if isinstance(pre, Consumer) \
-                                and self._preProducer.postProductTo(product, pre) \
-                                and isinstance(pre, Node):
-                            stop = True
-                    i += 1'''
+    def _propagateRequest(self):
+        updated = self._selfRequest()
+        if self.isPropagatingRequest() and self._producer() is not None: 
+            updated += self._producer().aggregateDemand()
+        if self.request()!=updated:
+            self._cumulatedrequest = updated
+            self.requestChanged.emit()
 
 # -------------------------------------------------------------------
-# Nodes
+# Worker
 
-class Worker(Producer, Consumer):
+class Worker:
+    pass
 
-    def __init__(self, request, offer, tags=None, store=None, retrieve=None, 
-                 parent=None, consume=None, hz=None, **kwargs):
-        consumerkwargs = {} if "requestChanged" not in kwargs \
-            else {"requestChanged": kwargs.pop("requestChanged")}
-        Producer.__init__(self, offer, store, retrieve, parent, **kwargs)
-        Consumer.__init__(self, request, consume, hz, **consumerkwargs)
+class _PropagatingWorker(Worker, _PropagatingProducer, _PropagatingConsumer):
+
+    def __init__(self, request, offer, 
+                 tags=None, store=None, retrieve=None, 
+                 consume=None, hz=None, parent=None):
+        _PropagatingProducer.__init__(self, None,
+                                      offer, tags, store, retrieve, parent)
+        _PropagatingConsumer.__init__(self, weakref.proxy(self),
+                                      request, consume, hz,
+                                      parent=None)
+        self._setConsumer(weakref.proxy(self))
 
     def __del__(self):
-        Producer.__del__(self)
-        Consumer.__del__(self)
+        _PropagatingProducer.__del__(self)
+        _PropagatingConsumer.__del__(self)
 
     def _checkRefs(self):
-        Producer._checkRefs(self)
-        Consumer._checkRefs(self)
+        _PropagatingProducer._checkRefs(self)
+        _PropagatingConsumer._checkRefs(self)
 
+    def clear(self):
+        _PropagatingProducer.clear(self)
+        _PropagatingConsumer.clear(self)
+
+    def __add__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Composite):
+            # Let the Composite '__radd__' method be used
+            rvalue = NotImplemented
+        elif isinstance(other, Worker):
+            self.addObserver(other)
+            rvalue = _CompositeWorker(consumers=[self], producers=[other])
+        elif isinstance(other, Consumer):
+            self.addObserver(other, child=True)
+            rvalue = _CompositeConsumer(self)
+        else:
+            rvalue = NotImplemented
+        return rvalue
+
+    def _debugData(self):
+        rvalue = _PropagatingConsumer._debugData(self)
+        rvalue.update(_PropagatingProducer._debugData(self))
+        return rvalue
+
+    def _debugSiblings(self):
+        rvalue = _PropagatingConsumer._debugSiblings(self)
+        rvalue.update(_PropagatingProducer._debugSiblings(self))
+        return rvalue
+
+
+class Identity(_PropagatingWorker):
+    
+    def __init__(self, store=None, retrieve=None, hz=None, parent=None):
+        super().__init__(request=Request.NONE, offer=Offer(), 
+                         store=store, retrieve=retrieve, hz=hz, parent=parent)
+
+    def _consume(self, products, producer):
+        for product in products:
+            self.postProduct(product)
+        
+# -------------------------------------------------------------------
+# Composite
+
+class _ForwardingConsumer(_PropagatingConsumer):
+    def _consume(self, products, producer):
+        producer = self._producer()
+        if producer is not None:
+            for product in products:
+                producer.postProduct(product)
+
+class Composite(QtCore.QObject):
+    pass
+
+class _CompositeProducer(_PropagatingProducer, Composite):
+    
+    def __init__(self, *producers, parent=None):
+        super().__init__(_ForwardingConsumer(None, Request.NONE),
+                         offer=Offer(), parent=parent)
+        self._consumer()._setProducer(weakref.proxy(self))
+        for prod in producers:
+            assertIsInstance(prod, Producer)
+            self._consumer().subscribeTo(prod, child=True)
+
+    def pushPost(self, worker):
+        assertIsInstance(worker, Worker)
+        for child in self._consumer().children():
+            child.removeObserver(self._consumer())
+            worker.subscribeTo(child, child=True)
+        self._consumer().subscribeTo(worker, child=True)
+                        
+    def __add__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Worker):
+            self.pushPost(other)
+            rvalue = self
+        elif isinstance(other, Consumer):
+            # Warning! Such Composite is closed.
+            self.addObserver(other)
+            composite = Composite()
+            other.setParent(composite)
+            self.setParent(composite)
+            rvalue = composite
+        else:
+            rvalue = NotImplemented
+        return rvalue
+
+    def _debugSiblings(self):
+        rvalue = super()._debugSiblings()
+        rvalue.update(consumer=self._consumer())
+        rvalue.move_to_end('consumer', last=False)
+        return rvalue        
+    
+class _CompositeConsumer(_ForwardingConsumer, Composite):
+    
+    def __init__(self, *consumers, parent=None):
+        super().__init__(_PropagatingProducer(None, Offer()),
+                         Request.NONE, parent=parent)        
+        self._producer()._setConsumer(weakref.proxy(self))
+        for cons in consumers:
+            assertIsInstance(cons, Consumer)
+            self._producer().addObserver(cons, child=True)
+
+    def pushPre(self, worker):
+        assertIsInstance(worker, Worker)
+        for child in self._producer().children():
+            child.unsubscribeFrom(self._producer())
+            worker.addObserver(child, child=True)
+        self._producer().addObserver(worker, child=True)
+
+    def __add__(self, other):
+        return self if other is None else NotImplemented
+
+    def __radd__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Worker):
+            self.pushPre(other)
+            rvalue = self
+        elif isinstance(other, Producer):
+            # Warning! Such Composite is closed.
+            self.subscribeTo(other)
+            composite = Composite()
+            other.setParent(composite)
+            self.setParent(composite)
+            rvalue = composite
+        else:
+            rvalue = NotImplemented
+        return rvalue
+
+    def _debugSiblings(self):
+        rvalue = super()._debugSiblings()
+        rvalue.update(producer=self._producer())
+        rvalue.move_to_end('producer', last=False)
+        return rvalue        
+
+
+class _CompositeWorker(_CompositeProducer, _CompositeConsumer, Worker):
+
+    def __init__(self, consumers, producers, parent=None):
+        _CompositeProducer.__init__(self, *producers, parent=parent)
+        _CompositeConsumer.__init__(self, *consumers)
+
+    def __del__(self):
+        _CompositeProducer.__del__(self)
+        _CompositeConsumer.__del__(self)
+
+    def _checkRefs(self):
+        _CompositeProducer._checkRefs(self)
+        _CompositeConsumer._checkRefs(self)
+
+    def clear(self):
+        _CompositeProducer.clear(self)
+        _CompositeConsumer.clear(self)        
+            
+    def __add__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Worker):
+            self.pushPost(other)
+            rvalue = self #_CompositeWorker(consumers=[self], producers=[other])
+        elif isinstance(other, Consumer):
+            # Warning! this case destroyes self
+            consumers = self._producer().children()
+            for consumer in consumers:
+                consumer.unsubscribeFrom(self._producer())                
+            rvalue = _CompositeConsumer(*consumers)
+            for producer in self._consumer().children():
+                producer.removeObserver(self._consumer())
+                producer.addObserver(other, child=True)
+                producer.setParent(rvalue)
+        else:
+            rvalue = NotImplemented
+        return rvalue
+
+    def __radd__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Worker):
+            self.pushPre(other)
+            rvalue = self
+        elif isinstance(other, Producer):
+            # Warning! this case destroyes self
+            producers = self._consumer().children()
+            for producer in producers:
+                producer.removeObserver(self._consumer())                
+            rvalue = _CompositeProducer(*producers)
+            for consumer in self._producer().children():
+                consumer.unsubscribeFrom(self._producer())
+                consumer.subscribeTo(other, child=True)
+                consumer.setParent(rvalue)
+        else:
+            rvalue = NotImplemented
+        return rvalue
+
+    def _debugData(self):
+        rvalue = _CompositeConsumer._debugData(self)
+        rvalue.update(_CompositeProducer._debugData(self))
+        return rvalue
+
+    def _debugSiblings(self):
+        rvalue = _CompositeConsumer._debugSiblings(self)
+        rvalue.update(_CompositeProducer._debugSiblings(self))
+        return rvalue
 
 # -------------------------------------------------------------------
 # Functor
 
-class Functor(Worker):
-
-    class Blender(object):
-        @staticmethod    
-        def blend(products, results):
-            raise NotImplementedError()
-
-    class MergeBlender(Blender):
-        pass
-
-    class ResultOnlyBlender(Blender):
-        pass
-
+class WiseWorker(_PropagatingWorker):
     '''
     FIXME: The Functor determines its request and offer
     (i.e. wiserequest and wiseoffer variables) depending on the other
@@ -712,27 +873,108 @@ class Functor(Worker):
      propagated from its Observers and Observed.
     ''' 
 
+    class _Forcing: pass
+    ACTIVATED = Forcing()
+    DEACTIVATED = Forcing()
+    NONE = Forcing()
+
+    TUNNELING = object()
+    """Use *TUNNELING* as the worker Offer, when the worker is
+    supposed to process and then forward a subset of the products it
+    receives. This is necessary since the worker cannot have a
+    predefined offer, but it always depend from the offer of the
+    observed producers."""
+    
+    
+    def __init__(self, request, offer, **kwargs):
+        self._tunneling = offer is WiseWorker.TUNNELING
+        super().__init__(request, 
+                         Offer() if offer is WiseWorker.TUNNELING else offer,
+                         **kwargs)
+        self._active = False
+        self._forced = None
+
+    def isActive(self):
+        # The worker is active only if its offer is requested from
+        # a subscribed consumer.
+        return self._active
+
+    def isTunneling(self):
+        """Return True if the worker is forwarding a subset of the
+        products it receives."""
+        return self._tunneling
+
+    def forcing(self):
+        return self._forced
+
+    def setForcing(self, forcing):
+        assertIsInstance(forcing, WiseWorker._Forcing)
+        self._forced = forcing
+        self._propagateRequest()
+
+    def _selfRequest(self): 
+        return super()._selfRequest() if self.isActive() else Request.NONE
+
+    def _selfOffer(self):
+        # Self offer is proposed only if its request is met by at least one 
+        # registered Producer.
+        satisfied = False
+        for obs in self.observed():
+            if isinstance(obs, Producer) \
+                    and obs.meetsRequest(super()._selfRequest()):
+                satisfied = True ; break
+        return super()._selfOffer() if satisfied else Offer()
+
+    def _propagateRequest(self):
+        self._refreshActive()
+        super()._propagateRequest()
+
+    def _refreshActive(self):
+        if self.forcing() is WiseWorker.ACTIVATED:
+            self._active = True
+        if self.forcing() is WiseWorker.DEACTIVATED:
+            self._active = False
+        else:
+            offer = self.offer() if self.isTunneling() else super()._selfOffer()
+            self._active = any(p in self.demandedOffer() for p in offer)
+
+    def _debugData(self):
+        rvalue = super()._debugData()
+        rvalue["active"] = self.isActive()
+        rvalue.move_to_end('active', last=False)
+        rvalue.move_to_end('id', last=False)
+        return rvalue
+
+class Functor(WiseWorker):  
+
+    class Blender(metaclass=abc.ABCMeta):
+        @abc.abstractmethod
+        def blend(self, products, results):
+            raise NotImplementedError()
+
+    class MergeBlender(Blender):
+        def __repr__(self): return "Blender.MERGE"
+
+    class ResultOnlyBlender(Blender):
+        def __repr__(self): return "Blender.RESULTONLY"
+
     def __init__(self, args, offer, blender, process=None, **kwargs):
         super().__init__(request=args, offer=offer, **kwargs)
-        self._active = False
-        self._args = args
-        self._wiserequest = Request.NONE
-        self._wiseoffer = Offer()
-        # demandedOffer and aggregateDemand influence the wise request
-        self.demandedOfferChanged.connect(self._refreshWiseRequest,
-                                          QtCore.Qt.QueuedConnection)
-        self.demandChanged.connect(self._refreshWiseRequest, 
-                                   QtCore.Qt.QueuedConnection)
-        if not issubclass(blender, Functor.Blender): raise TypeError(
+        if not isinstance(blender, Functor.Blender): raise TypeError(
             "Expected Blender subclass, not '%s'"%blender)
         else:
             self._blender = blender
-        self.__process = assertIsInstance(process, None, collections.Callable)        
+        self.__process = assertIsInstance(process, None, collections.Callable)
+
+    def blender(self):
+        return self._blender
         
     def _consume(self, products, producer):
         results = tuple() if not self.isActive() \
-            else tuple(self._process(map(self._args.items, products), producer))
-        products = self._blender.blend(products, results)
+            else self._process(map(self._selfRequest().items, products),
+                               producer)
+        products = self.blender().blend(products, 
+                                        results if results is not None else tuple())
         for product in filter(None, products):
             self.postProduct(product)
 
@@ -741,143 +983,15 @@ class Functor(Worker):
             return self.__process(operands, producer)
         else:
             raise NotImplementedError()
-
-    def isActive(self):
-        return self._active
-
-    def request(self):
-        return self._wiserequest
-
-    def offer(self):
-        return self._wiseoffer
-
-    def _addObservable(self, observable):
-        super()._addObservable(observable)
-        if isinstance(observable, Producer):
-            # Observed consumer's offer influence self wise offer
-            observable.offerChanged.connect(self._refreshWiseOffer, 
-                                            QtCore.Qt.QueuedConnection)
-            self._refreshWiseOffer()
-
-    def _removeObservable(self, observable):
-        super()._removeObservable(observable)
-        if isinstance(observable, Producer):
-            observable.offerChanged.disconnect(self._refreshWiseOffer)
-            self._refreshWiseOffer()
-
-    def _refreshWiseRequest(self):
-        # Self request is demanded only if its offer is requested from
-        # a subscribed consumer. Moreover, if using a MergeBlender, it
-        # propagates its consumers' request.
-        if super().offer() is Offer.UNDEFINED \
-                or any(p in self.demandedOffer() for p in super().offer()):
-            self._active = True
-            refreshed = super().request()+self.aggregateDemand() \
-                if issubclass(self._blender, Functor.MergeBlender) \
-                else super().request()
-        else:
-            self._active = False
-            refreshed = self.aggregateDemand() \
-                if issubclass(self._blender, Functor.MergeBlender) \
-                else Request.NONE
-        if self.request()!=refreshed:
-            self._wiserequest = refreshed
-            self.requestChanged.emit()
-
-    def _refreshWiseOffer(self):        
-        # Self offer is proposed only if its request is met by at least one 
-        # registered Producer. Moreover, if using a MergeBlender, it
-        # propagates its producers' offer.
-        inneroffer = super().offer() \
-            if any(obs.meetsRequest(self._args) for obs in self.observed() \
-                       if isinstance(obs, Producer)) \
-            else Offer()
-        refreshed = sum(
-            (obs.offer() for obs in self.observed() if isinstance(obs, Producer)),
-            inneroffer) \
-            if issubclass(self._blender, Functor.MergeBlender) else inneroffer
-        if self.offer()!=refreshed:
-            self._wiseoffer = refreshed
-            self.offerChanged.emit()
-
-
-class Identity(Functor):
-
-    class _NoBlender(Functor.MergeBlender):
-        @staticmethod    
-        def blend(products, results):
-            for product in products:
-                yield product
-    
-    def __init__(self, **kwargs):
-        super().__init__(Request.NONE, Offer(), blender=Identity._NoBlender, 
-                         process=lambda operands, producer: None, **kwargs)
         
-# -------------------------------------------------------------------
+    def isPropagatingRequest(self):
+        return isinstance(self.blender(), Functor.MergeBlender)
 
-def dumpGraph(origins, fd=sys.stdout, maxdepth=None, indent=6):
-    # print("dumpGraph", origins, fd)
-    memo = []
-    for node in origins:
-        dumpNode(node, memo, fd, 0, maxdepth, indent)
+    def isPropagatingOffer(self):
+        return self.isTunneling() \
+            or isinstance(self.blender(), Functor.MergeBlender)
 
-
-def dumpNode(node, memo, fd, level, maxdepth, indent):
-    # print("dumpNode", memo, fd)
-    if memo is None: memo = []
-    if node in memo:
-        fd.write("Node: %d"%memo.index(node))
-    else:
-        memo.append(node)
-        base = " "*(level*indent)
-        fd.write(base+"%d: %s\n"%(len(memo), type(node)))
-        if isinstance(node, Consumer):
-            fd.write(base+"   request = %s\n"%node.request())
-            '''if isinstance(node, FilterOut):
-                filterout = node.request()
-                if filterout is not None: filterout = repr(str(filterout))
-                fd.write(base+"  filterout = %s\n"%filterout)'''
-            # if isinstance(node, HierarchicalConsumer):
-            #     pres = tuple(node.pres())
-            #     fd.write(base+"  pre = [")
-            #     if not pres: fd.write("]\n")
-            #     elif maxdepth is None or level<maxdepth:
-            #         fd.write(base+"\n\n")                
-            #         for pre in pres:
-            #             dumpNode(pre, memo, fd, level+1, maxdepth, indent)
-            #         fd.write(base+"  ]\n")                
-            #     else:
-            #         fd.write("...]\n")
-            #     fd.write(base+"  _baserequest = %s\n"%node._baserequest)
-        if isinstance(node, Producer):
-            # fd.write(base+"   activetags = %s\n"%node._activetags)
-            # if isinstance(node, HierarchicalProducer):
-            #     fd.write(base+"   _postProducer:\n")
-            #     fd.write(base+"     offer = %s\n"%str(node._postProducer.offer()))
-            #     fd.write(base+"     aggregateDemand = %s\n"%(
-            #             node._postProducer.aggregateDemand()))
-            #     fd.write(base+"     demandedoffer = %s\n"%str(
-            #             node._postProducer.demandedOffer()))
-            #     posts = list(node.posts())
-            #     fd.write(base+"   posts = [")                    
-            #     if not posts: fd.write("]\n")
-            #     elif maxdepth is None or level<maxdepth:
-            #         fd.write(base+"\n\n")                
-            #         for post in posts:
-            #             dumpNode(post, memo, fd, level+1, maxdepth, indent)
-            #         fd.write(base+"  ]\n")                
-            #     else:
-            #         fd.write("...]\n")
-            fd.write(base+"   offer = %s\n"%str(node.offer()))
-            fd.write(base+"   aggregateDemand = %s\n"%node.aggregateDemand())
-            fd.write(base+"   demandedoffer = %s\n"%str(node.demandedOffer()))
-            fd.write(base+"   observers = [")
-            if not tuple(node.observers()):
-                fd.write("]\n")
-            elif maxdepth is None or level<maxdepth:
-                fd.write("\n\n")                
-                for observer in node.observers():
-                    dumpNode(observer, memo, fd, level+1, maxdepth, indent)
-                fd.write(base+"  ]\n\n")
-            else:
-                fd.write("...]\n\n")
+    def _debugData(self):
+        rvalue = super()._debugData()
+        rvalue["blender"] = self.blender()
+        return rvalue

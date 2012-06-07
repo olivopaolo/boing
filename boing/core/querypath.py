@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# boing/core/economy.py -
+# boing/core/querypath.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
@@ -13,14 +13,14 @@ from boing.utils import QPath, assertIsInstance
 class QRequest(economy.Request):
 
     def __init__(self, string):
-        super().__init__()
         self._query = QPath.QPath(string)
 
     def query(self):
         return self._query
 
     def test(self, product):
-        return self._query.test(product)
+        return product is economy.Product.UNDEFINED \
+            or self._query.test(product)
 
     def items(self, product):
         return self._query.items(product)
@@ -32,8 +32,9 @@ class QRequest(economy.Request):
         return self._query.filterout(product)
 
     def __eq__(self, other):
-        return isinstance(other, QRequest) and \
-            self._query==other.query()
+        return isinstance(other, QRequest) \
+            and other not in (economy.Request.ANY, economy.Request.NONE) \
+            and self._query==other.query()
         
     def __add__(self, other):
         if other is economy.Request.ANY or self==other:
@@ -51,7 +52,8 @@ class QRequest(economy.Request):
     def __hash__(self):
         return hash(self._query)
 
-    def __str__(self):
+    def __repr__(self):
         return "Request('%s')"%self._query
+
 
 

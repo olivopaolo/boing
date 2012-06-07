@@ -15,12 +15,13 @@ import weakref
 from PyQt4 import QtCore
 
 from boing.core.economy import \
-    Offer, Request, Producer, Consumer, \
-    FunctorRequest, _CustomerProducer
+    Offer, Request, Product, Producer, Consumer, FunctorRequest
 from boing.core.observer import Observer
 from boing.test import QtBasedTest
 from boing.test.core.test_observer import testReact
-
+    
+class TestingConfigurableConsumer(Consumer, Consumer.CONFIGURABLE):
+    pass
 
 class TestRequest(unittest.TestCase):
 
@@ -104,7 +105,8 @@ class Test_CompositeRequest(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def eqRequestFactory(other): 
-    return FunctorRequest(lambda value: value==other)
+    return FunctorRequest(
+        lambda product: product is Product.UNDEFINED or product==other)
 
 def storeProducts(consumer, products, producer):
     storage = consumer.__dict__.setdefault("storage", list())
@@ -115,7 +117,7 @@ class TestProducer(QtBasedTest):
     # FIXME: Add tag tests
 
     def test_creation(self):
-        producer = Producer(offer=Offer.UNDEFINED)
+        producer = Producer(offer=Offer(Product.UNDEFINED))
         ref = weakref.ref(producer)
         del producer
         self.assertIsNone(ref())
@@ -123,25 +125,17 @@ class TestProducer(QtBasedTest):
     def test_creation_wrong_arg(self):
         self.assertRaises(TypeError, Producer, wrong="wrong")
 
-    def test_creation_demandChanged(self):
-        producer = Producer(offer=Offer.UNDEFINED, 
-                            demandChanged=lambda : None)
-
     def test_connect_demandChanged(self):
-        producer = Producer(offer=Offer.UNDEFINED)
+        producer = Producer(offer=Offer(Product.UNDEFINED))
         producer.demandChanged.connect(lambda : None)
 
-    def test_creation_demandedOfferChanged(self):
-        producer = Producer(offer=Offer.UNDEFINED, 
-                            demandedOfferChanged=lambda : None)
-
     def test_connect_demandedOfferChanged(self):
-        producer = Producer(offer=Offer.UNDEFINED)
+        producer = Producer(offer=Offer(Product.UNDEFINED))
         producer.demandedOfferChanged.connect(lambda : None)
 
     def test_offer(self):
-        producer = Producer(offer=Offer.UNDEFINED)
-        self.assertEqual(producer.offer(), Offer.UNDEFINED)
+        producer = Producer(offer=Offer(Product.UNDEFINED))
+        self.assertEqual(producer.offer(), Offer(Product.UNDEFINED))
         offer = Offer("statue", "painting")
         producer = Producer(offer=offer)
         self.assertEqual(producer.offer(), offer)
@@ -149,9 +143,9 @@ class TestProducer(QtBasedTest):
         self.assertNotEqual(producer.offer(), Offer("statue"))
 
     def test_meetsRequest(self):
-        producer = Producer(offer=Offer.UNDEFINED)
-        self.assertFalse(producer.meetsRequest(eqRequestFactory("statue")))
-        self.assertFalse(producer.meetsRequest(Request.ANY))
+        producer = Producer(offer=Offer(Product.UNDEFINED))
+        self.assertTrue(producer.meetsRequest(eqRequestFactory("statue")))
+        self.assertTrue(producer.meetsRequest(Request.ANY))
         producer = Producer(Offer("statue", "obelisk"))
         self.assertTrue(producer.meetsRequest(eqRequestFactory("statue")))
         self.assertTrue(producer.meetsRequest(Request.ANY))
@@ -160,7 +154,7 @@ class TestProducer(QtBasedTest):
                 eqRequestFactory("statue")+eqRequestFactory("obelisk")))
 
     def test_addObservers(self):
-        producer = Producer(offer=Offer.UNDEFINED)
+        producer = Producer(offer=Offer(Product.UNDEFINED))
         refprod = weakref.ref(producer)
         self.assertRaises(TypeError, producer.addObserver, None)
         self.assertRaises(TypeError, producer.addObserver, "wrong")
@@ -179,10 +173,11 @@ class TestProducer(QtBasedTest):
         self.assertIsNone(refprod())
 
     def test_aggregateDemand_demandedOffer_isRequested(self):
-        producer = Producer(
-            offer=Offer("statue", "painting", "obelisk"),
-            demandChanged=lambda : setattr(self, "demandTrigger", True),
-            demandedOfferChanged=lambda : setattr(self, "offerTrigger", True))
+        producer = Producer(offer=Offer("statue", "painting", "obelisk"))
+        producer.demandChanged.connect(
+            lambda : setattr(self, "demandTrigger", True))
+        producer.demandedOfferChanged.connect(
+            lambda : setattr(self, "offerTrigger", True))
         self.assertEqual(producer.aggregateDemand(), Request.NONE)
         self.assertEqual(producer.demandedOffer(), Offer())
         # Init consumers
@@ -382,7 +377,7 @@ class TestProducer(QtBasedTest):
         for i, (template, n) in enumerate((("statue", 4), 
                                            ("painting", 3),
                                            ("obelisk", 3))):
-            producers.append(Producer(offer=Offer.UNDEFINED))
+            producers.append(Producer(offer=Offer(Product.UNDEFINED)))
             tid = QtCore.QTimer(producers[i], 
                                 timeout=makeFunctor(producers[i], template, n))
             tid.start(20)
@@ -409,7 +404,8 @@ class TestProducer(QtBasedTest):
                         eqRequestFactory("statue"), 
                         eqRequestFactory("painting"),
                         eqRequestFactory("statue") + eqRequestFactory("obelisk")):
-            consumers.append(Consumer(request, consume=storeProducts))
+            consumers.append(
+                TestingConfigurableConsumer(request, consume=storeProducts))
         reffirstconsumer = weakref.ref(consumers[0])
         # Forth consumer changes its request during eventloop
         QtCore.QTimer.singleShot(
@@ -475,9 +471,6 @@ class TestConsumer(unittest.TestCase):
     def test_creation_wrong_arg(self):
         self.assertRaises(TypeError, Consumer, Request.ANY, wrong="wrong")
 
-    def test_creation_requestChanged(self):
-        consumer = Consumer(Request.ANY, requestChanged=lambda : None)
-
     def test_connection_requestChanged(self):
         consumer = Consumer(Request.ANY)
         consumer.requestChanged.connect(lambda : None)
@@ -486,85 +479,31 @@ class TestConsumer(unittest.TestCase):
         consumer = Consumer(Request.ANY)
         self.assertEqual(consumer.request(), Request.ANY)
 
+class TestConfigurableConsumer(unittest.TestCase):
+
+    def trigger(self):
+        self.triggered = True
+
+    def setUp(self):
+        self.triggered = False
+
     def test_setRequest_raises(self):
-        consumer = Consumer(Request.ANY)
+        consumer = TestingConfigurableConsumer(Request.ANY)
         self.assertRaises(TypeError, consumer.setRequest, "wrong")
 
     def test_setRequest_different(self):
-        consumer = Consumer(Request.ANY, requestChanged=self.trigger)
+        consumer = TestingConfigurableConsumer(Request.ANY)
+        consumer.requestChanged.connect(self.trigger)
         consumer.setRequest(Request.NONE)
         self.assertEqual(consumer.request(), Request.NONE)
         self.assertTrue(self.triggered)
 
     def test_setRequest_equal(self):
-        consumer = Consumer(Request.ANY)
+        consumer = TestingConfigurableConsumer(Request.ANY)
         consumer.requestChanged.connect(self.trigger)
         consumer.setRequest(Request.ANY)
         self.assertEqual(consumer.request(), Request.ANY)
         self.assertFalse(self.triggered)
-
-# -------------------------------------------------------------------
-
-class Test_CustomerProducer(QtBasedTest):
-        
-    def production_test(self, mode):
-        # Init Observers
-        observer = Observer(react=testReact)
-        # Consumers are set so that:
-        # - the first is deleted during eventloop;
-        # - the second won't get anything (request=None)
-        # - the third will get only statues and paintings
-        # - the fourth will get only statues
-        consumers = []
-        for request in (Request.ANY,
-                        Request.NONE, 
-                        eqRequestFactory("statue") + eqRequestFactory("painting"),
-                        Request.ANY):
-            consumers.append(Consumer(request, consume=storeProducts))
-        reffirstconsumer = weakref.ref(consumers[0])
-        # Init producer
-        producer = _CustomerProducer(offer=Offer.UNDEFINED)
-        QtCore.QTimer(
-            producer, timeout=lambda : producer.postProduct("statue")).start(20)
-        QtCore.QTimer(producer, timeout=lambda : self.assertFalse(
-                producer.postProductTo("obelisk", observer))).start(30)
-        QtCore.QTimer(producer, timeout=lambda : self.assertTrue(
-                producer.postProductTo("painting", consumers[2]))).start(50)
-        QtCore.QTimer(producer, timeout=lambda : self.assertFalse(
-                producer.postProductTo("obelisk", consumers[2]))).start(60)
-        # Subscriptions
-        producer.addObserver(observer, mode)
-        for consumer in consumers:
-            producer.addObserver(consumer, mode)
-        del consumer
-        # Delete instances during eventloop
-        setter = lambda obj, key, value: obj.__setitem__(key, value)
-        QtCore.QTimer.singleShot(
-            200, lambda : setter(consumers, 0, None))
-        QtCore.QTimer.singleShot(
-            300, self.app.quit)
-        # Exec
-        self.app.exec_()
-        # Check element deletion
-        self.assertIsNone(reffirstconsumer())
-        self.assertEqual(set(producer.observers()), 
-                         set(itertools.chain(consumers[1:], 
-                                             (observer, ))))
-        # Check react func
-        self.assertGreater(observer.hit, 0)
-        self.assertFalse(hasattr(consumers[1], "storage"))
-        self.assertIn("statue", consumers[2].storage)
-        self.assertIn("painting", consumers[2].storage)
-        self.assertNotIn("obelisk", consumers[2].storage)
-        self.assertIn("statue", consumers[3].storage)
-        self.assertNotIn("painting", consumers[3].storage)
-        self.assertNotIn("obelisk", consumers[3].storage)
-
-    def test_production_direct(self):
-        self.production_test(QtCore.Qt.DirectConnection)
-
-    def test_production_queued(self):
-        self.production_test(QtCore.Qt.QueuedConnection)
 
 # -------------------------------------------------------------------
 
@@ -575,7 +514,7 @@ def suite():
         Test_CompositeRequest,
         TestProducer,
         TestConsumer,
-        Test_CustomerProducer,
+        TestConfigurableConsumer,
         )
     return unittest.TestSuite(itertools.chain(
             *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \

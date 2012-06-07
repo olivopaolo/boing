@@ -12,120 +12,80 @@ import os
 import sys
 import logging
 
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore
 
-from boing.core import Request, Functor, economy
-from boing.nodes import ioport, Dump, StatProducer
-#import boing.nodes.encoding as encoding
-#import boing.nodes.logger as logger
-#import boing.nodes.functions as functions
+from boing import Request, Functor, Identity
+from boing.nodes import encoding, ioport
+from boing.nodes.multitouch import attrToRequest
 from boing.net import tcp, udp
-from boing.utils import quickdict, fileutils
-
-#from boing.core.MappingEconomy import Tunnel, FilterOut, FunctionalNode
-#from boing.nodes.multitouch.ContactViz import ContactViz
+from boing.utils import assertIsInstance
+from boing.utils.fileutils \
+    import File, CommunicationFile, FileReader, IODevice, CommunicationDevice
 from boing.utils.url import URL
 
-
-def create(uri, mode="", logger=None, **kwargs):
-    """Return the node created from "uri"."""
-    if mode not in ("", "in", "out"): raise ValueError("Invalid mode: %s"%mode)
+def create(uri, mode="", logger=None, parent=None):
+    """Return a new node created from *uri*."""    
     logger = logger if logger is not None else logging.getLogger("loader")
-    uri = URL(str(uri))
+    if not isinstance(uri, URL): uri = URL(str(uri))
     if not uri.opaque and not uri.scheme and not uri.path: 
         raise ValueError("Empty URI")
-    kwargs = quickdict(kwargs)
 
     # -------------------------------------------------------------------
     # IN: AND  OUT: REPLACED USING MODE
     if uri.scheme=="in":
         assertUriModeIn(uri, mode, "", "in")
-        return create(str(uri).replace("in:", "", 1), "in", **kwargs)
+        return create(str(uri).replace("in:", "", 1), "in", logger, parent)
 
     elif uri.scheme=="out":
         assertUriModeIn(uri, mode, "", "out")
-        return create(str(uri).replace("out:", "", 1), "out", **kwargs)
+        return create(str(uri).replace("out:", "", 1), "out", logger, parent)
 
     # -------------------------------------------------------------------
-    # DATA REDIRECTION
-        '''    elif uri.scheme=="bridge":
-        extended = copy.copy(uri)
-        extended.scheme = "json.udp"
-        if uri.site.port==0: extended.site.port = 7898
-        if not uri.site.host and mode=="out": extended.site.host = "::1"
-        return create(extended, mode, **kwargs)
+    # LOGGING
 
-    elif uri.scheme=="play":
-        extended = copy.copy(uri)
-        extended.scheme = "play.json"
-        return create(extended, mode, **kwargs)
+    elif uri.scheme=="log":
+        return create(str(uri).replace("log:", "log.json:", 1), 
+                      mode, logger, parent)
 
-    elif uri.scheme.startswith("play."):
-        if mode not in ("", "in"): raise ValueError(
-            "Invalid mode for %s: %s"%(uri, mode))
-        elif uri.kind==URL.OPAQUE or uri.site or uri.fragment: raise ValueError(
+    elif uri.scheme.startswith("log."):
+        assertUriModeIn(uri, mode, "in", "out")
+        scheme = uri.scheme.replace("log.", "", 1)
+        if uri.kind==URL.OPAQUE or uri.site or uri.fragment: raise ValueError(
             "Invalid URI: %s"%uri)
         elif not uri.path: raise ValueError(
             "URI's path cannot be empty: %s"%uri)
-        else:
-            query = _uriquery(uri, "loop", "speed", "interval", "noslip")
-            unexpected = list(filter(lambda k: not _isPost(k),
-                                     uri.query.data.keys()-query.keys()))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            elif uri.scheme in ("play.json", "play.json.slip"):
-                kwargs.update(query)
-                node = encoding.JsonLogPlayer(uri.path, **kwargs)
-                node.addPost(encoding.TextEncoder())
-            elif uri.scheme in ("play.osc", "play.osc.slip",
-                                "play.tuio", "play.tuio.osc", "play.tuio.osc.slip"):
-                kwargs.update(query)
-                node = encoding.OscLogPlayer(uri.path, **kwargs)
-                node.addPost(encoding.OscEncoder())
-                node.addPost(encoding.OscDebug())
-                if "tuio" in uri.scheme: node.addPost(encoding.TuioDecoder())
+        elif mode=="in":
+            query = parseQuery(uri, "loop", "speed", "interval", "noslip")
+            assertUriQuery(uri, query)
+            if scheme in ("json", "json.slip"):
+                player = encoding.JsonLogPlayer(uri.path, **query)
+                node = player + encoding.TextEncoder()
+            elif scheme in ("osc", "osc.slip",
+                            "tuio", "tuio.osc", "tuio.osc.slip"):
+                player = encoding.OscLogPlayer(uri.path, **query)
+                node = player + encoding.OscEncoder() + encoding.OscDebug()
+                if "tuio" in uri.scheme: node += encoding.TuioDecoder()
             else:
                 raise ValueError("Unexpected encoding: %s"%uri)
             # FIXME: start should be triggered at outputs ready
-            QtCore.QTimer.singleShot(300, node.start)
-        
-    elif uri.scheme=="log":
-        return create(str(uri).replace("log:", "log.json:", 1), mode, **kwargs)
-
-    elif uri.scheme.startswith("log."):
-        if mode in ("", "out"):
-            if uri.kind==URL.OPAQUE or uri.site or uri.fragment: 
-                raise ValueError("Invalid URI: %s"%uri)
-            elif uri.scheme in ("log.json", "log.json.slip"):
-                query = _uriquery(uri, "request", "filter")
-                unexpected = list(filter(lambda k: not _isPre(k),
-                                         uri.query.data.keys()-query.keys()))
-                if unexpected: raise ValueError(
-                    "Unexpected query keys: %s"%", ".join(unexpected))
-                _filter = query.pop("filter", None)
-                node = encoding.JsonEncoder(**dict(query, **kwargs))
-                node.addPost(encoding.TextEncoder())
-                # FIXME: filter not uniformly implemented
-                if _filter is not None: 
-                    node.setRequest(uri.query.data["filter"])
-                    node.addPre(functions.Filter(uri.query.data["filter"]))
-            elif uri.scheme in ("log.osc", "log.osc.slip"):
-                unexpected = list(filter(lambda k: not _isPre(k),
-                                         uri.query.data))
-                if unexpected: raise ValueError(
-                    "Unexpected query keys: %s"%", ".join(unexpected))
-                else:
-                    node = encoding.OscEncoder(wrap=True, **kwargs)
+            QtCore.QTimer.singleShot(300, player.start)
+        elif mode=="out":            
+            if scheme in ("json", "json.slip"):
+                query = parseQuery(uri, "request")
+                assertUriQuery(uri, query)
+                encoder = encoding.JsonEncoder(wrap=True, **query)
+                encoder += encoding.TextEncoder()
+            elif uri.scheme in ("osc", "osc.slip"):
+                assertUriQuery(uri, None)
+                encoder = encoding.OscEncoder(wrap=True)
             else:
                 raise ValueError("Unknown log encoding: %s"%uri)
-            node.addObserver(
-                create("slip.file://%s"%uri.path, "out", parent=node))
-        else:
-            raise ValueError("Requested node is not an input: %s"%uri)'''
+            device = create("slip.file://%s"%uri.path, "out", logger)
+            node = encoder + device
         
         '''elif uri.scheme=="rec":
         if mode in ("", "out"):
-            kwargs.update(_uriquery(uri, "timelimit", "sizelimit", 
+            kwargs.update(parseQuery(uri, "timelimit", "sizelimit", 
                                       "oversizecut", "fps", "timewarping",
                                       "request", "hz"))
             kwargs.setdefault("request", "*")
@@ -139,27 +99,21 @@ def create(uri, mode="", logger=None, **kwargs):
     # IO DEVICES
     elif uri.scheme=="stdin":
         assertUriModeIn(uri, mode, "", "in")
+        assertUriQuery(uri, None)
         if uri.opaque or uri.path or uri.site or uri.fragment: 
             raise ValueError("Invalid URI: %s"%uri)
         else:
-            # No query data
-            unexpected = uri.query.data.keys()
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            node = ioport.DataReader(fileutils.CommunicationDevice(sys.stdin), 
-                                     **kwargs)
-            #node.addPost(encoding.TextEncoder(blend=Functor.MERGE))
+            encoder = encoding.TextEncoder(blender=Functor.MERGE)
+            reader = ioport.DataReader(CommunicationDevice(sys.stdin))
+            node = reader + encoder
 
     elif uri.scheme=="stdout":
         assertUriModeIn(uri, mode, "", "out")
+        assertUriQuery(uri, None)
         if uri.opaque or uri.path or uri.site or uri.fragment: 
             raise ValueError("Invalid URI: %s"%uri)
         else:
-            # Accepts only pres
-            unexpected = list(filter(lambda k: not _isPre(k), uri.query.data))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            node = ioport.DataWriter(fileutils.IODevice(sys.stdout), **kwargs)
+            node = ioport.DataWriter(IODevice(sys.stdout))
 
     elif uri.scheme in ("", "file"):
         if uri.kind==URL.OPAQUE or uri.site or uri.fragment: 
@@ -168,143 +122,105 @@ def create(uri, mode="", logger=None, **kwargs):
             raise ValueError("URI's path cannot be empty: %s"%uri)
         assertUriModeIn(uri, mode, "in", "out")
         if mode=="in":
-            query = _uriquery(uri, "uncompress", "postend")
-            unexpected = list(filter(lambda k: not _isPost(k),
-                                     uri.query.data.keys()-query.keys()))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            if "postend" in query: kwargs.postend = query.pop("postend")
-            filepath = str(uri.path)
-            if os.path.isfile(filepath):
-                inputfile = fileutils.FileReader(uri, **query)
+            filequery = parseQuery(uri, "uncompress")
+            readerquery = parseQuery(uri, "postend")
+            assertUriQuery(uri, tuple(filequery)+tuple(readerquery))
+            if os.path.isfile(str(uri.path)):
+                inputfile = FileReader(uri, **filequery)
                 # FIXME: start should be triggered at outputs ready
                 QtCore.QTimer.singleShot(300, inputfile.start)
             else:
-                inputfile = fileutils.CommunicationFile(uri)
-            node = ioport.DataReader(inputfile, **kwargs)
-            node.addPost(encoding.TextEncoder(blend=Functor.MERGE) \
-                             if inputfile.isTextModeEnabled() \
-                             else encoding.TextDecoder(blend=Functor.MERGE))
+                inputfile = CommunicationFile(uri)
+            encoder = encoding.TextEncoder(blender=Functor.MERGE) \
+                if inputfile.isTextModeEnabled() \
+                else encoding.TextDecoder(blender=Functor.MERGE)
+            reader = ioport.DataReader(inputfile, **readerquery)
+            node = reader + encoder
         elif mode=="out":
-            unexpected = list(filter(lambda k: not _isPre(k),
-                                     uri.query.data))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            node = ioport.DataWriter(fileutils.File(uri, fileutils.File.WriteOnly), 
-                              **kwargs)
+            assertUriQuery(uri, None)
+            node = ioport.DataWriter(File(uri, File.WriteOnly))
 
     elif uri.scheme=="udp":
         assertUriModeIn(uri, mode, "in", "out")
         if uri.kind==URL.OPAQUE or uri.path or uri.fragment: 
             raise ValueError("Invalid URI: %s"%uri)
         elif mode=="in":
-            unexpected = list(filter(lambda k: not _isPost(k), uri.query.data))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            node = ioport.DataReader(udp.UdpListener(uri), **kwargs)
-            node.addPost(encoding.TextDecoder(blend=Functor.MERGE))
+            assertUriQuery(uri, None)
+            encoder = encoding.TextDecoder(blender=Functor.MERGE)
+            reader = ioport.DataReader(udp.UdpListener(uri))            
+            node = reader + encoder
             if uri.site.port==0: logger.info(
-                "Listening at %s"%node.inputDevice().url())
+                "Listening at %s"%reader.inputDevice().url())
         elif mode=="out":
-            query = _uriquery(uri, "writeend")
-            unexpected = list(filter(lambda k: not _isPre(k),
-                                     uri.query.data.keys()-query.keys()))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            node = ioport.DataWriter(udp.UdpSender(uri), **dict(query, **kwargs))
+            query = parseQuery(uri, "writeend")
+            assertUriQuery(uri, query)
+            node = ioport.DataWriter(udp.UdpSender(uri), **query)
 
     elif uri.scheme=="tcp":
         assertUriModeIn(uri, mode, "in", "out")
+        assertUriQuery(uri, None)
         if uri.kind==URL.OPAQUE or uri.path or uri.fragment: 
             raise ValueError("Invalid URI: %s"%uri)
         elif mode=="in":
-            unexpected = list(filter(lambda k: not _isPost(k), uri.query.data))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            node = economy.Identity(**kwargs)
-            node.addPost(encoding.TextDecoder(blend=Functor.MERGE))
-            server = NodeServer(uri.site.host, uri.site.port, parent=node)
-            if uri.site.port==0: logger.info(
-                "Listening at %s"%server.url())
+            encoder = encoding.TextDecoder(blender=Functor.MERGE)
+            tunnel = Identity()
+            server = NodeServer(uri.site.host, uri.site.port, parent=tunnel)
+            if uri.site.port==0: logger.info("Listening at %s"%server.url())
+            node = tunnel + encoder
         elif mode=="out":
-            unexpected = list(filter(lambda k: not _isPre(k), uri.query.data))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            node = ioport.DataWriter(tcp.TcpConnection(uri), **kwargs)
+            node = ioport.DataWriter(tcp.TcpConnection(uri))
 
     # -------------------------------------------------------------------
     # ENCODINGS
     # SLIP
     elif uri.scheme.startswith("slip."):
         assertUriModeIn(uri, mode, "in", "out")
+        loweruri = lower(uri, "slip")
         if mode=="in":
-            unexpected = list(filter(lambda k: _isPre(k), uri.query.data))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            lower = LowerURI(uri, "slip")
-            if "file" in lower.scheme: lower.query.data["uncompress"] = ""
-            node = create(lower, "in", **kwargs)
-            node.addPost(
-                encoding.SlipDecoder().addPost(
-                    encoding.TextDecoder(blend=Functor.MERGE)))
-        elif mode=="out":
-            unexpected = list(filter(lambda k: _isPost(k), uri.query.data))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            lower = LowerURI(uri, "slip")
-            node = create(lower, "out", **kwargs)
-            node.addPre(
-                encoding.SlipEncoder(blend=Functor.MERGECOPY).addPost(
-                    encoding.TextDecoder(blend=Functor.MERGE)))
+            if "file" in loweruri.scheme: loweruri.query.data["uncompress"] = ""
+            device = create(loweruri, "in", logger, parent)
+            node = device + encoding.SlipDecoder()
+            node += encoding.TextDecoder(blender=Functor.MERGE)
 
-            '''# JSON
+        elif mode=="out":
+            device = create(loweruri, "out", logger, parent)
+            node = encoding.SlipEncoder(blender=Functor.MERGE) \
+                + encoding.TextDecoder(blender=Functor.MERGE)
+            node += device
+
+    # JSON
     elif uri.scheme=="json":
         extended = copy.copy(uri)
         extended.scheme += ".slip.file" if uri.path else ".udp"
         logger.info(
             "No transport protocol specified in URI, assuming: %s"%extended.scheme)
-        return create(extended, mode, **kwargs)
+        return create(extended, mode, logger, parent)
 
     elif uri.scheme.startswith("json."):
-        if mode not in ("in", "out"): raise ValueError(
-            "Invalid mode for %s: %s"%(uri, mode))
-        else:
-            query = _uriquery(uri, "request", "filter", "noslip")
-            lower = LowerURI(uri, "json", *query.keys())
-            noslip = query.pop("noslip", False)
-            if not isinstance(noslip, bool): raise TypeError(
-                "noslip must be boolean, not '%s'"%noslip.__class__.__name__)
-            elif not noslip:
-                if lower.scheme=="file":
-                    lower.scheme = "slip.%s"%lower.scheme
-                    logger.info(
-                        "JSON over FILE is SLIP encoded by default (set noslip to disable)")
-                if lower.scheme=="tcp":
-                    lower.scheme = "slip.%s"%lower.scheme
-                    logger.info(
-                        "JSON over TCP is SLIP encoded by default (set noslip to disable)")
-            if mode=="in":
-                if "request" in query: raise ValueError(
-                    "Unexpected query key: request")
-                if "filter" in query: raise ValueError(
-                    "Unexpected query key: filter")
-                unexpected = list(filter(lambda k: _isPre(k), uri.query.data))
-                if unexpected: raise ValueError(
-                    "Unexpected query keys: %s"%", ".join(unexpected))
-                node = encoding.JsonDecoder(**dict(query, **kwargs))
-                node.subscribeTo(create(lower, "in", parent=node))
-            elif mode=="out":
-                unexpected = list(filter(lambda k: _isPost(k), uri.query.data))
-                if unexpected: raise ValueError(
-                    "Unexpected query keys: %s"%", ".join(unexpected))
-                if "filter" not in query: _filter = None
-                else:
-                    _filter = functions.Filter(query.pop("filter"))
-                    query.setdefault("request", _filter.query())
-                node = encoding.JsonEncoder(**dict(query, **kwargs))
-                node.addPost(encoding.TextEncoder(Functor.MERGE))
-                if _filter is not None: node.addPre(_filter)
-                node.addObserver(create(lower, "out", parent=node))
+        assertUriModeIn(uri, mode, "in", "out")
+        query = parseQuery(uri, "request", "noslip")
+        loweruri = lower(uri, "json", query.keys())
+        noslip = assertIsInstance(query.pop("noslip", False), bool)
+        if not noslip:
+            if loweruri.scheme=="file":
+                loweruri.scheme = "slip.%s"%loweruri.scheme
+                logger.info(
+                    "JSON over FILE is SLIP encoded by default (set noslip to disable)")
+            if loweruri.scheme=="tcp":
+                loweruri.scheme = "slip.%s"%loweruri.scheme
+                logger.info(
+                    "JSON over TCP is SLIP encoded by default (set noslip to disable)")
+        if mode=="in":
+            if "request" in query: 
+                raise ValueError("Unexpected query keys: 'request'")
+            device = create(loweruri, "in", logger, parent)
+            decoder = encoding.JsonDecoder(blender=Functor.MERGE)
+            node = device + decoder
+        elif mode=="out":
+            device = create(loweruri, "out", logger, parent)
+            encoder = encoding.JsonEncoder(**query)
+            node = encoder + encoding.TextEncoder(blender=Functor.MERGE) 
+            node += device
 
     # OSC
     elif uri.scheme=="osc":
@@ -312,43 +228,33 @@ def create(uri, mode="", logger=None, **kwargs):
         extended.scheme += ".slip.file" if uri.path else ".udp"
         logger.info(
             "No transport protocol specified in URI, assuming: %s"%extended.scheme)
-        return create(extended, mode, **kwargs)
+        return create(extended, mode, logger, parent)
 
     elif uri.scheme.startswith("osc."):
-        if mode not in ("in", "out"): raise ValueError(
-            "Invalid mode for %s: %s"%(uri, mode))
-        else:
-            query = _uriquery(uri, "rt", "noslip")
-            lower = LowerURI(uri, "osc", *query.keys())
-            noslip = query.pop("noslip", False)
-            if not isinstance(noslip, bool): raise TypeError(
-                "noslip must be boolean, not '%s'"%noslip.__class__.__name__)
-            elif not noslip:
-                if lower.scheme=="file":
-                    lower.scheme = "slip.%s"%lower.scheme
-                    logger.info(
-                        "OSC over FILE is SLIP encoded by default (set noslip to disable)")
-                if lower.scheme=="tcp":
-                    lower.scheme = "slip.%s"%lower.scheme
-                    logger.info(
-                        "OSC over TCP is SLIP encoded by default (set noslip to disable)")
-            if mode=="in":
-                unexpected = list(filter(lambda k: _isPre(k), uri.query.data))
-                if unexpected: raise ValueError(
-                    "Unexpected query keys: %s"%", ".join(unexpected))
-                node = create(lower, "in", **kwargs)
-                node.addPost(FilterOut("str"))
-                node.addPost(
-                    encoding.OscDecoder(**query).addPost(encoding.OscDebug()))
-            elif mode=="out":
-                unexpected = list(filter(lambda k: _isPost(k), uri.query.data))
-                if unexpected: raise ValueError(
-                    "Unexpected query keys: %s"%", ".join(unexpected))
-                node = encoding.OscEncoder(resultmode=FunctionalNode.RESULTONLY, 
-                                           **dict(query, **kwargs))
-                node.addPost(encoding.OscDecoder())
-                node.addPost(encoding.OscDebug())
-                node.addObserver(create(lower, "out", parent=node))
+        assertUriModeIn(uri, mode, "in", "out")
+        query = parseQuery(uri, "rt", "noslip")
+        loweruri = lower(uri, "osc", query.keys())
+        noslip = assertIsInstance(query.pop("noslip", False), bool)
+        if not noslip:
+            if loweruri.scheme=="file":
+                loweruri.scheme = "slip.%s"%loweruri.scheme
+                logger.info(
+                    "OSC over FILE is SLIP encoded by default (set noslip to disable)")
+            if loweruri.scheme=="tcp":
+                loweruri.scheme = "slip.%s"%loweruri.scheme
+                logger.info(
+                    "OSC over TCP is SLIP encoded by default (set noslip to disable)")
+        if mode=="in":
+            device = create(loweruri, "in", logger, parent)
+            node = device + encoding.OscDecoder(blender=Functor.MERGE, **query)
+            node += encoding.OscDebug(blender=Functor.MERGE)
+
+        elif mode=="out":
+            device = create(loweruri, "out", logger, parent)
+            debugger = encoding.OscDebug(blender=Functor.MERGE)
+            decoder = encoding.OscDecoder(blender=Functor.MERGE)
+            encoder = encoding.OscEncoder(**query)
+            node = encoder + decoder + debugger + device
 
     # TUIO
     elif uri.scheme=="tuio":
@@ -359,29 +265,24 @@ def create(uri, mode="", logger=None, **kwargs):
             if uri.site.port==0: extended.site.port = 3333
         logger.info(
             "No transport protocol specified in URI, assuming: %s"%extended.scheme)
-        return create(extended, mode, **kwargs)
+        return create(extended, mode, logger, parent)
 
     elif uri.scheme.startswith("tuio."):
-        lower = LowerURI(uri, "tuio")
-        if not lower.scheme.startswith("osc."): 
-            lower.scheme = "osc.%s"%lower.scheme
+        assertUriModeIn(uri, mode, "in", "out")
+        loweruri = lower(uri, "tuio")
+        if not loweruri.scheme.startswith("osc."): 
+            loweruri.scheme = "osc.%s"%loweruri.scheme
         if mode=="in":
-            unexpected = list(filter(lambda k: _isPre(k), uri.query.data))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            node = create(lower, "in", **kwargs)
-            node.addPost(encoding.TuioDecoder())
+            device = create(loweruri, "in", logger, parent)
+            node = device + encoding.TuioDecoder(blender=Functor.MERGE)
         elif mode=="out":
-            unexpected = list(filter(lambda k: _isPost(k), uri.query.data))
-            if unexpected: raise ValueError(
-                "Unexpected query keys: %s"%", ".join(unexpected))
-            node = encoding.TuioEncoder(**kwargs)
-            if lower.site.host and lower.site.port==0: lower.site.port = 3333
-            node.addObserver(create(lower, "out", parent=node))
-        elif not mode:
-            raise NotImplementedError()            
-
-    # MT-DEV
+            if loweruri.site.host and loweruri.site.port==0: 
+                loweruri.site.port = 3333
+            encoder = encoding.TuioEncoder()
+            device = create(loweruri, "out")
+            node = encoder + device
+    
+        '''# MT-DEV
     elif uri.scheme=="mtdev":
         if sys.platform == "linux2":
             if mode not in ("", "in"): raise ValueError(
@@ -396,160 +297,155 @@ def create(uri, mode="", logger=None, **kwargs):
     # -------------------------------------------------------------------
     # DATA PROCESSING
     elif uri.scheme=="nop":
-        unexpected = list(filter(lambda k: not _isPost(k) or not _isPre(k), 
-                                 uri.query.data))
-        if unexpected: raise ValueError(
-            "Unexpected query keys: %s"%", ".join(unexpected))
-        node = economy.Identity(**kwargs)
+        assertUriQuery(uri, None)
+        node = Identity()
 
     elif uri.scheme in ("dump", "stat"):
         extended = copy.copy(uri)
         extended.scheme += ".udp" if extended.site \
             else ".file" if extended.path \
             else ".stdout"
-        return create(extended, mode, **kwargs)
+        return create(extended, mode, logger, parent)
 
     elif uri.scheme.startswith("dump."):
+        from boing.nodes import Dump
         assertUriModeIn(uri, mode, "", "out")
-        query = _uriquery(uri, "request", "filter", "src", "dest", "depth")
-        unexpected = list(filter(lambda k: _isPost(k), uri.query.data))
-        if unexpected: raise ValueError(
-            "Unexpected query keys: %s"%", ".join(unexpected))
-        if "filter" not in query: _filter = None
-        else:
-            _filter = Filter(Request(query.pop("filter")))
-            query.setdefault("request", _filter.query())
-        node = Dump(**dict(query, **kwargs))
-        # node.addPost(encoding.TextEncoder(blend=Functor.MERGE))
-        if _filter is not None: node.addPre(_filter)
-        lower = LowerURI(uri, "dump", "filter", *query.keys())
-        node.addObserver(create(lower, "out", parent=node))
+        query = parseQuery(uri, "request", "src", "dest", "depth")
+        dump = Dump(**query)
+        encoder = encoding.TextEncoder(blender=Functor.MERGE)
+        device = create(lower(uri, "dump", query.keys()), 
+                        "out", logger, parent)
+        node = dump + encoder + device
 
     elif uri.scheme.startswith("stat."):
+        from boing.nodes import StatProducer
         assertUriModeIn(uri, mode, "", "out")
-        query = _uriquery(uri, "request", "filter", "hz", "fps")
-        unexpected = list(filter(lambda k: _isPost(k), uri.query.data))
-        if unexpected: raise ValueError(
-            "Unexpected query keys: %s"%", ".join(unexpected))
-        if "filter" not in query: _filter = None
+        query = parseQuery(uri, "request", "filter", "hz", "fps")
+        stat = StatProducer(**query)
+        encoder = encoding.TextEncoder(blender=Functor.MERGE)
+        device = create(lower(uri, "stat", query.keys()), 
+                        "out", logger, parent) 
+        node = stat + encoder + device
+
+    elif uri.scheme=="viz":
+        from boing.nodes.multitouch.ContactViz import ContactViz
+        assertUriModeIn(uri, mode, "", "out")
+        if uri.opaque or uri.path or uri.site or uri.fragment: 
+            raise ValueError("Invalid URI: %s"%uri)
         else:
-            _filter = Filter(Request(query.pop("filter")))
-            query.setdefault("request", _filter.query())
-        node = StatProducer(**dict(query, **kwargs))
-        node.addPost(encoding.TextEncoder(blend=Functor.MERGE))
-        if _filter is not None: node.addPre(_filter)
-        lower = LowerURI(uri, "stat", "filter", *query.keys())
-        node.addObserver(create(lower, "out", parent=node))
-
-            '''elif uri.scheme=="viz":
-        if mode not in ("", "out"): raise ValueError(
-            "Invalid mode for %s: %s"%(uri, mode))
-        elif mode in ("", "out"):
-            if uri.opaque or uri.path or uri.site or uri.fragment: 
-                raise ValueError("Invalid URI: %s"%uri)
-            else:
-                query  = _uriquery(uri, "antialiasing", "fps")
-                unexpected = list(filter(lambda k: not _isPre(k),
-                                         uri.query.data.keys()-query.keys()))
-                if unexpected: raise ValueError(
-                    "Unexpected query keys: %s"%", ".join(unexpected))
-                node = ContactViz(**dict(query, **kwargs))
-
-    elif uri.scheme=="filter" and uri.kind==URL.OPAQUE:
-        kwargs.update(_uriquery(uri, "request", "hz"))
-        node = functions.Filter(uri.opaque, **kwargs)
-
-    elif uri.scheme=="filterout":
-        kwargs.update(_uriquery(uri, "hz"))
-        request = uri.opaque if uri.opaque else "*"
-        node = FilterOut(request, **kwargs)
+            query  = parseQuery(uri, "antialiasing", "fps")
+            assertUriQuery(uri, query)
+            node = ContactViz(**query)
 
     elif uri.scheme=="lag":
-        kwargs.update(_uriquery(uri, "request"))
+        from boing.nodes import Lag
         msec = int(uri.opaque) if uri.opaque else 200
-        node = functions.Lag(msec, **kwargs)
+        node = Lag(msec)
 
     elif uri.scheme=="timekeeper":
-        node = functions.Timekeeper(**kwargs)
+        from boing.nodes import Timekeeper
+        node = Timekeeper()
+
+    elif uri.scheme=="edit":
+        from boing.nodes import Editor
+        query = parseQuery(uri)
+        blender = query.pop("blender") if "blender" in query \
+                         else Functor.MERGECOPY
+        node = Editor(query, blender)
+
+    elif uri.scheme=="filter":
+        from boing.nodes import Filter
+        query = parseQuery(uri, "attr")
+        assertUriQuery(uri, query)
+        uri.opaque = Request(uri.opaque) if uri.opaque else Request.NONE
+        if "attr" in query:
+            uri.opaque += attrToRequest(query["attr"]) + Request("diff.removed")
+        node = Filter(uri.opaque)
 
     elif uri.scheme=="calib":
+        from boing.nodes.multitouch import Calibration
         matrix = None
-        args = _uriquery(uri, "matrix", "screen")
-        if "matrix" in args: 
-            values = tuple(map(float, args.matrix.strip().split(",")))
-            kwargs.matrix = QtGui.QMatrix4x4(*values)
-        elif "screen" in args:
-            if args.screen=="normal": 
-                kwargs.matrix = functions.Calibration.Identity
-            elif args.screen=="left": 
-                kwargs.matrix = functions.Calibration.Left
-            elif args.screen=="inverted": 
-                kwargs.matrix = functions.Calibration.Inverted
-            elif args.screen=="right": 
-                kwargs.matrix = functions.Calibration.Right
-        else: kwargs.matrix = functions.Calibration.Identity
-        kwargs.update(_uriquery(uri, "args", "request", "resultmode"))
-        if "args" not in kwargs:
-            kwargs.template = quickdict()
-            kwargs.args = ""
-            default = "rel_pos|rel_speed|boundingbox.rel_pos"
-            for attr in uri.query.data.get("attr", default).split("|"):
-                if kwargs.args: kwargs.args += "|"
-                kwargs.args += "diff.added,updated.contacts.*." + attr
-                # Add attribute to template
-                for action in ("added", "updated"):                    
-                    item = kwargs.template.diff[action].contacts["*"]
-                    for key in attr.split("."):
-                        if not key: break
-                        else:
-                            item = item[key]
-        node = functions.Calibration(**kwargs)
+        query = parseQuery(uri, "matrix", "screen", "request", 
+                           "merge", "copy", "result", "attr")
+        if "matrix" in query: 
+            query["matrix"] = Calibration.buildMatrix(
+                tuple(map(float, query["matrix"].strip().split(","))))
+        elif "screen" in query:
+            screen = query.pop("screen")
+            query["matrix"] = Calibration.Identity if screen=="normal" \
+                else Calibration.Left if screen=="left" \
+                else Calibration.Inverted if screen=="inverted" \
+                else Calibration.Right if screen=="right" \
+                else Calibration.Identity
+        if "attr" in query:
+            request = attrToRequest(query.pop("attr"))
+            query["request"] = query.get("request", Request.NONE) + request
+        elif "request" not in query:
+            query["request"] = attrToRequest("rel_pos,rel_speed")
+        query.setdefault("blender", Functor.MERGECOPY)
+        node = Calibration(**query)
 
     # -------------------------------------------------------------------
     # LIB FILTERING PORT
     elif uri.scheme=="filtering":
+        from boing.nodes import DiffArgumentFunctor
         import boing.extra.filtering as filtering
-        kwargs.update(_uriquery(uri, "args", "request", "resultmode"))
-        kwargs.setdefault("resultmode", FunctionalNode.MERGECOPY)
+
+        query = parseQuery(uri, "attr", "request", "blender")
+        #kwargs.setdefault("resultmode", FunctionalNode.MERGECOPY)
+        
         uri = uri.query.data.get("uri", "fltr:/moving/mean?winsize=5")
-        kwargs.functorfactory = filtering.getFunctorFactory(uri)
-        if "args" in kwargs:
-            node = functions.ArgumentFunctor(**kwargs)
+        query["functorfactory"] = filtering.getFunctorFactory(uri)
+        if "attr" in query:
+            request = attrToRequest(query.pop("attr"))
+            query["request"] = query.get("request", Request.NONE) + request
+        elif "request" not in query:
+            query["request"] = attrToRequest("rel_pos,rel_speed")
+
+        # if "args" in kwargs:
+        #     node = functions.ArgumentFunctor(**kwargs)
+        # else:
+        #     # Using contact diff as default
+        #     kwargs.template = quickdict()
+        #     kwargs.args = "diff.removed.contacts"       
+        #     for attr in uri.query.data.get("attr", "rel_pos").split("|"):
+        #         kwargs.args += "|diff.added,updated.contacts.*." + attr
+        #         # Add attribute to template
+        #         for action in ("added", "updated"):                    
+        #             item = kwargs.template.diff[action].contacts["*"]
+        #             for key in attr.split("."):
+        #                 if not key: break
+        #                 else:
+        #                     item = item[key]
+        query.setdefault("blender", Functor.MERGECOPY)
+        node = DiffArgumentFunctor(**query)
+
+    # -------------------------------------------------------------------
+    # GRAPHERS
+    elif uri.scheme.startswith("grapher."):
+        assertUriModeIn(uri, mode, "", "out")
+        if ".pydot" in uri.scheme:
+            from boing.extra.pydot import DotGrapherProducer
+            query = parseQuery(uri, "hz", "request", "maxdepth")
+            assertUriQuery(uri, query)
+            grapher = DotGrapherProducer(**query)
+            #encoder = encoding.TextEncoder(blender=Functor.MERGE)
+            #device = create(lower(uri, "grapher", query), mode="out")
+            node = grapher #+ encoder + device
+            node.grapher = grapher
         else:
-            # Using contact diff as default
-            kwargs.template = quickdict()
-            kwargs.args = "diff.removed.contacts"       
-            for attr in uri.query.data.get("attr", "rel_pos").split("|"):
-                kwargs.args += "|diff.added,updated.contacts.*." + attr
-                # Add attribute to template
-                for action in ("added", "updated"):                    
-                    item = kwargs.template.diff[action].contacts["*"]
-                    for key in attr.split("."):
-                        if not key: break
-                        else:
-                            item = item[key]
-            node = functions.DiffArgumentFunctor(**kwargs)
-            '''
+            from boing.nodes import SimpleGrapherProducer
+            query = parseQuery(uri, "hz", "request", "maxdepth")
+            assertUriQuery(uri, query)
+            grapher = SimpleGrapherProducer(**query)
+            encoder = encoding.TextEncoder(blender=Functor.MERGE)
+            device = create(lower(uri, "grapher", query), mode="out")
+            node = grapher + encoder + device
+            node.grapher = grapher
     else:
         raise ValueError("Invalid URI: %s"%uri)
-    '''
-    # -------------------------------------------------------------------
-    # POST & PRE ARGS
-    for key, value in _uriquery(uri).items():
-        # Post
-        if _isPost(key):
-            posturi = URL(value)
-            post = create(posturi)
-            if isinstance(post, FunctionalNode) and "resultmode" not in posturi:
-                post._resultmode = FunctionalNode.FUNCTOR.MERGE
-            node.addPost(post)
-        # Pre
-        if _isPre(key):
-            preuri = URL(value)
-            pre = create(preuri)
-            if isinstance(pre, FunctionalNode) and "resultmode" not in preuri:
-                pre._resultmode = FunctionalNode.FUNCTOR.MERGECOPY
-            node.addPre(pre)'''
+
+    if parent is not None: node.setParent(None)
     return node
 
 # -------------------------------------------------------------------
@@ -563,25 +459,25 @@ class NodeServer(tcp.TcpServer):
         reader = ioport.DataReader(conn, parent=conn)
         reader.addObserver(self.parent())
 
-def _uriquery(uri, *restrictions):
+# -------------------------------------------------------------------
+# URI parsing support
+
+def parseQuery(uri, *restrictions):
     """Return a dict obtained from the uri query data filtered using
     the key list restrictions. If restrictions is empty all the query
     data is preserved. The query data values are converted using the
     function '_kwstr2value'."""
-    rvalue = quickdict()
+    rvalue = {}
     for key, value in uri.query.data.items():
         if not restrictions or key in restrictions:
             if key=="request":
                 rvalue[key] = Request(value)
-            elif key=="resultmode":
-                if value.lower()=="merge":
-                    rvalue[key] = Functor.MERGE
-                elif value.lower()=="copy":
-                    rvalue[key] = Functor.MERGECOPY
-                elif value.lower()=="result":
-                    rvalue[key] = Functor.RESULTONLY
-                else:
-                    raise ValueError("Unexpected mode value: %s"%value)
+            elif key=="merge":
+                rvalue["blender"] = Functor.MERGE
+            elif key=="copy":
+                rvalue["blender"] = Functor.MERGECOPY
+            elif key=="result":
+                rvalue["blender"] = Functor.RESULTONLY
             else:                
                 rvalue[key] = _kwstr2value(uri.query.data[key])
     return rvalue
@@ -600,31 +496,31 @@ def _kwstr2value(string):
             rvalue = string
     return rvalue
 
-def _isPost(key):
-    """Return True if 'key' matches "postN", where N can be an
-    integer or nothing (e.g. post, post1, post2, etc.)."""
-    first, partition, end = key.partition("post")
-    return first=="" and partition=="post" and (end=="" or end.isdecimal())
-
-def _isPre(key):
-    """Return True if 'key' matches "preN", where N can be an
-    integer or nothing (e.g. pre, pre1, pre2, etc.)."""
-    first, partition, end = key.partition("pre")
-    return first=="" and partition=="pre" and (end=="" or end.isdecimal())
-
-def LowerURI(uri, schemecut="", *additional):
-    """Return a copy of 'uri' where:
-        - 'schemecut' is removed from the uri's scheme;
-        - all keys in 'additional' are removed from the uri's query data;
-        - all post* and pre* key-values are removed from the uri's query data;
-    """
+def lower(uri, schemecut="", keys=tuple()):
+    """Return a copy of *uri* where :
+        - *schemecut* is removed from the uri scheme ;
+        - all keys in *keys* are removed from the uri's query data ;"""
     rvalue = URL(str(uri))
+    # Cut scheme
     if schemecut: rvalue.scheme = rvalue.scheme.replace("%s."%schemecut, "", 1)
-    f = lambda k: not (_isPost(k) or _isPre(k) or k in additional)
-    rvalue.query.data = dict((k,v) for k,v in rvalue.query.data.items() if f(k))
+    # Cut query keys
+    f = lambda kw: kw[0] not in keys
+    rvalue.query.data = dict(filter(f, rvalue.query.data.items()))
     return rvalue
 
+# -------------------------------------------------------------------
+# Assert utils
+
+def assertUriQuery(uri, accepted):
+    """Raises ValueError if *uri* contains query keys not in *accepted*."""
+    if not isinstance(uri, URL): uri = URL(uri)
+    unexpected = uri.query.data if accepted is None \
+        else list(filter(lambda k: k not in accepted, uri.query.data))
+    if unexpected: raise ValueError(
+        "Unexpected query keys: %s"%", ".join("'%s'"%k for k in unexpected))
+
 def assertUriModeIn(uri, mode, *valid):
-     if mode not in valid: raise ValueError(
-         "Invalid mode for '%s': '%s' (Try: %s)"%(
-             uri, mode, ", ".join("'%s'"%i for i in valid)))
+    """Raises ValueError if *mode* is not in *valid*."""
+    if mode not in valid: raise ValueError(
+        "Invalid mode for '%s': '%s' (Try: %s)"%(
+            uri, mode, ", ".join("'%s'"%i for i in valid)))

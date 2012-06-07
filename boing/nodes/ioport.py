@@ -9,7 +9,7 @@
 
 from PyQt4 import QtCore
 
-from boing.core import Offer, Request, Product, Producer, Consumer
+from boing import Offer, Request, Product, Producer, Consumer
 from boing.utils import assertIsInstance
 
 class DataReader(Producer):
@@ -40,13 +40,13 @@ class DataReader(Producer):
         return self.__input
 
 
-class _BaseDataWriter(Consumer):
+class DataWriter(Consumer):
     """It takes an output device and anytime it receives some data from
     a Producer, it writes that data into the output device."""
-    def __init__(self, outputdevice, writeend, hz=None):
+    def __init__(self, outputdevice, writeend=True, hz=None, parent=None):
         self._textmode = outputdevice.isTextModeEnabled()
         super().__init__(request=Request("str" if self._textmode else "data"),
-                         hz=hz)
+                         hz=hz, parent=parent)
         self.__output = outputdevice
         self.writeend = assertIsInstance(writeend, bool)
     
@@ -62,13 +62,6 @@ class _BaseDataWriter(Consumer):
 
     def outputDevice(self):
         return self.__output
-
-
-class DataWriter(_BaseDataWriter, QtCore.QObject):
-    
-    def __init__(self, outputdevice, writeend=True, hz=None, parent=None):
-        QtCore.QObject.__init__(self, parent)
-        _BaseDataWriter.__init__(self, outputdevice, writeend, hz)
 
 
 '''class DataIO(DataReader, _BaseDataWriter):

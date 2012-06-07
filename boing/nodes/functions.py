@@ -6,7 +6,7 @@
 #
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
-
+'''
 import collections
 import copy
 import datetime
@@ -30,33 +30,6 @@ class ArgumentFunction(FunctionalNode):
     def _function(self, *args, **kwargs):
         self.__argfunction(*args, **kwargs)
 
-# -------------------------------------------------------------------
-
-class Lag(Node):
-    """Add a lag to the product pipeline."""
-    def __init__(self, msec, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.lag = msec
-        self.__buffer = collections.deque()
-
-    def __timeout(self):
-        self._postProduct(self.__buffer.popleft())
-        
-    def _consume(self, products, producer):
-        for p in products:
-            self.__buffer.append(p)
-            QtCore.QTimer.singleShot(self.lag, self.__timeout)
-
-
-class Timekeeper(FunctionalNode):
-    """Add to each product the timestamp at the time the product is
-    received as the item with keyword "timetag".""" 
-    def __init__(self, hz=None, parent=None):
-        super().__init__(None, "timetag", {"timetag": datetime.datetime.now()},
-                         request=Node.TRANSPARENT, hz=hz, parent=parent)
-  
-    def _function(self, paths, values):
-        yield datetime.datetime.now()
 
 # -------------------------------------------------------------------
 
@@ -146,36 +119,4 @@ class DiffArgumentFunctor(FunctionalNode):
 
 # -------------------------------------------------------------------
 
-class Calibration(FunctionalNode):
-    """Apply a 4x4 transformation matrix to each target value."""
-
-    Identity = QtGui.QMatrix4x4()
-    Right = QtGui.QMatrix4x4(0.0,-1.0, 0.0, 1.0, 
-                             1.0, 0.0, 0.0, 0.0, 
-                             0.0, 0.0, 1.0, 0.0,
-                             0.0, 0.0, 0.0, 1.0)
-    Inverted = QtGui.QMatrix4x4(-1.0, 0.0, 0.0, 1.0, 
-                                 0.0,-1.0, 0.0, 1.0, 
-                                 0.0, 0.0, 1.0, 0.0,
-                                 0.0, 0.0, 0.0, 1.0)
-    Left = QtGui.QMatrix4x4( 0.0, 1.0, 0.0, 0.0, 
-                            -1.0, 0.0, 0.0, 1.0, 
-                             0.0, 0.0, 1.0, 0.0,
-                             0.0, 0.0, 0.0, 1.0)
-
-    def __init__(self, matrix, *args, **kwargs):
-        FunctionalNode.__init__(self, *args, **kwargs)
-        self._matrix = matrix
-
-    def _function(self, paths, values):
-        for value in values:
-            if len(value)==2:
-                point = self._matrix*QtGui.QVector4D(value[0], value[1], 0, 1)
-                yield [point.x(), point.y()]
-            elif len(value)==3:
-                point = self._matrix*QtGui.QVector4D(value[0], value[1], value[2], 1)
-                yield [point.x(), point.y(), point.z()]
-            elif len(value)==4:
-                point = self._matrix*QtGui.QVector4D(*value)
-                yield [point.x(), point.y(), point.z(), point.w()]
-
+'''

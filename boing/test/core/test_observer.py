@@ -14,26 +14,26 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing.core.observer import StandardObservable, SelectiveObservable, Observer
+from boing.core.observer import Observable, Observer
 from boing.test import QtBasedTest
 
 def testReact(observer, observable):
     observer.hit = 0 if not hasattr(observer, "hit") else observer.hit + 1
 
-class TestConcreteObservable(QtBasedTest):
+class TestObservable(QtBasedTest):
 
     def test_creation(self):
-        obs = self.classobj()  
+        obs = Observable()  
         ref = weakref.ref(obs)
         del obs
         self.assertIsNone(ref())
         
     def test_addObservers(self):
-        observable = self.classobj()
+        observable = Observable()
         ref = weakref.ref(observable)
         self.assertRaises(TypeError, observable.addObserver, None)
         self.assertRaises(TypeError, observable.addObserver, "wrong")
-        self.assertRaises(TypeError, observable.addObserver, self.classobj())
+        self.assertRaises(TypeError, observable.addObserver, Observable())
         obs1 = Observer()
         ref1 = weakref.ref(obs1)
         self.assertTrue(observable.addObserver(obs1))
@@ -44,12 +44,25 @@ class TestConcreteObservable(QtBasedTest):
         self.assertIsNone(ref1())
         del observable
         self.assertIsNone(ref())
+        observable = Observable()
+        ref = weakref.ref(observable)
+        obs1 = Observer()
+        ref1 = weakref.ref(obs1)
+        self.assertTrue(observable.addObserver(obs1))
+        self.assertFalse(observable.addObserver(obs1))
+        obs2 = Observer()
+        self.assertTrue(observable.addObserver(obs2))
+        del obs1
+        self.assertIsNone(ref1())
+        del observable
+        self.assertIsNone(ref())
+
     
     def test_removeObserver(self):
-        observable = self.classobj()
+        observable = Observable()
         self.assertFalse(observable.removeObserver(None))
         self.assertFalse(observable.removeObserver("wrong"))
-        self.assertFalse(observable.removeObserver(self.classobj()))
+        self.assertFalse(observable.removeObserver(Observable()))
         obs1 = Observer()
         observable.addObserver(obs1)
         obs2 = Observer()
@@ -59,7 +72,7 @@ class TestConcreteObservable(QtBasedTest):
         self.assertTrue(observable.removeObserver(obs2))
         
     def test_observers(self):
-        observable = self.classobj()
+        observable = Observable()
         self.assertEqual(set(observable.observers()), set())
         obs1 = Observer()
         observable.addObserver(obs1)
@@ -73,7 +86,7 @@ class TestConcreteObservable(QtBasedTest):
         self.assertEqual(set(observable.observers()), set())
 
     def test_clear(self):
-        observable = self.classobj()
+        observable = Observable()
         observable.clear()
         obs1 = Observer()
         observable.addObserver(obs1)
@@ -86,7 +99,7 @@ class TestConcreteObservable(QtBasedTest):
         # Init observables
         observables = []
         for i, period in enumerate((100,150,200)):
-            observables.append(StandardObservable())
+            observables.append(Observable())
             tid = QtCore.QTimer(observables[i], timeout=observables[i].notify)
             tid.start(period)
         del i, period
@@ -124,35 +137,6 @@ class TestConcreteObservable(QtBasedTest):
     def test_trigger_queued(self):
         self.trigger_test(QtCore.Qt.QueuedConnection)
 
-    
-class TestStandardObservable(TestConcreteObservable):
-
-    def setUp(self):
-        super().setUp()
-        self.classobj = StandardObservable
-
-
-class TestSelectiveObservable(TestConcreteObservable):
-
-    def setUp(self):
-        super().setUp()
-        self.classobj = SelectiveObservable
-
-    def test_addObservers(self):
-        super().test_addObservers()
-        observable = SelectiveObservable()
-        ref = weakref.ref(observable)
-        obs1 = Observer()
-        ref1 = weakref.ref(obs1)
-        self.assertTrue(observable.addObserver(obs1))
-        self.assertFalse(observable.addObserver(obs1))
-        obs2 = Observer()
-        self.assertTrue(observable.addObserver(obs2))
-        del obs1
-        self.assertIsNone(ref1())
-        del observable
-        self.assertIsNone(ref())
-
     def trigger_observer_test(self, mode):
         # Values are set to that:
         #
@@ -176,7 +160,7 @@ class TestSelectiveObservable(TestConcreteObservable):
         def trigger(obs):
             obs.notify(*list(itertools.compress(observers, selection)))
         for i, period in enumerate((100,150,200)):
-            observables.append(SelectiveObservable())
+            observables.append(Observable())
             tid = QtCore.QTimer(parent=observables[i], 
                                 timeout=lambda : trigger(observables[i]))
             tid.start(period)
@@ -210,8 +194,7 @@ class TestSelectiveObservable(TestConcreteObservable):
 
 class TestObserver(QtBasedTest):
 
-    concreteObservables = (StandardObservable, 
-                           SelectiveObservable)
+    concreteObservables = (Observable, )
 
     def test_creation_empty(self):
         obs = Observer()
@@ -315,8 +298,7 @@ class TestObserver(QtBasedTest):
 
 def suite():    
     testcases = (
-        TestStandardObservable,
-        TestSelectiveObservable,
+        TestObservable,
         TestObserver,
         )
     return unittest.TestSuite(itertools.chain(

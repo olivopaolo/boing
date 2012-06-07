@@ -8,6 +8,7 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import base64
+import logging
 import json as _json
 import datetime
 import struct
@@ -24,7 +25,11 @@ class _ProductEncoder(_json.JSONEncoder):
             pack = struct.pack("d", ntp.datetime2ntp(obj))
             serializable = {"__ntp__": base64.b64encode(pack).decode()}
         else:
-            serializable = _json.JSONEncoder.default(self, obj)
+            try:
+                serializable = _json.JSONEncoder.default(self, obj)
+            except TypeError as e:
+                logger = logging.getLogger("boing.net.json._ProductEncoder")
+                logger.warning(str(e))
         return serializable
 
 def _productHook(dct):

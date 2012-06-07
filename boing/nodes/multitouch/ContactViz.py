@@ -7,9 +7,6 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-import sys
-
-
 import copy
 import datetime
 import math
@@ -17,13 +14,13 @@ import weakref
 
 from PyQt4 import QtCore, QtGui
 
-from boing.core.MappingEconomy import Node
+from boing import Request, Consumer
 from boing.core.StateMachine import StateMachine
 from boing.utils import quickdict, deepDump
 
 #import uiVizConfig
 
-class ContactViz(Node):
+class ContactViz(Consumer):
 
     '''"""Gestures' position is fit to the widget size"""
     WINSIZE = 1
@@ -33,7 +30,8 @@ class ContactViz(Node):
     SISIZE = 3'''
             
     def __init__(self, antialiasing=False, fps=60, parent=None):
-        Node.__init__(self, request="diff.*.contacts|source", hz=fps, parent=parent)
+        super().__init__(request=Request("diff.*.contacts|source"), 
+                       hz=fps, parent=parent)
         self._sources = {}
         self.__gui = ContactWidget(weakref.proxy(self), antialiasing)
         self.__gui.show()
