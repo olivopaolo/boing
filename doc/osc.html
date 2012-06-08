@@ -21,10 +21,10 @@ at <a href="http://opensoundcontrol.org/">http://opensoundcontrol.org/</a></p>
 <pre>boing -i osc.tcp://:7777 -o log:///tmp/log</pre>
 
 <p>Replay an OSC log to an UDP socket:</p>
-<pre>boing -i play:///tmp/log -o osc://[::1]:7777</pre>
+<pre>boing -i log:///tmp/log -o osc://[::1]:7777</pre>
 
 <p>Replay an OSC log (at double speed and loop enabled) to a TCP socket:</p>
-<pre>boing -i "osc:///tmp/log?speed=2&amp;loop" -o osc.tcp://[::1]:7777</pre>
+<pre>boing -i "log:///tmp/log?speed=2&amp;loop" -o osc.tcp://[::1]:7777</pre>
 
 <!--<p>Print the raw content of an OSC log:</p>
 <pre>boing -i osc.slip.file:///tmp/log.osc.bz2</pre>

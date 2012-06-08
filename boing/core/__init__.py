@@ -7,7 +7,6 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-
 from boing.core import economy
 from boing.utils import quickdict
 

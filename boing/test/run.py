@@ -18,8 +18,8 @@ def additional_tests(modules=[]):
         tests += test_observer.suite()
         tests += test_economy.suite()
     if not modules or 'net' in modules:
-        from boing.test.net import test_dns_sd
-        tests += test_dns_sd.suite()
+        #from boing.test.net import test_dns_sd
+        #tests += test_dns_sd.suite()
         from boing.test.net import test_json
         tests += test_json.suite()
         from boing.test.net import test_osc
@@ -34,10 +34,11 @@ def additional_tests(modules=[]):
         from boing.test.nodes import test_loader
         tests += test_loader.suite()
     if not modules or 'utils' in modules:
-        from boing.test.utils import test_QPath, test_display, test__init__
+        from boing.test.utils import test_QPath, test__init__
         tests += test__init__.suite()
         tests += test_QPath.suite()
-        tests += test_display.suite()
+        #from boing.test.utils import test_display
+        #tests += test_display.suite()
 
     return unittest.TestSuite(tests)
 

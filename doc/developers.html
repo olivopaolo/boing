@@ -26,11 +26,10 @@ import boing
 app = PyQt4.QtGui.QApplication(sys.argv)
 
 # Create nodes
-n1 = boing.create("in:bridge:")
+n1 = boing.create("in:tuio:")
 n2 = boing.create("viz:")
 
-# Link nodes
-n2.subscribeTo(n1)
+graph = n1 + n2
 
 # Run
 sys.exit(app.exec_())

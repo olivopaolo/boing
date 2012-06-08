@@ -321,7 +321,7 @@ def create(uri, mode="", logger=None, parent=None):
     elif uri.scheme.startswith("stat."):
         from boing.nodes import StatProducer
         assertUriModeIn(uri, mode, "", "out")
-        query = parseQuery(uri, "request", "filter", "hz", "fps")
+        query = parseQuery(uri, "request", "filter", "fps")
         stat = StatProducer(**query) # blender is fixed to  RESULTONLY
         encoder = encoding.TextEncoder(blender=Functor.MERGE)
         device = create(lower(uri, "stat", query.keys()), "out", logger) 
@@ -406,7 +406,7 @@ def create(uri, mode="", logger=None, parent=None):
     # GRAPHERS
     elif uri.scheme.startswith("grapher."):
         assertUriModeIn(uri, mode, "", "out")
-        if ".pydot" in uri.scheme:
+        if False: #".pydot" in uri.scheme:
             from boing.extra.pydot import DotGrapherProducer
             query = parseQuery(uri, "hz", "request", "maxdepth")
             assertUriQuery(uri, query)

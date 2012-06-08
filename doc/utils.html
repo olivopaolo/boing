@@ -12,33 +12,23 @@
 <h2>Examples:</h2>
 
 <p>Dump to console all the available products received from the inputs:</p>
-<pre>boing -i bridge: -o dump:</pre>
+<pre>boing -i stdin: -o dump:</pre>
 
-<p>Dump requested<sup>1</sup> products to a TCP socket:</p>
-<pre>boing -i bridge: -o dump.tcp://[::1]:7777?request=data</pre>
+<p>Dump requested products to a TCP socket:</p>
+<pre>boing -i stdin: -o dump.tcp://[::1]:7777</pre>
 
 <p>Dump only the products that match a query filter:</p>
-<pre>boing -i bridge: -o dump:?filter=str</pre>
+<pre>boing -i stdin: -o dump:?request=str</pre>
 
 <p>Print statistics (i.e. lag, frequence, sum, tags, etc.) of the products from two sources:</p>
 <pre>boing -i udp://:0 tcp://:0  -o stat:</pre>
 
 <p>Record to file the incoming events:</p>
-<pre>boing -i bridge: -o log:///tmp/log.bz2</pre>
+<pre>boing -i udp://:0 -o log:///tmp/log</pre>
 
 <p>Replay a log file a forward it to a socket:</p>
-<pre>boing -i play:///tmp/log.bz2 -o udp://[::1]:7777</pre>
-
-<p>Add a lag (1000 ms) to product stream:</p>
-<pre>boing -i bridge:?post=lag:1000 -o bridge:</pre>
-
-
-<p><sup>1</sup>The request of a node defines what the node requires to
-its inputs to produce; it does not means that the only products a
-node will receive are the requested ones. For example if a product is
-a necessary step to made the requested product, then also the
-intermediate product will be normally dispatched. Filtering can be
-used to exclude unwanted products.</p>
+<pre>boing -i log:///tmp/log -o stdout:</pre>
 
 <p><a href="users.html">&lt;&lt; back</a></p>
+
 </body></html>

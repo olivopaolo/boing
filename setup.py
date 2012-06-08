@@ -22,4 +22,5 @@ setup(
 On demand producer-consumer architecture for connecting different
 sources (e.g. devices, sockets, files, etc.) to different outputs, while
 applying flexible data processing.""",
-    license = "GPLv2", )
+    license = "GPLv2", 
+)

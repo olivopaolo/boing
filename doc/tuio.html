@@ -28,8 +28,9 @@
 socket and show it locally (antialised at 30 fps):</p>
 <pre>boing -i "log:///tmp/log?speed=2&amp;loop" -o tuio://[::1]:7777 "viz:?antialiasing&fps=30"</pre>
 
+<!--
 <p>Convert mtdev events to TUIO and send them through a socket (administrator privileges may be required to read from device node):</p>
-<pre>boing -i mtdev:///dev/input/event5 -o tuio://[::1]</pre>
+<pre>boing -i mtdev:///dev/input/event5 -o tuio://[::1]</pre>-->
 
 <p>Merge two TUIO streams into a single TUIO stream, then show and record it:</p>
 <pre>boing -i tuio://:3334 tuio://:3335 -o viz: log:///tmp/log</pre>

@@ -40,13 +40,13 @@
       <!-- 	<td>&nbsp;</td> -->
       <!-- 	<td>&nbsp;</td> -->
       <!-- </tr> -->
-      <tr>
-	<td><ossupport>OLW</ossupport></td>
-	<td><ossupport>IO</ossupport></td>
-	<td><url>&lt;in|out&gt;:bridge:[//&lt;HOST&gt;:&lt;PORT&gt;]</url></td>
-	<td>&nbsp;</td>
-	<td>Listen/Forward data on the default bridge
-	  (i.e. <url>json.udp://:7898</url>)<a href="#3"><sup>3</sup></a></td></tr>
+      <!-- <tr> -->
+      <!-- 	<td><ossupport>OLW</ossupport></td> -->
+      <!-- 	<td><ossupport>IO</ossupport></td> -->
+      <!-- 	<td><url>&lt;in|out&gt;:bridge:[//&lt;HOST&gt;:&lt;PORT&gt;]</url></td> -->
+      <!-- 	<td>&nbsp;</td> -->
+      <!-- 	<td>Listen/Forward data on the default bridge -->
+      <!-- 	  (i.e. <url>json.udp://:7898</url>)<a href="#3"><sup>3</sup></a></td></tr> -->
       <tr>
 	<td><ossupport>OLW</ossupport></td>
 	<td><ossupport>IO</ossupport></td>
@@ -57,7 +57,7 @@
       <tr>
 	<td><ossupport>OLW</ossupport></td>
 	<td><ossupport>I</ossupport></td>
-	<td><url><!--&lt;in|out&gt;:-->play[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
+	<td><url><!--&lt;in|out&gt;:-->log[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
 	<td><url>loop, speed, interval</url></td>
 	<td>Replay data from log file (default <url>json</url>)</td></tr>
       <tr>
@@ -79,13 +79,13 @@
 	<td><ossupport>OLW</ossupport></td>
 	<td><ossupport>O</ossupport></td>
 	<td><url>dump&lt;&lt;OUTPUT-DEVICE&gt;|:&gt;</url></td>
-	<td><url>request, filter, src, dest, depth</url></td>
+	<td><url>request, src, dest, depth</url></td>
 	<td>Dump products to an output device (default stdout:)</td></tr>
       <tr>
 	<td><ossupport>OLW</ossupport></td>
 	<td><ossupport>O</ossupport></td>
 	<td><url>stat&lt;&lt;OUTPUT-DEVICE&gt;|:&gt;</url></td>
-	<td><url>request, filter, hz</url></td>
+	<td><url>request, fps</url></td>
 	<td>Print products statistics to an output device (default stdout)</td></tr>
       <tr>
 	<td><ossupport>OLW</ossupport></td>
@@ -99,12 +99,12 @@
 	<td><url>filter:[&lt;QUERY&gt;]</url></td>
 	<td>&nbsp;</td>
 	<td>Discard the products that do not match 'query'</td></tr>
-      <tr>
-	<td><ossupport>OLW</ossupport></td>
-	<td><ossupport>F</ossupport></td>
-	<td><url>filterout:[&lt;QUERY&gt;]</url></td>
-	<td>&nbsp;</td>
-	<td>Discard the products that match 'query'</td></tr>
+      <!-- <tr> -->
+      <!-- 	<td><ossupport>OLW</ossupport></td> -->
+      <!-- 	<td><ossupport>F</ossupport></td> -->
+      <!-- 	<td><url>filterout:[&lt;QUERY&gt;]</url></td> -->
+      <!-- 	<td>&nbsp;</td> -->
+      <!-- 	<td>Discard the products that match 'query'</td></tr> -->
       <tr>
 	<td><ossupport>OLW</ossupport></td>
 	<td><ossupport>F</ossupport></td>
@@ -121,13 +121,13 @@
 	<td><ossupport>OLW</ossupport></td>
 	<td><ossupport>F</ossupport></td>
 	<td><url>calib:</url></td>
-	<td><url>matrix, screen, attr, args,<br>request, resultmode</url></td>
+	<td><url>matrix, screen, attr, request</url></td>
 	<td>Apply a 4x4 transformation matrix</td></tr>
       <tr>
 	<td><ossupport>OLW</ossupport></td>
 	<td><ossupport>F</ossupport></td>
 	<td><url>filtering:</url></td>
-	<td><url>uri, attr, args,<br>request, resultmode</url></td>
+	<td><url>uri, attr, request</url></td>
 	<td>Filter product data using <code>filtering</code> library</td></tr>
       <!-- IO devices -->
       <tr><th colspan="3">IO devices</th></tr>
@@ -204,7 +204,7 @@
 	<td><ossupport>OLW</ossupport></td>
 	<td><ossupport>O</ossupport></td>
 	<td><url>json</url></td>
-	<td><url>request, filter, noslip</url></td>
+	<td><url>request, noslip</url></td>
 	<td>Products to <a href="http://www.json.org/">JSON</a></td></tr>
       <tr>
 	<td><ossupport>OLW</ossupport></td>
@@ -218,13 +218,13 @@
 	<td><url>tuio[.osc]</url></td>
 	<td>&nbsp;</td>
 	<td>Multi-touch events from/to <a href="http://www.tuio.org/">TUIO</a></td></tr>
-      <tr>
-	<td><ossupport>L</ossupport></td>
-	<td><ossupport>I</ossupport></td>
-	<td><url>mtdev</url></td>
-	<td>&nbsp;</td>
-	<td>Multi-touch events from <code>mtdev</code>
-	  device<a href="#6"><sup>6</sup></a></td></tr>
+      <!-- <tr> -->
+      <!-- 	<td><ossupport>L</ossupport></td> -->
+      <!-- 	<td><ossupport>I</ossupport></td> -->
+      <!-- 	<td><url>mtdev</url></td> -->
+      <!-- 	<td>&nbsp;</td> -->
+      <!-- 	<td>Multi-touch events from <code>mtdev</code> -->
+      <!-- 	  device<a href="#6"><sup>6</sup></a></td></tr> -->
     </table>
     <br>
 
@@ -284,12 +284,7 @@
       components. As an example, the uri <url>out:bridge:</url> is by
       default translated to <url>out:json.udp://[::1]:7898</url>, so it
       owns the query keys of the json encoder (request, filter) and of
-      the udp socket node (writeend). Moreover, all input nodes also
-      have the query
-      keys <url>pre</url>, <url>pre1</url>, <url>pre2...</url> and
-      all output nodes also have the query
-      keys <url>post</url>, <url>post1</url>, <url>post2...</url> All
-      function nodes have both of them.</p>
+      the udp socket node (writeend). 
 
     <p><a name="3"><sup>3</sup><i>in:</i> and <i>out:</i> prefixes can
 	be omitted when using <code>boing</code> command line
@@ -301,8 +296,8 @@
 
     <p><a name="5"><sup>5</sup></a>It cannot be used to form composed URLs.</p>
 
-    <p><a name="6"><sup>6</sup></a><code>mtdev</code> decoding only
-      works on linux device files (e.g. <url>/dev/input/event6</url>).</p>
+    <!-- <p><a name="6"><sup>6</sup></a><code>mtdev</code> decoding only -->
+    <!--   works on linux device files (e.g. <url>/dev/input/event6</url>).</p> -->
 
     <p><a href="index.html">&lt;&lt; home</a></p>
   </body>

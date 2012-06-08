@@ -1,0 +1,60 @@
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="style.css">
+<title>Boing on Ubuntu 12.04</title>
+</head>
+
+<body>
+<div class="title">Boing on Ubuntu 12.04</div>
+
+<!-- -------------------------------------------------------------- -->
+<h1>Ubuntu packages</h1>
+
+<p>Boing is developed in Python 3.2 and it requires the PyQt bindings
+to work. It is possible to get both of them from the standard
+repositories by typing in a terminal:
+<pre>$ sudo apt-get install python3-pyqt4 python3-setuptools</pre>
+<!-- removed  libavahi-compat-libdnssd-dev libmtdev-dev -->
+
+<!-- -------------------------------------------------------------- -->
+<h1>Boing</h1>
+
+<p>In order to complete the installation, open a terminal and
+  type:</p>
+
+<pre>
+ $ cd &lt;BOING-DIRECTORY&gt;
+ $ sudo python3 setup.py install</pre>
+
+
+<!-- -------------------------------------------------------------- -->
+<h2>Ubuntu releases:</h2>
+<p>
+  - <a href="ubuntu-natty-narwhal.html">Ubuntu 11.04</a> (Natty Narwhal)
+</p>
+
+<!-- --------------------------------------------------------------
+<h2>Usage notes</h2>
+
+<p>Boing's <code>dns_sd</code> code uses the <code>libdns_sd</code>
+  library, which in Ubuntu is provided by the Avahi Apple Bonjour
+  compatibility library. In order to use the <code>dns_sd</code>
+  functionalities provided by such library, the <code>Avahi
+  daemon</code> must be running.</p>
+
+<pre>
+ $ sudo avahi-daemon -D</pre>
+
+<p>WARNING! Avahi services cannot be found on
+the <code>loopback</code> interface; for this reason when working
+offline, it is necessary to set the IP address of the Ethernet or the
+Wireless interface to a dummy address. To achive this, for example
+type in a terminal:
+<pre>
+  $ sudo ifconfig eth0 192.168.0.1</pre> -->
+
+<p><a href="index.html">&lt;&lt; home</a></p>
+</body></html>
+
+
+
