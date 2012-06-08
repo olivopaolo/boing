@@ -4,9 +4,11 @@ syntax: glob
 *~
 *.o
 *.pyc
+*.osc.bz2
 
 boing.egg-info
 
 xtra*
 
 #syntax: regexp
+

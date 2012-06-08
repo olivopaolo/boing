@@ -65,8 +65,9 @@ class SlipEncoder(Functor):
 
 
 class SlipDecoder(Functor):
-
     def __init__(self, parent=None):
+        # It is forced to be use a RESULTONLY blender because for each
+        # received product, it may produce multiple products.
         super().__init__(Request("data"), Offer(Product(data=bytearray())),
                          Functor.RESULTONLY, parent=parent)
         self._slipbuffer = None
@@ -379,14 +380,15 @@ class TuioEncoder(Functor):
                          hz=hz, parent=parent)
         # self._tuiostate[observable-ref][source][profile] = [fseq, {s_id: TuioDescriptor}]
         self._tuiostate = {}
+        self.observableRemoved.connect(self.__removeRecord)
+
     
     def _checkRefs(self):
         super()._checkRefs()
         self._tuiostate = dict(((k,v) for k,v in self._tuiostate.items() \
                                     if k() is not None))
 
-    def _removeObservable(self, observable):
-        super()._removeObservable(observable)
+    def __removeRecord(self, observable):
         for ref in self._tuiostate.keys():
             if ref() is observable:
                 del self._tuiostate[ref] ; break

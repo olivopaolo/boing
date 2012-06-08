@@ -7,6 +7,41 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+"""
+The economy module provides classes that implement the producer-consumer
+problem. 
+
+The Producer and Consumer classes are build over the Observer design
+pattern of the module boing.core.observer: the Producer is an
+Observable object enabled to post products; a consumer is an Observer
+object that can subscribe itself to many producers. When a producer has a
+new product, it triggers the registered consumers; the triggered
+consumers will immediately or at regular time interval demand
+the producer the new products. 
+
+A producer can be registered to multiple consumers. Each product is
+shared within different consumers, therefore a consumer SHOULD NOT
+modify any received product, unless it is supposed to be the only
+consumer.
+
+Consumers have a request. Each time a producer has a new product, for
+each registered consumer, it check if the consumer's request matches
+the current product and only in such case it triggers the consumer.
+
+A consumer's request must be an instance of the class Request. The
+requests "any product" and "no product" are available. The class
+Request implements the Composite design pattern.
+
+Producers have an offer, which is a list of product templates. A
+producer, using its own offer, can say if it can meet a consumer's
+request. 
+
+The Worker inherits both the Producer and Consumer classes and it is
+used as base class for defining processing nodes. By connecting
+producers, workers and consumers it is possible to create processing
+pipelines.
+"""
+
 import abc
 import collections
 import copy
@@ -20,13 +55,6 @@ from boing.utils import assertIsInstance
 
 # -------------------------------------------------------------------
 # Offer
-
-class Product: pass
-
-class _UndefinedProduct(Product):
-    def __repr__(self):
-        return "Product.UNDEFINED"
-Product.UNDEFINED = _UndefinedProduct()
 
 class Offer(tuple):
     
@@ -58,6 +86,12 @@ class Offer(tuple):
 
     def __radd__(self, other):
         return self if other is None else NotImplemented
+
+class UndefinedProduct:
+    """UndefinedProduct instances can be used to define a producer's
+    offer, when the real offer cannot be defined a priori. This avoids
+    to have empty offers, when they cannot be predeterminated."""
+    def __repr__(self): return "Product.UNDEFINED"
 
 # -------------------------------------------------------------------
 # Request
@@ -626,6 +660,12 @@ class _PropagatingConsumer(Consumer):
 # Worker
 
 class Worker:
+    """Workers can normally propagate requests and offers, i.e. the
+    requests of all the connected consumers are summed to the worker's
+    own request to form its real request and the offers of all
+    the connected producers are summed to the worker's own offer to
+    form its real offer.    
+    """
     pass
 
 class _PropagatingWorker(Worker, _PropagatingProducer, _PropagatingConsumer):

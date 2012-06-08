@@ -8,7 +8,12 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 """
-This module contains classes implementing the Observer design pattern.
+The observer module provides an implementation of the Observer design
+pattern.
+
+Beyond the standard behaviour, this implementation enables the
+Observable objects to trigger only a subset of all the current
+registered Observer objects.
 """
 
 import collections
@@ -22,21 +27,34 @@ from boing.core.graph import Node
 from boing.utils import assertIsInstance
 
 class Observable(QtCore.QObject, Node):
+    """    
+    An Observable can be subscribed by a list of Observer objects;
+    then the observable can trigger all or a subset of the subscribed
+    observers by invoking its method named *trigger*.
 
+    An Observable does not own the subscribed observers, since weak
+    references are used.
+    """
+    
     # FIXME: Add unittest for these signals
     observerAdded = QtCore.pyqtSignal(QtCore.QObject)
+    """Signal emitted when a new observer is added."""
+
     observerRemoved = QtCore.pyqtSignal(QtCore.QObject)
+    """Signal emitted when a registered observer is removed."""
 
     class _ObserverRecord(QtCore.QObject):
-
         trigger = QtCore.pyqtSignal(QtCore.QObject)
-
         def __init__(self, observer, mode):
             super().__init__()
             self.trigger.connect(observer._reactSlot, mode)
 
-
     def __init__(self, parent=None):
+        """
+        Constructor.
+        
+        *parent* defines the observable's parent.
+        """
         QtCore.QObject.__init__(self, parent)
         Node.__init__(self)
         self.__observers = dict()
@@ -59,13 +77,14 @@ class Observable(QtCore.QObject, Node):
         return (ref() for ref in self.__observers.keys())
 
     def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection, child=False):
-        """Subscribe a new *observer*; return true if *observer* has been
-        correctly added, false otherwise."""
+        """Subscribe *observer* as a new observer. Return whether
+        *observer* has been correctly added. If *child* is true, the
+        observer is set to be child of the current observable."""
         assertIsInstance(observer, Observer)
         if observer in self.observers(): 
             rvalue = False
         else:
-            observer._addObservable(self)
+            observer._Observer__addObservable(self)
             self.__observers[weakref.ref(observer)] = \
                 Observable._ObserverRecord(observer, mode)
             if child: observer.setParent(self)
@@ -74,14 +93,15 @@ class Observable(QtCore.QObject, Node):
         return rvalue
 
     def removeObserver(self, observer):
-        """Unsubscribe *observer*; return true if *observer* has been
-        correcty found and removed, false otherwise."""
+        """Unsubscribe *observer*. Return whether *observer* has been
+        correctly removed."""
         ref = self._getRef(observer)
         if ref is None: rvalue = False
         else:
             record = self.__observers.pop(ref)
             record.trigger.disconnect(observer._reactSlot)
-            observer._removeObservable(self)
+            observer._Observer__removeObservable(self)
+            if observer.parent() is self: observer.setParent(None)
             self.observerRemoved.emit(observer)
             rvalue = True
         return rvalue
@@ -92,7 +112,9 @@ class Observable(QtCore.QObject, Node):
             self.removeObserver(observer)
 
     def notify(self, *restrictions):
-        """Activate the trigger."""
+        """Trigger all the subscribed observers if *restrictions* is
+        empty, otherwise trigger only the registered observers in
+        restrictions."""
         records = self.__observers.values() if not restrictions \
             else (record for ref, record in self.__observers.items() \
                       if ref() in restrictions)
@@ -145,6 +167,19 @@ class Observable(QtCore.QObject, Node):
 # -------------------------------------------------------------------
 
 class Observer(QtCore.QObject, Node):
+    """    
+    An observer can subscribe itself to many observables in order to listen
+    to their notifications.
+
+    The method *_react* is invoked as consequence of an observable notification.
+
+    It is possible to configure the Observer to immediately react to
+    the observer notification, or to enqueue the triggered
+    observables and to react at regular time interval.
+    
+    An Observer does not own the observables it is subscribed to,
+    since weak references are used.
+    """
 
     # FIXME: Add unittest for these signals
     class _InternalQObject(QtCore.QObject):
@@ -153,16 +188,31 @@ class Observer(QtCore.QObject, Node):
 
     @property
     def observableAdded(self):
+        """Signal emitted when the observer is subscribed to a new
+        observable."""
         return self.__internal.observableAdded
 
     @property
     def observableRemoved(self):
+        """Signal emitted when the observer is unsubscribed from an
+        observable."""
         return self.__internal.observableRemoved
 
     def __init__(self, react=None, hz=None, parent=None):        
-        """FIXME: 'hz' defines the refresh frequency; if is is None, refresh is
-        immediately done at react time, so that the DelayedReactive actually
-        works the same as a ReactiveObject."""
+        """
+        Constructor.
+        
+        *react* can be a callable object to be used as a handler to the
+         observer notifications (see *_react* for handler arguments).
+
+        *hz* defines when the observer should react to the observers'
+         notifications. Accepted values:
+          - None   : immediately ;
+          - 0      : never ;
+          - float  : at the selected frequency (in hz).
+
+        *parent* defines the observer's parent.
+        """
         if not sip.ispycreated(self): 
             QtCore.QObject.__init__(self, parent)
             Node.__init__(self)
@@ -188,17 +238,16 @@ class Observer(QtCore.QObject, Node):
 
     def subscribeTo(self, observable, mode=QtCore.Qt.QueuedConnection,
                     child=False):
-        """Subscribe to *observable* in order to react to its
-        triggers. Return true if subscription has been done, false
-        otherwise."""
+        """Subscribe to *observable*. Return whether *observer* has
+        been successfully subscribed to."""
         assertIsInstance(observable, Observable)
         rvalue = observable.addObserver(self, mode)
         if rvalue and child: observable.setParent(self)
         return rvalue
 
     def unsubscribeFrom(self, observable):
-        """Unsubscribe from *observable*; return true if subscription
-        has been done, false otherwise."""        
+        """Unsubscribe from *observable*. Return whether *observable*
+        has been successfully found and removed."""        
         return observable.removeObserver(self) \
             if observable in self.observed() else False
 
@@ -208,12 +257,16 @@ class Observer(QtCore.QObject, Node):
             obs.removeObserver(self)
 
     def hz(self):
-        """FIXME"""
+        """Return when the observer should react to the observers'
+         notifications. Possible values:
+          - None   : immediately ;
+          - 0      : never ;
+          - float  : at the selected frequency (in hz)."""
         return self.__hz
 
     def queue(self):
         """Return an iterator over the observables that have triggered
-        whithout having being reacted yet."""
+        without having being reacted to yet."""
         return (ref() for ref in self.__queue)
 
     def _reactSlot(self, observable):
@@ -229,21 +282,22 @@ class Observer(QtCore.QObject, Node):
              if self._customreact is not None \
              else None
 
-    def _addObservable(self, observable):
+    def __addObservable(self, observable):
         self.__observed.add(weakref.ref(observable))
         self.observableAdded.emit(observable)
 
-    def _removeObservable(self, observable):
+    def __removeObservable(self, observable):
         for ref in self.__observed:
             if ref() is observable:
                 # Remove from queue if present
                 self.__queue.discard(ref)
                 self.__observed.remove(ref)
-                self.observableRemoved.emit(observable)
+                if observable.parent() is self: observable.setParent(None)
+                self.observableRemoved.emit(observable)                
                 break
 
     def _update(self):
-        """Force to react to all observables in the queue."""
+        """Require the observer to react to all observables in the queue."""
         for ref in self.__queue.copy():
             self._react(ref())
         self.__queue.clear()

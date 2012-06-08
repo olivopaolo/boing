@@ -63,17 +63,12 @@ class StatProducer(Functor, Consumer.CONFIGURABLE):
         self._inittime = datetime.datetime.now()
         self.__stat = {}
         self._update = False
+        self.observableRemoved.connect(self.__removeRecord)
 
     def _checkRefs(self):
         super()._checkRefs()
         f = lambda kw: kw[0]() is not None
         self.__stat = dict(filter(f, self.__stat.items()))
-
-    def _removeObservable(self, observable):
-        super()._removeObservable(observable)
-        for ref in self.__stat.keys():
-            if ref() is observable: 
-                del self.__sources[ref] ; break
 
     def _consume(self, products, producer):
         self._update = True
@@ -95,6 +90,11 @@ class StatProducer(Functor, Consumer.CONFIGURABLE):
                     delta = now - timetag
                     if record.lagmax is None or delta>record.lagmax:
                         record.lagmax = delta
+
+    def __removeRecord(self, observable):
+        for ref in self.__stat.keys():
+            if ref() is observable: 
+                del self.__sources[ref] ; break
 
     def __produce(self):
         if self._update:
@@ -183,10 +183,10 @@ class Lag(Identity):
 class Timekeeper(Functor):
     """Add to each product the timestamp at the time the product is
     received as the item with keyword "timetag".""" 
-    def __init__(self, parent=None):
+    def __init__(self, blender=Functor.MERGECOPY, parent=None):
         super().__init__(Request.NONE, 
                          Offer(Product(timetag=datetime.datetime.now())),
-                         blender=Functor.MERGECOPY, parent=parent)
+                         blender, parent=parent)
   
     def _process(self, sequence, producer):
         for operands in sequence:
@@ -248,13 +248,48 @@ class Filter(Identity):
 
 # -------------------------------------------------------------------
 
+'''class ArgumentFunctor(FunctionalNode):
+    """It takes a functorfactory and for each different argument path,
+    it creates a new functor which is applied to the argument
+    value. After a functor is created, it is stocked and it is never
+    dropped."""
+    def __init__(self, functorfactory, *args, **kwargs):
+        FunctionalNode.__init__(self, *args, **kwargs)
+        self.__factory = functorfactory
+        self.__functors = utils.quickdict()
+    
+    def _function(self, paths, values):
+        for key, value in zip(paths, values):
+            item = self.__functors
+            split = key.split(".")
+            for step in split[:-1]:
+                item = item[step]
+            if isinstance(value, collections.Sequence):
+                functor = item.setdefault(
+                    split[-1], 
+                    tuple(self.__factory.create() for i in range(len(value))))
+                if hasattr(value, "__setitem__") \
+                        and self._resultmode==FunctionalNode.MERGE:
+                    for i, item in enumerate(value):
+                        value[i] = type(item)(functor[i](item))
+                else:
+                    value = type(value)((type(item)(functor[i](item)) \
+                                             for i,item in enumerate(value)))
+                yield value
+            elif isinstance(value, collections.Mapping):
+                raise NotImplementedError()
+            else:
+                functor = item.setdefault(split[-1], self.__factory.create())
+                yield type(value)(functor(value))'''
+
+
 class DiffArgumentFunctor(Functor):
     """It takes a functorfactory and for each different argument path,
     it creates a new functor which is applied to the argument
     value. The args must be a diff-based path so that functor can be
     removed depending on 'diff.removed' instances."""
     def __init__(self, functorfactory, 
-                 request, blender, parent=None):
+                 request, blender=Functor.MERGECOPY, parent=None):
         super().__init__(request, Functor.TUNNELING, blender, parent=parent)
         self.__factory = functorfactory
         self.__functors = quickdict()

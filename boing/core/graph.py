@@ -7,6 +7,11 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+"""
+The graph module provides the base classes for creating graphs and
+few abstract classes for traversing and drawing a graph.
+"""
+
 import abc
 import collections
 import sys
@@ -15,8 +20,6 @@ import weakref
 from boing.core.economy import Request
 from boing.utils import assertIsInstance
 
-# -------------------------------------------------------------------
-# Node
 
 class Node:
 
@@ -33,7 +36,6 @@ class Node:
     # Identifiable
     def id(self):
         return self.__id
-
 
     @staticmethod
     def _checkRecords():
@@ -54,7 +56,7 @@ class Node:
     # Debuggable
     def debug(self, fd=sys.stdout, maxdepth=1, grapher=None):
         if grapher is None: grapher = SimpleGrapher() 
-        grapher.draw(self, file=fd, maxdepth=maxdepth)
+        grapher.draw(self, file=fd, maxdepth=maxdepth, memo=set())
 
     def _debugData(self): return collections.OrderedDict(id=self.id())
 
@@ -64,7 +66,7 @@ class Node:
 # GraphDrawers
 
 class Grapher(metaclass=abc.ABCMeta):
-
+    """FIXME: Very bad design."""
     def draw(self, node, file, level=0, maxdepth=None, memo=None):
         key = self._getId(node)
         if memo is None or key not in memo:

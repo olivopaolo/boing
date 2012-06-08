@@ -24,7 +24,7 @@ from boing.utils.fileutils \
 from boing.utils.url import URL
 
 def create(uri, mode="", logger=None, parent=None):
-    """Return a new node created from *uri*."""    
+    """Create a new node from *uri*."""    
     logger = logger if logger is not None else logging.getLogger("loader")
     if not isinstance(uri, URL): uri = URL(str(uri))
     if not uri.opaque and not uri.scheme and not uri.path: 
@@ -178,15 +178,15 @@ def create(uri, mode="", logger=None, parent=None):
         loweruri = lower(uri, "slip")
         if mode=="in":
             if "file" in loweruri.scheme: loweruri.query.data["uncompress"] = ""
-            device = create(loweruri, "in", logger, parent)
-            node = device + encoding.SlipDecoder()
-            node += encoding.TextDecoder(blender=Functor.MERGE)
-
+            device = create(loweruri, "in", logger)
+            decoder = encoding.SlipDecoder() # blender is fixed to  RESULTONLY
+            textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
+            node = device + decoder + textdecoder
         elif mode=="out":
-            device = create(loweruri, "out", logger, parent)
-            node = encoding.SlipEncoder(blender=Functor.MERGE) \
-                + encoding.TextDecoder(blender=Functor.MERGE)
-            node += device
+            encoder = encoding.SlipEncoder(blender=Functor.MERGE)
+            textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
+            device = create(loweruri, "out", logger)
+            node = encoder + textdecoder + device
 
     # JSON
     elif uri.scheme=="json":
@@ -213,14 +213,14 @@ def create(uri, mode="", logger=None, parent=None):
         if mode=="in":
             if "request" in query: 
                 raise ValueError("Unexpected query keys: 'request'")
-            device = create(loweruri, "in", logger, parent)
+            device = create(loweruri, "in", logger)
             decoder = encoding.JsonDecoder(blender=Functor.MERGE)
             node = device + decoder
         elif mode=="out":
-            device = create(loweruri, "out", logger, parent)
-            encoder = encoding.JsonEncoder(**query)
-            node = encoder + encoding.TextEncoder(blender=Functor.MERGE) 
-            node += device
+            encoder = encoding.JsonEncoder(blender=Functor.RESULTONLY, **query)
+            textencoder = encoding.TextEncoder(blender=Functor.MERGE)
+            device = create(loweruri, "out", logger)
+            node = encoder + textencoder + device
 
     # OSC
     elif uri.scheme=="osc":
@@ -245,16 +245,17 @@ def create(uri, mode="", logger=None, parent=None):
                 logger.info(
                     "OSC over TCP is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
-            device = create(loweruri, "in", logger, parent)
-            node = device + encoding.OscDecoder(blender=Functor.MERGE, **query)
-            node += encoding.OscDebug(blender=Functor.MERGE)
+            device = create(loweruri, "in", logger)
+            decoder = encoding.OscDecoder(blender=Functor.MERGE, **query)
+            oscdebug = encoding.OscDebug(blender=Functor.MERGE)
+            node = device + decoder + oscdebug
 
         elif mode=="out":
-            device = create(loweruri, "out", logger, parent)
-            debugger = encoding.OscDebug(blender=Functor.MERGE)
+            encoder = encoding.OscEncoder(blender=Functor.RESULTONLY, **query)
             decoder = encoding.OscDecoder(blender=Functor.MERGE)
-            encoder = encoding.OscEncoder(**query)
-            node = encoder + decoder + debugger + device
+            oscdebug = encoding.OscDebug(blender=Functor.MERGE)
+            device = create(loweruri, "out", logger)
+            node = encoder + decoder + oscdebug + device
 
     # TUIO
     elif uri.scheme=="tuio":
@@ -273,12 +274,13 @@ def create(uri, mode="", logger=None, parent=None):
         if not loweruri.scheme.startswith("osc."): 
             loweruri.scheme = "osc.%s"%loweruri.scheme
         if mode=="in":
-            device = create(loweruri, "in", logger, parent)
-            node = device + encoding.TuioDecoder(blender=Functor.MERGE)
+            device = create(loweruri, "in", logger)
+            encoder = encoding.TuioDecoder(blender=Functor.MERGE)
+            node = device + encoder
         elif mode=="out":
             if loweruri.site.host and loweruri.site.port==0: 
                 loweruri.site.port = 3333
-            encoder = encoding.TuioEncoder()
+            encoder = encoding.TuioEncoder(blender=Functor.RESULTONLY)
             device = create(loweruri, "out")
             node = encoder + device
     
@@ -311,20 +313,18 @@ def create(uri, mode="", logger=None, parent=None):
         from boing.nodes import Dump
         assertUriModeIn(uri, mode, "", "out")
         query = parseQuery(uri, "request", "src", "dest", "depth")
-        dump = Dump(**query)
+        dump = Dump(**query) # blender is fixed to  RESULTONLY
         encoder = encoding.TextEncoder(blender=Functor.MERGE)
-        device = create(lower(uri, "dump", query.keys()), 
-                        "out", logger, parent)
+        device = create(lower(uri, "dump", query.keys()), "out", logger)
         node = dump + encoder + device
 
     elif uri.scheme.startswith("stat."):
         from boing.nodes import StatProducer
         assertUriModeIn(uri, mode, "", "out")
         query = parseQuery(uri, "request", "filter", "hz", "fps")
-        stat = StatProducer(**query)
+        stat = StatProducer(**query) # blender is fixed to  RESULTONLY
         encoder = encoding.TextEncoder(blender=Functor.MERGE)
-        device = create(lower(uri, "stat", query.keys()), 
-                        "out", logger, parent) 
+        device = create(lower(uri, "stat", query.keys()), "out", logger) 
         node = stat + encoder + device
 
     elif uri.scheme=="viz":
@@ -344,7 +344,9 @@ def create(uri, mode="", logger=None, parent=None):
 
     elif uri.scheme=="timekeeper":
         from boing.nodes import Timekeeper
-        node = Timekeeper()
+        query = parseQuery(uri, "merge", "copy", "result")
+        assertUriQuery(uri, ["merge", "copy", "result"])
+        node = Timekeeper(**query)
 
     elif uri.scheme=="edit":
         from boing.nodes import Editor
@@ -390,34 +392,14 @@ def create(uri, mode="", logger=None, parent=None):
     elif uri.scheme=="filtering":
         from boing.nodes import DiffArgumentFunctor
         import boing.extra.filtering as filtering
-
         query = parseQuery(uri, "attr", "request", "blender")
-        #kwargs.setdefault("resultmode", FunctionalNode.MERGECOPY)
-        
-        uri = uri.query.data.get("uri", "fltr:/moving/mean?winsize=5")
-        query["functorfactory"] = filtering.getFunctorFactory(uri)
+        filteruri = uri.query.data.get("uri", "fltr:/moving/mean?winsize=5")
+        query["functorfactory"] = filtering.getFunctorFactory(filteruri)
         if "attr" in query:
             request = attrToRequest(query.pop("attr"))
             query["request"] = query.get("request", Request.NONE) + request
         elif "request" not in query:
             query["request"] = attrToRequest("rel_pos,rel_speed")
-
-        # if "args" in kwargs:
-        #     node = functions.ArgumentFunctor(**kwargs)
-        # else:
-        #     # Using contact diff as default
-        #     kwargs.template = quickdict()
-        #     kwargs.args = "diff.removed.contacts"       
-        #     for attr in uri.query.data.get("attr", "rel_pos").split("|"):
-        #         kwargs.args += "|diff.added,updated.contacts.*." + attr
-        #         # Add attribute to template
-        #         for action in ("added", "updated"):                    
-        #             item = kwargs.template.diff[action].contacts["*"]
-        #             for key in attr.split("."):
-        #                 if not key: break
-        #                 else:
-        #                     item = item[key]
-        query.setdefault("blender", Functor.MERGECOPY)
         node = DiffArgumentFunctor(**query)
 
     # -------------------------------------------------------------------

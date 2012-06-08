@@ -11,6 +11,7 @@ from boing.core import economy
 from boing.utils import QPath, assertIsInstance
 
 class QRequest(economy.Request):
+    """The QRequest is a consumer request defined by a QPath."""
 
     def __init__(self, string):
         self._query = QPath.QPath(string)
@@ -19,7 +20,7 @@ class QRequest(economy.Request):
         return self._query
 
     def test(self, product):
-        return product is economy.Product.UNDEFINED \
+        return isinstance(product, economy.UndefinedProduct) \
             or self._query.test(product)
 
     def items(self, product):
