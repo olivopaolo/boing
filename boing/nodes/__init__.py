@@ -14,19 +14,18 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing import \
-    Offer, Request, Product, Producer, Consumer, Functor, Identity
+from boing import Offer, Request, Producer, Consumer, Functor, Identity
 from boing.core.graph import SimpleGrapher
 from boing.utils import assertIsInstance, deepDump, quickdict
 
 # -------------------------------------------------------------------
 # Dump
 
-class Dump(Functor, Consumer.CONFIGURABLE):
+class Dump(Functor, Functor.ConfigurableRequest):
 
     def __init__(self, src=False, dest=False, depth=None, 
                  request=Request.ANY, parent=None):
-        super().__init__(request, Offer(Product(str=str())), Functor.RESULTONLY, 
+        super().__init__(request, Offer(quickdict(str=str())), Functor.RESULTONLY, 
                          parent=parent)
         self.dumpsrc = assertIsInstance(src, bool)
         self.dumpdest = assertIsInstance(dest, bool)
@@ -39,14 +38,14 @@ class Dump(Functor, Consumer.CONFIGURABLE):
         if self.dumpdest: 
             stream.write("DumpNode(request=%s)\n"%repr(str(self.request())))
         for operands in sequence:
-            deepDump(Product(operands), stream, self.depth)
+            deepDump(quickdict(operands), stream, self.depth)
             stream.write("\n")
         yield (("str", stream.getvalue()),)
 
 # -------------------------------------------------------------------
 # StatProducer
 
-class StatProducer(Functor, Consumer.CONFIGURABLE):
+class StatProducer(Functor, Functor.ConfigurableRequest):
 
     class _StatRecord(object):
         def __init__(self):
@@ -56,7 +55,7 @@ class StatProducer(Functor, Consumer.CONFIGURABLE):
             self.lagmax = None
 
     def __init__(self, request=Request.ANY, fps=1, parent=None):
-        super().__init__(request, Offer(Product(str=str())), Functor.RESULTONLY, 
+        super().__init__(request, Offer(quickdict(str=str())), Functor.RESULTONLY, 
                          parent=parent)
         self.__timer = QtCore.QTimer(timeout=self.__produce)        
         self.__timer.start(1000/float(fps))
@@ -70,7 +69,7 @@ class StatProducer(Functor, Consumer.CONFIGURABLE):
         f = lambda kw: kw[0]() is not None
         self.__stat = dict(filter(f, self.__stat.items()))
 
-    def _consume(self, products, producer):
+    def _consume(self, quickdicts, producer):
         self._update = True
         # Get producer record
         record = None
@@ -124,7 +123,7 @@ class StatProducer(Functor, Consumer.CONFIGURABLE):
                     record.partial = 0
                     record.tags.clear()
             if intro: data.write("\n")
-            self.postProduct(Product(str=data.getvalue()))
+            self.postProduct(quickdict(str=data.getvalue()))
 
 # -------------------------------------------------------------------
 # SimpleGrapherProducer
@@ -138,7 +137,7 @@ class SimpleGrapherProducer(Producer):
 """
     def __init__(self, starters=tuple(), request=Request.ANY, maxdepth=None,
                  hz=1, parent=None):
-        super().__init__(Offer(Product(str=str())), parent=parent)
+        super().__init__(Offer(quickdict(str=str())), parent=parent)
         self._starters = starters
         self._grapher = SimpleGrapher(request)
         self.__tid = QtCore.QTimer(timeout=self._draw)
@@ -159,7 +158,7 @@ class SimpleGrapherProducer(Producer):
         for node in self._starters:
             self._grapher.draw(node, stream, maxdepth=self.maxdepth, memo=memo)
         graph = stream.getvalue()
-        if graph: self.postProduct(Product(str=self.separator+graph))
+        if graph: self.postProduct(quickdict(str=self.separator+graph))
 
 # -------------------------------------------------------------------
 
@@ -185,7 +184,7 @@ class Timekeeper(Functor):
     received as the item with keyword "timetag".""" 
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
         super().__init__(Request.NONE, 
-                         Offer(Product(timetag=datetime.datetime.now())),
+                         Offer(quickdict(timetag=datetime.datetime.now())),
                          blender, parent=parent)
   
     def _process(self, sequence, producer):
@@ -197,7 +196,7 @@ class Timekeeper(Functor):
 class Editor(Functor):
 
     def __init__(self, dict, blender, parent=None):
-        super().__init__(Request.NONE, Offer(Product(**dict)), blender, 
+        super().__init__(Request.NONE, Offer(quickdict(**dict)), blender, 
                          parent=parent)
         self.__dict = dict
 

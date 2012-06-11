@@ -14,7 +14,7 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing import Offer, Request, Product, Functor
+from boing import Offer, QRequest, Functor
 from boing.nodes.logger import FilePlayer
 from boing.net import json, osc, slip, tuio
 from boing.utils import assertIsInstance, deepupdate, quickdict
@@ -25,7 +25,7 @@ from boing.utils import assertIsInstance, deepupdate, quickdict
 class TextEncoder(Functor):
     
     def __init__(self, encoding="utf-8", blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request("str"), Offer(Product(data=bytearray())), 
+        super().__init__(QRequest("str"), Offer(quickdict(data=bytearray())), 
                          blender, parent=parent)
         self.encoding = assertIsInstance(encoding, str)
   
@@ -38,7 +38,7 @@ class TextEncoder(Functor):
 class TextDecoder(Functor):
     
     def __init__(self, encoding="utf-8", blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request("data"), Offer(Product(str=str())),
+        super().__init__(QRequest("data"), Offer(quickdict(str=str())),
                          blender, parent=parent)
         self.encoding = assertIsInstance(encoding, str)
         self.errors = "replace"
@@ -54,7 +54,7 @@ class TextDecoder(Functor):
 class SlipEncoder(Functor):
 
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request("data"), Offer(Product(data=bytearray())),
+        super().__init__(QRequest("data"), Offer(quickdict(data=bytearray())),
                          blender, parent=parent)
 
     def _process(self, sequence, producer):
@@ -68,7 +68,7 @@ class SlipDecoder(Functor):
     def __init__(self, parent=None):
         # It is forced to be use a RESULTONLY blender because for each
         # received product, it may produce multiple products.
-        super().__init__(Request("data"), Offer(Product(data=bytearray())),
+        super().__init__(QRequest("data"), Offer(quickdict(data=bytearray())),
                          Functor.RESULTONLY, parent=parent)
         self._slipbuffer = None
 
@@ -88,25 +88,25 @@ class SlipDecoder(Functor):
 class JsonEncoder(Functor):
 
     def __init__(self, wrap=False, 
-                 request=Request.ANY, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(request, Offer(Product(str=str())), 
+                 request=QRequest.ANY, blender=Functor.MERGECOPY, parent=None):
+        super().__init__(request, Offer(quickdict(str=str())), 
                          blender, parent=parent)
         self.wrap = assertIsInstance(wrap, bool)
 
     def _process(self, sequence, producer):
         if self.wrap:
-            products = tuple(map(Product, sequence))
-            yield (("str", json.encode(Product(timetag=datetime.datetime.now(), 
+            products = tuple(map(quickdict, sequence))
+            yield (("str", json.encode(quickdict(timetag=datetime.datetime.now(), 
                                                products=products))), )
         else:
             for operands in sequence:
-                yield (("str", json.encode(Product(operands))),)
+                yield (("str", json.encode(quickdict(operands))),)
 
 
 class JsonDecoder(Functor):
 
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request("str"), Offer(Product.UNDEFINED), 
+        super().__init__(QRequest("str"), Offer(Offer.UndefinedProduct()), 
                          blender, parent=parent)
 
     def _process(self, sequence, producer):
@@ -141,7 +141,7 @@ class OscEncoder(Functor):
 
     def __init__(self, wrap=False, rt=False,
                  blender=Functor.RESULTONLY, parent=None):
-        super().__init__(Request("osc"), Offer(Product(data=bytearray())), 
+        super().__init__(QRequest("osc"), Offer(quickdict(data=bytearray())), 
                          blender, parent=parent)
         self.wrap = assertIsInstance(wrap, bool)
         self.rt = assertIsInstance(rt, bool)
@@ -160,8 +160,8 @@ class OscEncoder(Functor):
 class OscDecoder(Functor):
 
     def __init__(self, rt=False, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request("data"), 
-                         Offer(Product(osc=osc.Packet(), 
+        super().__init__(QRequest("data"), 
+                         Offer(quickdict(osc=osc.Packet(), 
                                        timetag=datetime.datetime.now())),
                          blender, parent=parent)
         self._receipttime = assertIsInstance(rt, bool)
@@ -178,7 +178,7 @@ class OscDecoder(Functor):
 class OscDebug(Functor):
 
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request("osc"), Offer(Product(str=str())), 
+        super().__init__(QRequest("osc"), Offer(quickdict(str=str())), 
                          blender, parent=parent)
 
     def _process(self, sequence, producer):
@@ -195,7 +195,7 @@ class OscLogPlayer(FilePlayer):
         super().__init__(filename, 
                          FilePlayer.FileParser(OscLogPlayer._Decoder()), 
                          OscLogPlayer._Sender(),
-                         offer=Offer(Product(osc=osc.Packet(), 
+                         offer=Offer(quickdict(osc=osc.Packet(), 
                                              timetag=datetime.datetime.now())),
                          **kwargs)
         self.stopped.connect(self._parser.decoder.unslip.reset)
@@ -213,7 +213,7 @@ class OscLogPlayer(FilePlayer):
             for packet in obj.elements:
                 packet.timetag = player._date if player._date is not None \
                     else datetime.datetime.now()
-                player.postProduct(Product(osc=packet, timetag=packet.timetag))
+                player.postProduct(quickdict(osc=packet, timetag=packet.timetag))
 
 # -------------------------------------------------------------------
 # TUIO
@@ -226,7 +226,7 @@ class TuioDecoder(Functor):
     than one source or for more than one TUIO profile."""
 
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request("osc"), Offer(TuioDecoder.getTemplate()),
+        super().__init__(QRequest("osc"), Offer(TuioDecoder.getTemplate()),
                          blender, parent=parent)
         """Alive TUIO items."""
         # self.__alive[source][profile] = set of session_ids
@@ -374,9 +374,9 @@ class TuioDecoder(Functor):
 
 class TuioEncoder(Functor):
     """Convert contact events into OSC/TUIO packets."""
-    def __init__(self, request=Request("diff.*.contacts|source|timetag"), 
+    def __init__(self, request=QRequest("diff.*.contacts|source|timetag"), 
                  blender=Functor.RESULTONLY, hz=None, parent=None):
-        super().__init__(request, Offer(Product(osc=osc.Packet)), blender,
+        super().__init__(request, Offer(quickdict(osc=osc.Packet)), blender,
                          hz=hz, parent=parent)
         # self._tuiostate[observable-ref][source][profile] = [fseq, {s_id: TuioDescriptor}]
         self._tuiostate = {}

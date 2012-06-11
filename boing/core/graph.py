@@ -7,9 +7,9 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""
-The graph module provides the base classes for creating graphs and
+"""The graph module provides the base classes for creating graphs and
 few abstract classes for traversing and drawing a graph.
+
 """
 
 import abc

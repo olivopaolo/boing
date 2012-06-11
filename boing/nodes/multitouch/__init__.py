@@ -9,7 +9,7 @@
 
 from PyQt4 import QtGui
 
-from boing import Offer, Request, Functor
+from boing import Offer, QRequest, Functor
 from boing.utils import assertIsInstance
 
 def attrToRequest(attributes):
@@ -22,7 +22,7 @@ def attrToRequest(attributes):
     for attr in attributes.split("|"):
         if request: request += "|"
         request += "diff.added,updated.contacts.*.%s"%attr
-    return Request(request)
+    return QRequest(request)
 
 class Calibration(Functor):
     """Apply a 4x4 transformation matrix to each target value."""

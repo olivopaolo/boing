@@ -155,6 +155,7 @@ class Observable(QtCore.QObject, Node):
         return self.__observers.get(ref, None)
 
     def deleteLater(self):
+        """Schedules this object for deletion. See Qt docs."""
         # Clear registered observers prior to deleting the object.
         self.clear()
         super().deleteLater()
@@ -203,9 +204,10 @@ class Observer(QtCore.QObject, Node):
         Constructor.
         
         *react* can be a callable object to be used as a handler to the
-         observer notifications (see *_react* for handler arguments).
+         observer notifications (see *_react* for the handler arguments)
+         or None.
 
-        *hz* defines when the observer should react to the observers'
+        *hz* defines when the observer should react to the observervables'
          notifications. Accepted values:
           - None   : immediately ;
           - 0      : never ;
@@ -222,7 +224,7 @@ class Observer(QtCore.QObject, Node):
         self.__timer = QtCore.QTimer(timeout=self._update)
         self.__hz = None if hz is None else float(hz)
         if self.__hz: self.__timer.start(1000/float(hz))
-        self._customreact = assertIsInstance(react, None, collections.Callable)
+        self.__react = assertIsInstance(react, None, collections.Callable)
         
     def __del__(self):
         if not sip.isdeleted(self):
@@ -278,8 +280,8 @@ class Observer(QtCore.QObject, Node):
                 
     def _react(self, observable):
         """React to the *observable*'s trigger."""
-        return self._customreact(self, observable) \
-             if self._customreact is not None \
+        return self.__react(self, observable) \
+             if self.__react is not None \
              else None
 
     def __addObservable(self, observable):

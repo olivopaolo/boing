@@ -7,17 +7,16 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""
-The economy module provides classes that implement the producer-consumer
-problem. 
+"""The economy module provides classes that implement the
+producer-consumer problem.
 
 The Producer and Consumer classes are build over the Observer design
 pattern of the module boing.core.observer: the Producer is an
 Observable object enabled to post products; a consumer is an Observer
-object that can subscribe itself to many producers. When a producer has a
-new product, it triggers the registered consumers; the triggered
-consumers will immediately or at regular time interval demand
-the producer the new products. 
+object that can subscribe itself to many producers. When a producer
+has a new product, it triggers the registered consumers; the triggered
+consumers will immediately or at regular time interval demand the
+producer the new products.
 
 A producer can be registered to multiple consumers. Each product is
 shared within different consumers, therefore a consumer SHOULD NOT
@@ -34,12 +33,13 @@ Request implements the Composite design pattern.
 
 Producers have an offer, which is a list of product templates. A
 producer, using its own offer, can say if it can meet a consumer's
-request. 
+request.
 
 The Worker inherits both the Producer and Consumer classes and it is
 used as base class for defining processing nodes. By connecting
 producers, workers and consumers it is possible to create processing
 pipelines.
+
 """
 
 import abc
@@ -57,11 +57,31 @@ from boing.utils import assertIsInstance
 # Offer
 
 class Offer(tuple):
+    """An offer defines the list of products that a producer
+    advertises to be its deliverable objects.
+    
+    """
+    pass
+
+    class UndefinedProduct:
+        """UndefinedProduct instances can be used to define a
+        producer's offer, when the real offer cannot be defined a
+        priori. This avoids to have empty offers, when they cannot be
+        predeterminated.
+
+        """
+        def __repr__(self): return "Product.UNDEFINED"    
+        def __eq__(self, other): return isinstance(other, Offer.UndefinedProduct)
+        def __ne__(self, other): return not isinstance(other, Offer.UndefinedProduct)
     
     def __new__(cls, *args, iter=None):
-        """Offer can be direcly defined passing the products,
-        e.g. Offer(p1, p2), or passing an iterable to the keyword
-        argument *iter*, e.g. Offer(iter=[p1, p2])."""
+        """Constructor.
+
+        Offer can be direcly constructed passing the sequence of
+        products, e.g. Offer(p1, p2), or passing an iterable to the
+        keyword argument *iter*, e.g. Offer(iter=[p1, p2]).
+
+        """
         l = lambda item: item is not None
         if iter is not None:
             if args: raise ValueError()
@@ -87,38 +107,51 @@ class Offer(tuple):
     def __radd__(self, other):
         return self if other is None else NotImplemented
 
-class UndefinedProduct:
-    """UndefinedProduct instances can be used to define a producer's
-    offer, when the real offer cannot be defined a priori. This avoids
-    to have empty offers, when they cannot be predeterminated."""
-    def __repr__(self): return "Product.UNDEFINED"
-
 # -------------------------------------------------------------------
 # Request
 
-class RequestMeta(abc.ABCMeta):
+class Request(metaclass=abc.ABCMeta):
+    """The Request abstract class defines objects for filtering
+    products.  Each consumer has got a request so that producers know
+    if it is useful or not to deliver a product to a consumer.
 
-    def __instancecheck__(self, instance):
-        return instance is Request.ANY \
-            or instance is Request.NONE \
-            or super().__instancecheck__(instance)
+    Request.NONE and Request.ANY define respectively a no product and
+    any product requests.
+    
+    The Request class implements the Composite design
+    pattern. Composite requests can be obtained simply adding singular
+    requests, e.g. comp = r1 + r2. Request.NONE is the identity
+    element of Request sum.
 
-class Request(metaclass=RequestMeta):
-    """Implements the Composite Pattern. Requests instances are immutable."""
+    Request instances are immutable objects.
 
+    """
     @abc.abstractmethod
     def test(self, product):
-        """Returns True if *product* is requested; False otherwise."""
+        """Return whether *product* matches the request."""
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def items(self, product): raise NotImplementedError()
+    def items(self, product):
+        """Return an iterator over the *product*'s items ((key, value)
+        pairs) that match the request, if *product* can be subdivided, otherwise
+        return the pair (None, *product)."""
+        raise NotImplementedError()
 
     @abc.abstractmethod
-    def filter(self, product): raise NotImplementedError()
+    def filter(self, product):
+        """Return the subset of *product* that matches the request, if
+        *product* can be subdivided, otherwise return *product*, if
+        product matches the request, else return None."""
+        raise NotImplementedError()
 
     @abc.abstractmethod
-    def filterout(self, product): raise NotImplementedError()
+    def filterout(self, product):
+        """Return the subset of *product* that does not match the
+        request, if *product* can be subdivided, otherwise return
+        *product*, if product does not match the request, else return
+        None."""
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def __hash__(self): raise NotImplementedError()
@@ -126,8 +159,7 @@ class Request(metaclass=RequestMeta):
     @abc.abstractmethod
     def __eq__(self, other): raise NotImplementedError()
 
-    def __ne__(self, other): 
-        return not self==other
+    def __ne__(self, other): return not self==other
         
     def __add__(self, other):
         if other is Request.ANY or self==other:
@@ -139,7 +171,6 @@ class Request(metaclass=RequestMeta):
         else: raise TypeError(
             "Expected type Request, not '%s'"%type(other).__name__)
         return rvalue
-
 
 class _AnyRequest(Request):
 
@@ -253,15 +284,17 @@ class _CompositeRequest(Request):
 
     def __eq__(self, other):
         return isinstance(other, _CompositeRequest) \
-            and other not in (Request.ANY, Request.NONE) \
             and self._children==other._children
 
     def __hash__(self):
         raise NotImplementedError()
 
 
-class FunctorRequest(Request):
-
+class LambdaRequest(Request):
+    """
+    The LambdaRequest is a Request that can be initialized using a
+    lambda function.
+    """
     def __init__(self, test=None):
         super().__init__()
         self._customtest = assertIsInstance(test, None, collections.Callable)
@@ -283,8 +316,7 @@ class FunctorRequest(Request):
         return copy.copy(product) if not self.test(product) else None
 
     def __eq__(self, other):
-        return isinstance(other, FunctorRequest) \
-            and other not in (Request.ANY, Request.NONE) \
+        return isinstance(other, LambdaRequest) \
             and self._customtest==other._customtest
 
     def __hash__(self):
@@ -296,19 +328,62 @@ class FunctorRequest(Request):
 from boing.core.observer import Observable, Observer
 
 class Producer(Observable):
+    """
+    A Producer is an observable object enabled to post products to
+    a set of subscribed consumers. 
 
-    class CONFIGURABLE:          
+    When a producer is demanded to posts a product, for each
+    registered consumer it tests the product with the consumer's
+    request and only if the match is valid it triggers the consumer.
+
+    Each Producer has an Offer (a list of product templates), so it
+    can say if a priori it can meet a consumer's request.
+    """
+
+    class ConfigurableOffer:
+        """The ConfigurableOffer class provides the method
+        *setOffer*, which enables to set the offer of the
+        producer.  Inherit both Producer and ConfigurableOffer to
+        grant such behaviour, e.g. :
+
+           class MyProducer(Producer, Producer.ConfigurableOffer):
+               pass
+        
+        """
         def setOffer(self, offer):
+            """Set *offer* as the new producer's offer."""
             if self._offer!=offer:
                 self._offer = offer
                 self.offerChanged.emit()
 
     demandChanged = QtCore.pyqtSignal()
+    """Signal emitted when the aggregate demand changes."""
+
     offerChanged = QtCore.pyqtSignal()
+    """Signal emitted when its own offer changes."""
+
     demandedOfferChanged = QtCore.pyqtSignal()
+    """Signal emitted when its own demanded offer changes."""
 
     def __init__(self, offer, tags=None, store=None, retrieve=None, 
                  parent=None):
+        """Constructor.
+
+        *offer* must be an instance of Offer.
+
+        *tags* must be a dict or None.
+        
+        *store* can be a callable object to be used as a handler for
+        storing posted products (see *_store* for the handler arguments)
+        or None.
+        
+        *retrieve* can be a callable object to be used as a handler
+        for retrieving stored products (see *_retrieveAndDeliver* for
+        the handler arguments) or None.
+
+        *parent* defines the consumer's parent.
+
+        """
         super().__init__(parent)
         self._aggregatedemand = Request.NONE
         self._offer = assertIsInstance(offer, Offer)
@@ -317,10 +392,8 @@ class Producer(Observable):
         self._activetags = set()
         self.demandChanged.connect(self._refreshDemandedOffer)
         self.offerChanged.connect(self._refreshDemandedOffer)
-        self._customstore = assertIsInstance(store, 
-                                             None, collections.Callable)
-        self._customretrieve = assertIsInstance(retrieve, 
-                                                None, collections.Callable)
+        self.__store = assertIsInstance(store, None, collections.Callable)
+        self.__retrieve = assertIsInstance(retrieve, None, collections.Callable)
         
     def aggregateDemand(self):
         """Return the union of all the subscribed consumers' requests."""
@@ -335,13 +408,13 @@ class Producer(Observable):
         return self._demandedoffer
 
     def meetsRequest(self, request):
-        """Return True if the product's offer meets *request*."""
+        """Return whether the product's offer meets *request*."""
         assertIsInstance(request, Request)
         return request is Request.NONE or any(map(request.test, self.offer()))
 
     def isRequested(self, product=None, **kwargs):
-        """FIXME: Return True if any of the subscribed consumers requires
-        *product*; False otherwise"""
+        """Return whether any of the subscribed consumers requires
+        *product*."""
         for key, value in kwargs.items():
             if key=="tag": tag = value
             else: raise TypeError(
@@ -354,7 +427,72 @@ class Producer(Observable):
             rvalue = self._aggregatedemand.test(product)
         return rvalue
 
+    def postProduct(self, product):
+        """Post *product*. In concrete terms, it triggers the
+        registered consumers that require *product*, then it stores
+        the product."""
+        records = tuple(self._filterRecords(product))
+        if records: self._notifyFromRecords(records)
+        return len(records)
+
+    def _filterRecords(self, product):
+        """Return an iterator over the record of each observer that
+        must be triggerer due of posting *product*."""
+        for ref, record in self._Observable__observers.items():
+            observer = ref()
+            if not isinstance(observer, Consumer) \
+                    or observer.request().test(product) \
+                    and self._store(product, observer) \
+                    and not record.__dict__.get("notified", False):
+                yield record
+
+    def _store(self, product, consumer):
+        """Store *product* while waiting that *consumer* retrives it."""
+        # Call custom function if defined, otherwise use default method.
+        return self.__store(self, product, consumer) \
+            if self.__store is not None \
+            else self._defaultStore(product, consumer)
+
+    def _requireProducts(self, consumer):
+        """Notify that *consumer* required the products stored for it.""" 
+        ref = self._getRef(consumer)
+        if ref is None: raise Exception(
+            "Unsubscribed consumers cannot get products: %s"%consumer)
+        else:
+            record = self._getRecord(ref=ref)
+            record.notified = False
+            self._retrieveAndDeliver(consumer)
+
+    def _retrieveAndDeliver(self, consumer):
+        """Retrive all the products stored for *consumer* and deliver them."""
+        # Call custom function if defined, otherwise use default method.
+        return self.__retrieve(self, consumer) \
+            if self.__retrieve is not None \
+            else self._defaultRetrieveAndDeliver(consumer)
+
+    def _deliverProducts(self, products, consumer):
+        """Deliver *products* to *consumer*."""
+        consumer.productsDelivery(products, self)
+
+    def _defaultStore(self, product, consumer):
+        """Enqueue *product* into the *consumer* product queue."""
+        record = self._getRecord(consumer)
+        if not hasattr(record, "products"):
+            record.products = [product]
+        else: 
+            record.products.append(product)
+        return record.products
+
+    def _defaultRetrieveAndDeliver(self, consumer):
+        """Retrive the products stored for *consumer*, empty the
+        storage and deliver the products."""
+        record = self._getRecord(consumer)
+        products = record.__dict__.get("products", list())
+        record.products = list()
+        self._deliverProducts(products, consumer)
+
     def _refreshAggregateDemand(self):
+        """Recalculate the aggregate demand."""
         cumulate = Request.NONE
         for obs in self.observers():
             if isinstance(obs, Consumer):
@@ -365,8 +503,7 @@ class Producer(Observable):
             self.demandChanged.emit()
 
     def _refreshDemandedOffer(self):
-        """Update the demanded offerer using the current aggregate demand"""
-        
+        """Recalculate the demanded offer."""        
         refresh = Offer(iter=filter(self._aggregatedemand.test, self.offer()))
         if self._demandedoffer!=refresh:
             self._demandedoffer = refresh
@@ -394,66 +531,11 @@ class Producer(Observable):
         super()._checkRefs()
         self._refreshAggregateDemand()
 
-    def postProduct(self, product):
-        records = tuple(self._filterRecords(product))
-        if records: self._notifyFromRecords(records)
-        return len(records)
-
-    def _deliverProducts(self, products, consumer):
-        consumer.productsDelivery(products, self)
-
-    def _requireProducts(self, consumer):
-        ref = self._getRef(consumer)
-        if ref is None: raise Exception(
-            "Unsubscribed consumers cannot get products: %s"%consumer)
-        else:
-            record = self._getRecord(ref=ref)
-            record.notified = False
-            self._retrieveAndDeliver(consumer)
-
-    def _filterRecords(self, product):
-        """Return an iterator over the record of each observer that
-        must be triggerer due of having to post *product*."""
-        for ref, record in self._Observable__observers.items():
-            observer = ref()
-            if not isinstance(observer, Consumer) \
-                    or observer.request().test(product) \
-                    and self._store(product, observer) \
-                    and not record.__dict__.get("notified", False):
-                yield record
-
     def _notifyFromRecords(self, records):
+        """Notify the observers associated to *records*."""
         for record in records:
             record.notified = True
             record.trigger.emit(self)
-
-    def _store(self, product, consumer):
-        return self._customstore(self, product, consumer) \
-            if self._customstore is not None \
-            else self._defaultStore(product, consumer)
-    
-    def _retrieveAndDeliver(self, consumer):
-        return self._customretrieve(self, consumer) \
-            if self._customretrieve is not None \
-            else self._defaultRetrieveAndDeliver(consumer)
-
-    def _defaultStore(self, product, consumer):
-        record = self._getRecord(consumer)
-        if not hasattr(record, "products"):
-            record.products = [product]
-        else: 
-            record.products.append(product)
-        return record.products
-
-    def _defaultRetrieveAndDeliver(self, consumer):
-        """Retrive the products stored from *producer* for
-        *consumer*, empty the storage and deliver the
-        products. *record* is the data storage kept by *producer* for
-        *consumer*."""
-        record = self._getRecord(consumer)
-        products = record.__dict__.get("products", list())
-        record.products = list()
-        self._deliverProducts(products, consumer)
 
     def __add__(self, other):
         if other is None:
@@ -488,11 +570,39 @@ class Producer(Observable):
 # -------------------------------------------------------------------
 # Consumer
 
-class Consumer(Observer):    
+class Consumer(Observer):
+    """A Consumer is an observer object that can be subscribed to many
+    producers for receiving their products. When a producer posts a
+    product, it triggers the registered consumers; the triggered
+    consumers will immediately or at regular time interval demand the
+    producer the new products.
 
-    class CONFIGURABLE:
+    Many consumers can be subscribed to a single producer. Each new
+    product is actually shared within the different consumers,
+    therefore a consumer SHOULD NOT modify any received product,
+    unless it is supposed to be the only consumer.
+
+    Consumers have a request. When a producer is demanded to posts a
+    product, it tests the product with the consumer's request and only
+    if the match is valid it triggers the consumer.
+
+    A consumer's request must be an instance of the class Request. The
+    requests "any product" and "no product" are available.
+
+    """
+
+    class ConfigurableRequest:
+        """The ConfigurableRequest class provides the method
+        *setRequest*, which enables to set the request of the
+        consumer.  Inherit both Consumer and ConfigurableRequest to
+        grant such behaviour, e.g. :
+
+           class MyConsumer(Consumer, Consumer.ConfigurableRequest):
+               pass
+        
+        """
         def setRequest(self, request):
-            """Set a new product request."""
+            """Set *request* as the consumer's request."""
             if self._request!=request:
                 self._request = assertIsInstance(request, Request)
                 self.requestChanged.emit()
@@ -502,29 +612,48 @@ class Consumer(Observer):
 
     @property
     def requestChanged(self):
+        """Signal emitted when the new consumer's request changes."""
         return self.__internal.requestChanged
 
     def __init__(self, request, consume=None, hz=None, parent=None):
+        """Constructor.
+
+        *request* must be an instance of Request.
+
+        *consume* can be a callable object to be used as a handler for
+        consuming received products (see *_consume* for the handler arguments)
+         or None.
+        
+        *hz* defines when the consumer should react to the observervables'
+         notifications. Accepted values:
+          - None   : immediately ;
+          - 0      : never ;
+          - float  : at the selected frequency (in hz).
+
+        *parent* defines the consumer's parent.
+
+        """
         super().__init__(hz=hz, parent=parent)
         self.__internal = Consumer._InternalQObject()
         self._request = assertIsInstance(request, Request)
         self.__consume = assertIsInstance(consume, None, collections.Callable)
     
     def request(self):
+        """Return the consumer's request."""
         return self._request
 
     def _react(self, observable):
+        """If *observable* is a producer, require its products."""
         if isinstance(observable, Producer): 
             observable._requireProducts(self)
-        else:
-            pass
 
     def productsDelivery(self, products, producer=None):
+        """Slot for delivering *products*."""
         self._consume(products, producer)
             
     def _consume(self, products, producer):
-        """The consumer normally must not modify the received
-        products, because they could be shared with other consumers."""        
+        """Consume *products* posted from *producer*."""
+        # Call custom function if defined, otherwise use default method.
         return self.__consume(self, products, producer) \
             if self.__consume is not None \
             else None
@@ -545,7 +674,7 @@ class Consumer(Observer):
 
 class _PropagatingProducer(Producer):
 
-    class CONFIGURABLE:          
+    class ConfigurableOffer(Producer.ConfigurableOffer):          
         def setOffer(self, offer):
             if self._offer!=offer:
                 self._offer = offer
@@ -607,9 +736,9 @@ class _PropagatingProducer(Producer):
 
 class _PropagatingConsumer(Consumer):
 
-    class CONFIGURABLE(Consumer.CONFIGURABLE):
+    class ConfigurableRequest(Consumer.ConfigurableRequest):
         def setRequest(self, request):
-            """Set a new product request."""
+            """Set *request* as the consumer's request."""
             if self._request!=request:
                 self._request = assertIsInstance(request, Request)
                 self._propagateRequest()

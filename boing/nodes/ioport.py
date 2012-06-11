@@ -9,8 +9,8 @@
 
 from PyQt4 import QtCore
 
-from boing import Offer, Request, Product, Producer, Consumer
-from boing.utils import assertIsInstance
+from boing import Offer, QRequest, Producer, Consumer
+from boing.utils import assertIsInstance, quickdict
 
 class DataReader(Producer):
     """It takes an input device and anytime it receives the readyRead
@@ -18,11 +18,11 @@ class DataReader(Producer):
     def __init__(self, inputdevice, postend=True, parent=None):
         self._textmode = inputdevice.isTextModeEnabled()
         if self._textmode:
-            offer = Offer(Product(str=str()))
-            tags = dict(str=Request("str"))
+            offer = Offer(quickdict(str=str()))
+            tags = dict(str=QRequest("str"))
         else:
-            offer = Offer(Product(data=bytearray()))
-            tags = dict(data=Request("data"))
+            offer = Offer(quickdict(data=bytearray()))
+            tags = dict(data=QRequest("data"))
         super().__init__(offer, tags=tags, parent=parent)
         self.__input = inputdevice
         self.__input.readyRead.connect(self._postData)
@@ -32,7 +32,7 @@ class DataReader(Producer):
         data = self.__input.read()
         attr = "str" if self._textmode else "data"
         if attr in self._activetags and (data or self.postend):
-            product = Product()
+            product = quickdict()
             product[attr] = data
             self.postProduct(product)
 
@@ -45,7 +45,7 @@ class DataWriter(Consumer):
     a Producer, it writes that data into the output device."""
     def __init__(self, outputdevice, writeend=True, hz=None, parent=None):
         self._textmode = outputdevice.isTextModeEnabled()
-        super().__init__(request=Request("str" if self._textmode else "data"),
+        super().__init__(request=QRequest("str" if self._textmode else "data"),
                          hz=hz, parent=parent)
         self.__output = outputdevice
         self.writeend = assertIsInstance(writeend, bool)

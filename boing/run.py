@@ -45,7 +45,18 @@ parser.add_argument("-T", dest="traceback", nargs="?", type=int,
                     help="Set exceptions traceback depth")
 parser.add_argument("-f", dest="force", action='store_true',
                     help="Force execution (avoiding warnings)")
+parser.add_argument("--version", action='store_true',
+                    help="Output version and copyright information")
 args = parser.parse_args()
+
+if args.version: 
+    print(
+        """Boing (version %s)
+
+Copyright (C) 2012 Paolo Olivo and Nicolas Roussel
+This is free software; see the source for copying conditions. There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."""%boing.VERSION)
+    sys.exit(0)
 logging.basicConfig(level=logging.getLevelName(args.logging_level))
 
 # Init application
@@ -57,7 +68,7 @@ timer.start(150)
 signal.signal(signal.SIGINT, lambda *args: app.quit())
 
 # Check minimal resources
-if not args.input and args.console!="std:":
+if not args.input and args.console!="":
     default = "stdin:"
     logging.info("Using default input: %s"%default)    
     args.input.append(default)

@@ -14,7 +14,7 @@ import weakref
 
 from PyQt4 import QtCore, QtGui
 
-from boing import Request, Consumer
+from boing import QRequest, Consumer
 from boing.core.StateMachine import StateMachine
 from boing.utils import quickdict, deepDump
 
@@ -30,7 +30,7 @@ class ContactViz(Consumer):
     SISIZE = 3'''
             
     def __init__(self, antialiasing=False, fps=60, parent=None):
-        super().__init__(request=Request("diff.*.contacts|source"), 
+        super().__init__(request=QRequest("diff.*.contacts|source"), 
                        hz=fps, parent=parent)
         self._sources = {}
         self.__gui = ContactWidget(weakref.proxy(self), antialiasing)

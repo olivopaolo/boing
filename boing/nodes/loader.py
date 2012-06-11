@@ -14,7 +14,7 @@ import logging
 
 from PyQt4 import QtCore
 
-from boing import Request, Functor, Identity
+from boing import QRequest, Functor, Identity
 from boing.nodes import encoding, ioport
 from boing.nodes.multitouch import attrToRequest
 from boing.net import tcp, udp
@@ -359,9 +359,9 @@ def create(uri, mode="", logger=None, parent=None):
         from boing.nodes import Filter
         query = parseQuery(uri, "attr")
         assertUriQuery(uri, query)
-        uri.opaque = Request(uri.opaque) if uri.opaque else Request.NONE
+        uri.opaque = QRequest(uri.opaque) if uri.opaque else QRequest.NONE
         if "attr" in query:
-            uri.opaque += attrToRequest(query["attr"]) + Request("diff.removed")
+            uri.opaque += attrToRequest(query["attr"]) + QRequest("diff.removed")
         node = Filter(uri.opaque)
 
     elif uri.scheme=="calib":
@@ -381,7 +381,7 @@ def create(uri, mode="", logger=None, parent=None):
                 else Calibration.Identity
         if "attr" in query:
             request = attrToRequest(query.pop("attr"))
-            query["request"] = query.get("request", Request.NONE) + request
+            query["request"] = query.get("request", QRequest.NONE) + request
         elif "request" not in query:
             query["request"] = attrToRequest("rel_pos,rel_speed")
         query.setdefault("blender", Functor.MERGECOPY)
@@ -397,7 +397,7 @@ def create(uri, mode="", logger=None, parent=None):
         query["functorfactory"] = filtering.getFunctorFactory(filteruri)
         if "attr" in query:
             request = attrToRequest(query.pop("attr"))
-            query["request"] = query.get("request", Request.NONE) + request
+            query["request"] = query.get("request", QRequest.NONE) + request
         elif "request" not in query:
             query["request"] = attrToRequest("rel_pos,rel_speed")
         node = DiffArgumentFunctor(**query)
@@ -453,7 +453,7 @@ def parseQuery(uri, *restrictions):
     for key, value in uri.query.data.items():
         if not restrictions or key in restrictions:
             if key=="request":
-                rvalue[key] = Request(value)
+                rvalue[key] = QRequest(value)
             elif key=="merge":
                 rvalue["blender"] = Functor.MERGE
             elif key=="copy":

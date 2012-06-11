@@ -13,7 +13,7 @@ import math
 
 from PyQt4 import QtCore, QtGui, uic
 
-from boing import Offer, Product, Producer
+from boing import Offer, Producer
 from boing.utils import fileutils
 
 # Compile all .ui files in this directory
@@ -519,7 +519,7 @@ class Player(Producer):
     stopped = QtCore.pyqtSignal()
     
     def __init__(self, parser, sender, speed=1.0, loop=False, interval=1000, 
-                 offer=Offer(Product.UNDEFINED), parent=None):
+                 offer=Offer(Offer.UndefinedProduct()), parent=None):
         super().__init__(offer, parent=parent)
         self._parser = parser
         self._sender = sender
@@ -618,7 +618,7 @@ class FilePlayer(Player):
     def __init__(self, filepath,
                  parser=FileParser(), sender=Player.PostSender, 
                  speed=1.0, loop=False, interval=1000, 
-                 offer=Offer(Product.UNDEFINED), parent=None):
+                 offer=Offer(Offer.UndefinedProduct()), parent=None):
         super().__init__(parser, sender, speed, loop, interval, offer, parent)
         self.__fd = fileutils.File(filepath, uncompress=True)
 

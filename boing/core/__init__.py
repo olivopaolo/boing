@@ -7,19 +7,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-from boing.core import economy
-from boing.utils import quickdict
-
-class Product(quickdict):
-    def __repr__(self):
-        return "Product(%s)"%",".join("%s=%s"%(k,repr(v)) for k,v in self.items())
-
-class _ConcreteUndefined(Product, economy.UndefinedProduct):
-    """Concrete undefined product."""
-    def __init__(self): super().__init__()
-    def __repr__(self): return "Product.UNDEFINED"
-
-Product.UNDEFINED = _ConcreteUndefined()
+from boing.core import economy, querypath
 
 # -------------------------------------------------------------------
 # FIXME: Develop QPath.set
