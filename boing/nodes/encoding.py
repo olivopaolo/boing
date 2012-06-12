@@ -97,7 +97,7 @@ class JsonEncoder(Functor):
         if self.wrap:
             products = tuple(map(quickdict, sequence))
             yield (("str", json.encode(quickdict(timetag=datetime.datetime.now(), 
-                                               products=products))), )
+                                                 products=products))), )
         else:
             for operands in sequence:
                 yield (("str", json.encode(quickdict(operands))),)

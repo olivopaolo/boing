@@ -191,13 +191,13 @@ class Observer(QtCore.QObject, Node):
     def observableAdded(self):
         """Signal emitted when the observer is subscribed to a new
         observable."""
-        return self.__internal.observableAdded
+        return self._internal.observableAdded
 
     @property
     def observableRemoved(self):
         """Signal emitted when the observer is unsubscribed from an
         observable."""
-        return self.__internal.observableRemoved
+        return self._internal.observableRemoved
 
     def __init__(self, react=None, hz=None, parent=None):        
         """
@@ -218,7 +218,7 @@ class Observer(QtCore.QObject, Node):
         if not sip.ispycreated(self): 
             QtCore.QObject.__init__(self, parent)
             Node.__init__(self)
-        self.__internal = Observer._InternalQObject()
+        self._internal = self._InternalQObject()
         self.__observed = set()
         self.__queue = set()
         self.__timer = QtCore.QTimer(timeout=self._update)

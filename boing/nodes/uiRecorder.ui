@@ -50,7 +50,7 @@
       <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
-      <string>&amp;Record</string>
+      <string>Record</string>
      </property>
      <property name="shortcut">
       <string>Space</string>

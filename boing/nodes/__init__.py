@@ -39,7 +39,7 @@ class Dump(Functor, Functor.ConfigurableRequest):
             stream.write("DumpNode(request=%s)\n"%repr(str(self.request())))
         for operands in sequence:
             deepDump(quickdict(operands), stream, self.depth)
-            stream.write("\n")
+            stream.write("\n\n")
         yield (("str", stream.getvalue()),)
 
 # -------------------------------------------------------------------

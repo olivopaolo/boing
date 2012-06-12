@@ -63,37 +63,44 @@ def create(uri, mode="", logger=None, parent=None):
             elif scheme in ("osc", "osc.slip",
                             "tuio", "tuio.osc", "tuio.osc.slip"):
                 player = encoding.OscLogPlayer(uri.path, **query)
-                node = player + encoding.OscEncoder() + encoding.OscDebug()
-                if "tuio" in uri.scheme: node += encoding.TuioDecoder()
+                encoder = encoding.OscEncoder(blender=Functor.MERGE)
+                oscdebug = encoding.OscDebug(blender=Functor.MERGE)
+                node = player + encoder + oscdebug
+                if "tuio" in uri.scheme: 
+                    node += encoding.TuioDecoder(blender=Functor.MERGE)
             else:
                 raise ValueError("Unexpected encoding: %s"%uri)
             # FIXME: start should be triggered at outputs ready
             QtCore.QTimer.singleShot(300, player.start)
         elif mode=="out":            
             if scheme in ("json", "json.slip"):
-                query = parseQuery(uri, "request")
+                query = parseQuery(uri, "request", "wrap")
                 assertUriQuery(uri, query)
-                encoder = encoding.JsonEncoder(wrap=True, **query)
+                query.setdefault("wrap", True)
+                encoder = encoding.JsonEncoder(blender=Functor.RESULTONLY,
+                                               **query)
                 encoder += encoding.TextEncoder()
             elif uri.scheme in ("osc", "osc.slip"):
                 assertUriQuery(uri, None)
-                encoder = encoding.OscEncoder(wrap=True)
+                encoder = encoding.OscEncoder(blender=Functor.RESULTONLY,
+                                              wrap=True)
             else:
                 raise ValueError("Unknown log encoding: %s"%uri)
             device = create("slip.file://%s"%uri.path, "out", logger)
             node = encoder + device
         
-        '''elif uri.scheme=="rec":
-        if mode in ("", "out"):
-            kwargs.update(parseQuery(uri, "timelimit", "sizelimit", 
-                                      "oversizecut", "fps", "timewarping",
-                                      "request", "hz"))
-            kwargs.setdefault("request", "*")
-            node = logger.Recorder(**kwargs)
-            node.gui.show()
-            node.gui.raise_()
-        else:
-            raise ValueError("Requested node is not an input: %s"%uri)'''
+    elif uri.scheme=="rec":
+        from boing.nodes.logger import Recorder
+        assertUriModeIn(uri, mode, "", "out")
+        query = parseQuery(uri, 
+                           "timelimit", "sizelimit", 
+                           "oversizecut", "fps", "timewarping",
+                           "request")
+        assertUriQuery(uri, query)
+        node = Recorder(**query)
+        node.start()
+        node.gui.show()
+        node.gui.raise_()
 
     # -------------------------------------------------------------------
     # IO DEVICES
@@ -183,7 +190,7 @@ def create(uri, mode="", logger=None, parent=None):
             textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
             node = device + decoder + textdecoder
         elif mode=="out":
-            encoder = encoding.SlipEncoder(blender=Functor.MERGE)
+            encoder = encoding.SlipEncoder(blender=Functor.RESULTONLY)
             textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
             device = create(loweruri, "out", logger)
             node = encoder + textdecoder + device

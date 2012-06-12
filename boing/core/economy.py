@@ -365,7 +365,8 @@ class Producer(Observable):
     demandedOfferChanged = QtCore.pyqtSignal()
     """Signal emitted when its own demanded offer changes."""
 
-    def __init__(self, offer, tags=None, store=None, retrieve=None, 
+    def __init__(self, offer, tags=None, 
+                 store=None, retrieve=None, haspending=None,
                  parent=None):
         """Constructor.
 
@@ -394,6 +395,8 @@ class Producer(Observable):
         self.offerChanged.connect(self._refreshDemandedOffer)
         self.__store = assertIsInstance(store, None, collections.Callable)
         self.__retrieve = assertIsInstance(retrieve, None, collections.Callable)
+        self.__haspendingproducts = assertIsInstance(haspending, 
+                                                     None, collections.Callable)
         
     def aggregateDemand(self):
         """Return the union of all the subscribed consumers' requests."""
@@ -453,6 +456,12 @@ class Producer(Observable):
             if self.__store is not None \
             else self._defaultStore(product, consumer)
 
+    def hasPendingProducts(self, consumer=None):
+        # Call custom function if defined, otherwise use default method.
+        return self.__haspendingproducts(self, consumer) \
+            if self.__haspendingproducts is not None \
+            else self._defaultHasPendingProducts(consumer)
+
     def _requireProducts(self, consumer):
         """Notify that *consumer* required the products stored for it.""" 
         ref = self._getRef(consumer)
@@ -482,6 +491,15 @@ class Producer(Observable):
         else: 
             record.products.append(product)
         return record.products
+
+    def _defaultHasPendingProducts(self, consumer=None):
+        if consumer is None:
+            l = lambda record: hasattr(record, "products") and record.products
+            rvalue = any(map(l, self._Observable__observers.values()))
+        else:
+            record = self._getRecord(consumer)
+            rvalue = hasattr(record, "products") and bool(record.products)
+        return rvalue
 
     def _defaultRetrieveAndDeliver(self, consumer):
         """Retrive the products stored for *consumer*, empty the
@@ -515,8 +533,7 @@ class Producer(Observable):
     def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection, child=False):
         rvalue = super().addObserver(observer, mode, child)
         if rvalue and isinstance(observer, Consumer):
-            observer.requestChanged.connect(self._refreshAggregateDemand, 
-                                            QtCore.Qt.QueuedConnection)
+            observer.requestChanged.connect(self._refreshAggregateDemand)
             self._refreshAggregateDemand()
         return rvalue
 
@@ -607,13 +624,13 @@ class Consumer(Observer):
                 self._request = assertIsInstance(request, Request)
                 self.requestChanged.emit()
 
-    class _InternalQObject(QtCore.QObject):
+    class _InternalQObject(Observer._InternalQObject):
         requestChanged = QtCore.pyqtSignal()
 
     @property
     def requestChanged(self):
         """Signal emitted when the new consumer's request changes."""
-        return self.__internal.requestChanged
+        return self._internal.requestChanged
 
     def __init__(self, request, consume=None, hz=None, parent=None):
         """Constructor.
@@ -634,7 +651,6 @@ class Consumer(Observer):
 
         """
         super().__init__(hz=hz, parent=parent)
-        self.__internal = Consumer._InternalQObject()
         self._request = assertIsInstance(request, Request)
         self.__consume = assertIsInstance(consume, None, collections.Callable)
     
@@ -680,9 +696,10 @@ class _PropagatingProducer(Producer):
                 self._offer = offer
                 self._propagateOffer()
 
-    def __init__(self, consumer, offer, tags=None, store=None, retrieve=None, 
+    def __init__(self, consumer, offer, tags=None, 
+                 store=None, retrieve=None, haspending=None,
                  parent=None):
-        super().__init__(offer, tags, store, retrieve, parent)
+        super().__init__(offer, tags, store, retrieve, haspending, parent)
         self._cumulatedoffer = offer
         self.__cons = assertIsInstance(consumer, None, Consumer)
         if self.__cons is not None:
@@ -724,8 +741,7 @@ class _PropagatingProducer(Producer):
     def __followOffer(self, observable):
         if isinstance(observable, Producer):
             # Observed consumer's offer influence self wise offer
-            observable.offerChanged.connect(self._propagateOffer, 
-                                            QtCore.Qt.QueuedConnection)
+            observable.offerChanged.connect(self._propagateOffer)
             self._propagateOffer()
 
     def __unfollowOffer(self, observable):
@@ -749,10 +765,8 @@ class _PropagatingConsumer(Consumer):
         self.__prod = assertIsInstance(producer, None, Producer)
         if self.__prod is not None:
             # demandedOffer and aggregateDemand influence the cumulated request
-            self.__prod.demandedOfferChanged.connect(self._propagateRequest, 
-                                                     QtCore.Qt.QueuedConnection)
-            self.__prod.demandChanged.connect(self._propagateRequest, 
-                                              QtCore.Qt.QueuedConnection)
+            self.__prod.demandedOfferChanged.connect(self._propagateRequest)
+            self.__prod.demandChanged.connect(self._propagateRequest)
         self.requestChanged.connect(self._propagateRequest)
         
     def request(self):
@@ -772,10 +786,8 @@ class _PropagatingConsumer(Consumer):
             self.__prod.demandedOfferChanged.disconnect(self._propagateRequest)
             self.__prod.demandChanged.disconnect(self._propagateRequest)
         self.__prod = producer
-        self.__prod.demandedOfferChanged.connect(self._propagateRequest,
-                                                 QtCore.Qt.QueuedConnection)
-        self.__prod.demandChanged.connect(self._propagateRequest,
-                                          QtCore.Qt.QueuedConnection)
+        self.__prod.demandedOfferChanged.connect(self._propagateRequest)
+        self.__prod.demandChanged.connect(self._propagateRequest)
 
     def _propagateRequest(self):
         updated = self._selfRequest()
@@ -800,10 +812,10 @@ class Worker:
 class _PropagatingWorker(Worker, _PropagatingProducer, _PropagatingConsumer):
 
     def __init__(self, request, offer, 
-                 tags=None, store=None, retrieve=None, 
+                 tags=None, store=None, retrieve=None, haspending=None,
                  consume=None, hz=None, parent=None):
-        _PropagatingProducer.__init__(self, None,
-                                      offer, tags, store, retrieve, parent)
+        _PropagatingProducer.__init__(self, None, offer, tags, 
+                                      store, retrieve, haspending, parent)
         _PropagatingConsumer.__init__(self, weakref.proxy(self),
                                       request, consume, hz,
                                       parent=None)

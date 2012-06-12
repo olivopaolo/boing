@@ -16,6 +16,8 @@ import collections as _collections
 import copy as _copy
 import itertools as _itertools
 
+from  boing.utils import quickdict as _quickdict
+
 def _merge(previous, items):
     rvalue = previous
     if items:
@@ -49,9 +51,8 @@ class _ConcreteMergeCopy(economy.Functor.MergeBlender):
 
 class _ConcreteResultOnly(economy.Functor.ResultOnlyBlender):    
     def blend(self, products, results):
-        for items in filter(None, results):
-            yield _merge(Product(), items)
-
+        for product, items in _itertools.zip_longest(products, results):
+            yield _merge(_quickdict(), items)
 
 economy.Functor.MERGE = _ConcreteMerge()
 economy.Functor.MERGECOPY = _ConcreteMergeCopy()

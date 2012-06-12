@@ -21,6 +21,9 @@
 <p>Record to a file a TUIO stream received on a different UDP socket:</p>
 <pre>boing -i tuio://:3334 -o log:///tmp/log</pre>
 
+<p>Record a TUIO stream using a buffed recorder (with GUI), while showing it :</p>
+<pre>boing -i tuio: -o rec: viz:</pre>
+
 <p>Replay a TUIO log to an TCP socket:</p>
 <pre>boing -i log:///tmp/log -o tuio.tcp://[::1]:7777</pre>
 
