@@ -7,6 +7,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import abc
 import collections
 import datetime
 import math
@@ -16,6 +17,7 @@ import weakref
 from PyQt4 import QtCore, QtGui, uic
 
 from boing import Offer, Request, Producer, Consumer
+from boing.net import Decoder
 from boing.utils import fileutils, quickdict, assertIsInstance
 
 # Compile all .ui files in this directory
@@ -26,9 +28,9 @@ from boing.nodes.uiRecorder import Ui_recorder
 
 class ProductBuffer(QtCore.QObject):
 
-    changed = QtCore.pyqtSignal() 
+    changed = QtCore.pyqtSignal()
     """Emitted anytime the product buffer changes."""
-    
+
     productDrop = QtCore.pyqtSignal()
     """Emitted when the maximum number of products has been exceeded
     and some products must be dropped before the normal product's
@@ -50,10 +52,10 @@ class ProductBuffer(QtCore.QObject):
         # Connect argument slot
         for key, value in kwargs.items():
             if key=="changed": self.changed.connect(value)
-            elif key=="productDrop": self.productDrop.connect(value) 
+            elif key=="productDrop": self.productDrop.connect(value)
             else: raise TypeError(
                 "'%s' is an invalid keyword argument for this function"%key)
-                
+
     def sizeLimit(self):
         return self._sizelimit
 
@@ -85,7 +87,7 @@ class ProductBuffer(QtCore.QObject):
         del self._buffer[:]
         self._sum = 0
         self.changed.emit()
-            
+
     def sum(self):
         """Return the total amount of stored products. It can be
         different from the buffer size, since each buffer item may
@@ -98,7 +100,7 @@ class ProductBuffer(QtCore.QObject):
         if end is None: end = len(self._buffer)
         for i in range(start, end):
             if self._buffer[i].timetag>=timetag: break
-        else: 
+        else:
             i += 1
         return i
 
@@ -119,7 +121,7 @@ class ProductBuffer(QtCore.QObject):
         buffer."""
         assertIsInstance(starttime, datetime.datetime, None)
         assertIsInstance(endtime, datetime.datetime, None)
-        for record in self._buffer:            
+        for record in self._buffer:
             if starttime is not None and record.timetag<starttime: continue
             if endtime is not None and record.timetag>endtime: break
             yield record
@@ -138,7 +140,7 @@ class ProductBuffer(QtCore.QObject):
         else:
             rvalue = False
         return rvalue
-        
+
     def __len__(self):
         """Return the number of elements of the buffer."""
         return len(self._buffer)
@@ -157,7 +159,7 @@ class TimedProductBuffer(ProductBuffer):
     removed when they are done.
 
     """
-    def __init__(self, timelimit=30000, sizelimit=10000, eraserinterval=1000, 
+    def __init__(self, timelimit=30000, sizelimit=10000, eraserinterval=1000,
                  oversizecut=100, parent=None, **kwargs):
         super().__init__(sizelimit, oversizecut, parent, **kwargs)
         """Products timelife."""
@@ -210,7 +212,7 @@ class TimedProductBuffer(ProductBuffer):
                 if record.timetag>=oldest: break
                 else:
                     count += len(record.products)
-            else: 
+            else:
                 i += 1
             if i>0:
                 del self._buffer[:i]
@@ -224,7 +226,7 @@ class BufferGraph(QtGui.QWidget):
     ProductBuffer.
 
     """
-    def __init__(self, buffer, starttime=None, endtime=None, 
+    def __init__(self, buffer, starttime=None, endtime=None,
                  fps=None, parent=None):
         super().__init__(parent)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -235,7 +237,7 @@ class BufferGraph(QtGui.QWidget):
             else datetime.datetime.max
         self._interval = self._endtime-self._starttime
         self._refresher = QtCore.QTimer(timeout=self._refresherTimeout)
-        if fps is not None and fps!=0: 
+        if fps is not None and fps!=0:
             self._toupdate = False
             self._buffer.changed.connect(self._bufferChanged)
             self._refresher.start(1000/fps)
@@ -269,7 +271,7 @@ class BufferGraph(QtGui.QWidget):
 
     def setFps(self, fps):
         """Set the graph's refresh frame rate."""
-        if fps is None or fps==0: 
+        if fps is None or fps==0:
             if self._refresher.isActive():
                 self._buffer.changed.disconnect(self._bufferChanged)
                 self._refresher.stop()
@@ -281,15 +283,15 @@ class BufferGraph(QtGui.QWidget):
 
     def _bufferChanged(self):
         self._toupdate = True
-        
+
     def _refresherTimeout(self):
-        if self._toupdate: 
+        if self._toupdate:
             self._toupdate = False
             self.update()
 
     def paintEvent(self, event):
         width, height = self.width(), self.height()
-        painter = QtGui.QPainter(self)            
+        painter = QtGui.QPainter(self)
         painter.setFont(QtGui.QFont( "courier", 9))
         painter.setPen(QtGui.QColor(200,200,200))
         # Draw grid
@@ -309,218 +311,232 @@ class BufferGraph(QtGui.QWidget):
 
 class Player(Producer):
 
-    @staticmethod
-    def PostSender(player, obj):
-        player.postProduct(obj)
+    class Parser(metaclass=abc.ABCMeta):
+        @abc.abstractmethod
+        def parse(self): raise NotImplementedError()
+        @abc.abstractmethod
+        def reset(self): raise NotImplementedError()
 
-    @staticmethod
-    def ProductSender(player, obj):
-        for product in obj.products:
-            #product["timetag"] = player._date if player._date is not None \
-            #    else datetime.datetime.now()
-            player.postProduct(product)
+    class Sender(metaclass=abc.ABCMeta):
+        @abc.abstractmethod
+        def send(self, player, obj): raise NotImplementedError()
+
+    # FIXME: Sender should be rearchitectured.
+    class PostSender(Sender):
+        def send(self, player, obj): player.postProduct(obj)
+
+    class ProductSender(Sender):
+        def send(self, player, obj):
+            for product in obj["products"]:
+                # product["timetag"] = player._date if player._date is not None \
+                # else datetime.datetime.now()
+                player.postProduct(product)
 
     started = QtCore.pyqtSignal()
     stopped = QtCore.pyqtSignal()
-    
-    def __init__(self, parser, sender, speed=1.0, loop=False, interval=1000, 
+
+    def __init__(self, parser, sender, speed=1.0, loop=False, interval=1000,
                  offer=Offer(Offer.UndefinedProduct()), parent=None):
         super().__init__(offer, parent=parent)
-        self._parser = parser
-        self._sender = sender
-        if not isinstance(loop, bool): raise TypeError(
-            "loop must be boolean, not '%s'"%loop.__class__.__name__)
-        self._loop = loop
-        self._speed = float(speed)
-        self._interval = int(interval)
+        self._parser = assertIsInstance(parser, Player.Parser)
+        self._sender = assertIsInstance(sender, Player.Sender)
+        self._loop = assertIsInstance(loop, bool)
+        self._speed = float(speed) # speed factor
+        self._interval = int(interval) # in ms
         self._queue = collections.deque()
-        self.__waittimer = QtCore.QTimer(timeout=self._parseSendOutAndWait)
-        self.__waittimer.setSingleShot(True)
-        self.__looptimer = QtCore.QTimer(timeout=self.start)
-        self.__looptimer.setSingleShot(True)
+        self._waittimer = QtCore.QTimer(timeout=self._parseSendOutAndWait)
+        self._waittimer.setSingleShot(True)
         self._running = False
         self._date = None # Datetime when the next item should be sent.
         self.playcnt = 0
 
     def start(self):
+        """Start the player."""
         if not self._running:
             self._running = True
             self.playcnt += 1
             self.started.emit()
             self._parseSendOutAndWait()
-        
+
     def stop(self):
+        """Stop the player."""
         if self._running:
             self._running = False
-            self.__waittimer.stop()
+            self._parser.reset()
+            self._waittimer.stop()
             self._queue.clear()
             self._date = None
             self.stopped.emit()
 
     def isRunning(self):
+        """Return whether the player is currently reproducing a track."""
         return self._running
 
-    def isLooping(self):
-        return self._loop
-
     def speed(self):
+        """Return the playback speed factor."""
         return self._speed
 
     def setSpeed(self, speed):
-        self._speed = speed
+        """Set the playback speed factor."""
+        self._speed = float(speed)
 
-    def _parse(self):
-        return self._parser(self)
+    def interval(self):
+        """Return the interval between two executions in ms."""
+        return self._interval
 
-    def _sendOut(self, obj):
-        return self._sender(self, obj)
+    def setInterval(self, ms):
+        """Set the interval between two executions to *ms*."""
+        self._interval = float(ms)
+
+    def parser(self):
+        """Return the current parser."""
+        return self._parser
+
+    def sender(self):
+        """Return the current sender."""
+        return self._sender
 
     def setSender(self, sender):
-        self._sender = assertIsInstance(sender, collections.Callable)
+        """Set a new sender."""
+        self._sender = assertIsInstance(sender, Player.Sender)
 
     def _parseSendOutAndWait(self):
         # Parse for the first
-        while not self._queue and self._parse(): pass
+        while not self._queue:
+            proceed, *items = self.parser().parse()
+            self._queue.extend(items)
+            if not proceed: break
         if not self._queue: self.stop()
         else:
             # Send out the first
             first = self._queue.popleft()
             sendtime = datetime.datetime.now()
-            self._sendOut(first)
+            self.sender().send(self, first)
             # Parse for the second
-            while not self._queue and self._parse(): pass
-            if not self._queue: 
-                self.stop()
-                if self._loop: self.__looptimer.start(self._interval)
-                else:
-                    # FIXME: Handle how to notify that a log is terminated
-                    # self._sendOut(None)
-                    pass
+            while not self._queue:
+                proceed, *items = self.parser().parse()
+                self._queue.extend(items)
+                if not proceed: break
+            if not self._queue: self._finished()
             else:
                 # Wait for the second
                 if math.isinf(self._speed): msec = 0
                 else:
-                    delta = (self._queue[0].timetag-first.timetag)/self._speed
+                    firsttime = first.timetag if hasattr(first, "timetag") \
+                        else first["timetag"] if "timetag" in first \
+                        else sendtime
+                    nexttime = self._queue[0].timetag \
+                        if hasattr(self._queue[0], "timetag") \
+                        else self._queue[0]["timetag"] \
+                        if "timetag" in self._queue[0] \
+                        else sendtime
+                    delta = (nexttime-firsttime)/self._speed
                     if self._date is not None: delta -= sendtime-self._date
                     self._date = sendtime+delta
                     msec = 0 if delta.days<0 else delta.total_seconds()*1000
-                self.__waittimer.start(msec)
+                self._waittimer.start(msec)
+
+    def _finished(self):
+        self._parser.reset()
+        if self._loop:
+            self._waittimer.start(self._interval)
+        else:
+            self.stop()
+
 
 class FilePlayer(Player):
 
-    class FileParser(collections.Callable):
-        def __init__(self, decoder=None):
-            self.decoder = decoder if isinstance(decoder, collections.Callable) \
-                else lambda obj: obj
+    class FileParser(Player.Parser):
+        def __init__(self, filepath, decoder=None):
+            self._file = None if filepath is None \
+                else fileutils.File(filepath, uncompress=True)
+            self._decoder = assertIsInstance(decoder, Decoder, None)
 
-        def __call__(self, player):
-            rvalue = False
-            if player.file().isOpen(): 
-                encoded = player.file().read()
-                if encoded:
-                    player._queue.extend(self.decoder(encoded))
-                    rvalue = True
+        def file(self): return self._file
+        def decoder(self): return self._decoder
+
+        def setFile(self, filepath):
+            if self._file is not None and self._file.isOpen():
+                self.decoder().reset()
+                self._file.close()
+            self._file = None if filepath is None \
+                else fileutils.File(filepath, uncompress=True)
+
+        def setDecoder(self, decoder):
+            self._decoder = assertIsInstance(decoder, Decoder)
+
+        def parse(self):
+            rvalue = False,
+            if self.file() is not None and self.file().isOpen():
+                data = self.file().read()
+                if data:
+                    if self.decoder() is not None:
+                        rvalue = (True, ) + self.decoder().decode(data)
+                    else:
+                        rvalue = True, data
             return rvalue
 
-    def __init__(self, filepath,
-                 parser=FileParser(), sender=Player.PostSender, 
-                 speed=1.0, loop=False, interval=1000, 
-                 offer=Offer(Offer.UndefinedProduct()), parent=None):
-        super().__init__(parser, sender, speed, loop, interval, offer, parent)
-        self.__fd = fileutils.File(filepath, uncompress=True)
+        def reset(self):
+            if self._file is not None and self._file.isOpen():
+                self._file.seek(0)
+            self.decoder().reset()
 
-    def file(self):
-        return self.__fd
+    def __init__(self, filepath, decoder=None, *args, **kwargs):
+        super().__init__(self.FileParser(filepath, decoder), *args, **kwargs)
 
-    def stop(self):
-        super().stop()
-        if self.__fd.isOpen(): self.__fd.seek(0)
+    def file(self): return self.parser().file()
 
+    def setFile(self, filepath):
+        return self.parser().setFile(filepath)
+
+    def play(self, filepath):
+        if self.isRunning(): self.stop()
+        self.setFile(filepath)
+        self.start()
 
 class BufferPlayer(Player):
-      
-    class ListParser(collections.Callable):
-        def __init__(self):
+
+    class BufferParser(Player.Parser):
+        def __init__(self, buffer):
             super().__init__()
-            self.index = 0
+            self._buffer = assertIsInstance(buffer, collections.Sequence)
+            self._index = 0
 
-        def reset(self): self.index = 0
+        def buffer(self):
+            return self._buffer
 
-        def __call__(self, player):
-            rvalue = False
-            if self.index<len(player._buffer):
-                player._queue.append(player._buffer[self.index])
-                self.index += 1
-                rvalue = True
+        def setBuffer(self, buffer):
+            self._buffer = buffer
+            self.reset()
+
+        def parse(self):
+            rvalue = False,
+            if self._index<len(self.buffer()):
+                rvalue = True, self.buffer()[self._index]
+                self._index += 1
             return rvalue
 
-    def __init__(self, parse=ListParser(), sendout=Player.PostSender, 
-                 speed=1.0, loop=False, interval=1000,
-                 offer=Offer(Offer.UndefinedProduct()), parent=None):
-        super().__init__(parse, sendout, speed, loop, interval, offer, parent)
-        self._buffer = tuple()
+        def reset(self): self._index = 0
 
-    def start(self, buffer):
-        if not self._running:
-            self._buffer = buffer
-            super().start()
+    def __init__(self, parser=None, *args, **kwargs):
+        if parser is None: parser = BufferPlayer.BufferParser(tuple())
+        super().__init__(assertIsInstance(parser, BufferPlayer.BufferParser),
+                         *args, **kwargs)
 
-    def stop(self):
-        super().stop()
-        self._parser.reset()
+    def setBuffer(self, buffer):
+        if self.isRunning(): raise Exception(
+            "Cannot set buffer while player is running.")
+        return self.parser().setBuffer(buffer)
 
-        
-'''class ProductPlayer(AbstractPlayer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._addTag("timetag", {"timetag": datetime.datetime.now()})
-
-    def _sendOut(self, next):
-        for product in next.products:
-            if self._tag("timetag"):
-                product["timetag"] = self._date if self._date is not None \
-                    else datetime.datetime.now()
-            self._postProduct(product)
-
-
-class ProductQueuePlayer(ProductPlayer):
-    def __init__(self, buffer, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__buffer = buffer
-        
-    def _parse(self):
-        rvalue = False
-        if self.__buffer:
-            if hasattr("popleft", self.__buffer):                
-                self._queue.append(self.__buffer.popleft())
-            else:
-                self._queue.append(self.__buffer.pop(0))
-            rvalue = True
-        return rvalue
-
-
-class ProductListPlayer(ProductPlayer):
-    def __init__(self, buffer, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__buffer = buffer
-
-    def start(self):
-        self.__index = 0
-        super().start()
-
-    def _parse(self):
-        rvalue = False
-        if self.__index<len(self.__buffer):
-            self._queue.append(self.__buffer[self.__index])
-            self.__index += 1
-            rvalue = True
-        return rvalue
-'''
+    def play(self, buffer):
+        if self.isRunning(): self.stop()
+        self.setBuffer(buffer)
+        self.start()
 
 # -------------------------------------------------------------------
 
 class Recorder(Consumer):
-    
+
     class _InternalQObject(Consumer._InternalQObject):
         started = QtCore.pyqtSignal()
         stopped = QtCore.pyqtSignal()
@@ -541,7 +557,7 @@ class Recorder(Consumer):
             "fps must be a value greater than zero, not %s"%str(fps))
         self.fps = fps
         self._active = False
-        self._buffer = TimedProductBuffer(timelimit, sizelimit, 
+        self._buffer = TimedProductBuffer(timelimit, sizelimit,
                                           oversizecut=oversizecut)
         # Deactivate the timed buffer eraser and use the refresher
         # timer instead.
@@ -555,7 +571,7 @@ class Recorder(Consumer):
         self._refresher = QtCore.QTimer(timeout=self._refreshtime)
         self.gui = Recorder._Ui(self, guiparent)
         # Writer size
-        self._writer = BufferPlayer()
+        self._writer = BufferPlayer(sender=Player.PostSender())
         self._writer.started.connect(self.gui.writerStarted)
         self._writer.stopped.connect(self._writerStopped)
         self._writerwaiter = QtCore.QTimer(timeout=self._checkWriter)
@@ -584,7 +600,7 @@ class Recorder(Consumer):
             self.started.emit()
 
     def stop(self):
-        """Stop product recording, so that it will not store any other product 
+        """Stop product recording, so that it will not store any other product
         and it will not loose any stored product."""
         if self._active:
             self._active = False
@@ -593,7 +609,7 @@ class Recorder(Consumer):
             self._refresher.stop()
             self.gui.recorderStopped()
             self.stopped.emit()
-            
+
     def request(self):
         """Return the recorder's request."""
         return super().request() if self.isActive() else Request.NONE
@@ -606,8 +622,8 @@ class Recorder(Consumer):
             from boing import create
             self._writer.addObserver(create(uri, mode="out"), child=True)
             self._writer.setSpeed(float("inf"))
-            self._writer.setSender(BufferPlayer.PostSender)
-            self._writer.start(self._buffer)
+            self._writer.setSender(Player.PostSender())
+            self._writer.play(self._buffer)
         else:
             raise Exception("Recorder's writer is already running.")
 
@@ -616,8 +632,8 @@ class Recorder(Consumer):
             from boing import create
             self._writer.addObserver(create(uri, mode="out"), child=True)
             self._writer.setSpeed(1)
-            self._writer.setSender(BufferPlayer.ProductSender)
-            self._writer.start(self._buffer)
+            self._writer.setSender(Player.ProductSender())
+            self._writer.play(self._buffer)
         else:
             raise Exception("Recorder's writer is already running.")
 
@@ -627,7 +643,7 @@ class Recorder(Consumer):
         timelimit = self._buffer.timeLimit()
         if timelimit is not None: self.gui.graph.setStartTime(now-timelimit)
         self.gui.graph.setEndTime(now)
-    
+
     def _writerStopped(self):
         self._writerwaiter.start(20)
 
@@ -638,24 +654,24 @@ class Recorder(Consumer):
             self._writerwaiter.stop()
             self._writer.clear()
             self.gui.writerStopped()
-            
+
     class _Ui(QtGui.QWidget, Ui_recorder):
 
         class RecorderGraph(BufferGraph):
 
-            def __init__(self, buffer, starttime=None, endtime=None, 
+            def __init__(self, buffer, starttime=None, endtime=None,
                          fps=None, parent=None):
                 super().__init__(buffer, starttime, endtime, fps, parent)
                 self._recording = False
 
-            def recorderStarted(self): 
+            def recorderStarted(self):
                 self._recording = True
                 self.update()
-                
-            def recorderStopped(self): 
+
+            def recorderStopped(self):
                 self._recording = False
                 self.update()
-                            
+
             def paintEvent(self, event):
                 super().paintEvent(event)
                 # Draw rec point
@@ -667,32 +683,32 @@ class Recorder(Consumer):
                     painter.setPen(QtCore.Qt.red)
                     painter.setBrush(QtCore.Qt.red)
                     painter.drawEllipse(self.width()-34, 3, 6, 6)
-    
+
         def __init__(self, recorder, parent=None):
             super().__init__(parent)
             self.writeslot = recorder.writeTo
             self.playslot = recorder.playTo
             now = datetime.datetime.now()
             # Setup ui
-            self.setupUi(self)          
-            self.graph = Recorder._Ui.RecorderGraph(recorder._buffer, 
+            self.setupUi(self)
+            self.graph = Recorder._Ui.RecorderGraph(recorder._buffer,
                                                     now, now, fps=0)
             self.graph.setFocus(QtCore.Qt.OtherFocusReason)
             self.graph.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             self.framelayout.addWidget(self.graph)
             self.startstop.toggled.connect(recorder.setActive)
-            QtGui.QShortcut('Ctrl+Q', self, 
+            QtGui.QShortcut('Ctrl+Q', self,
                             activated=QtGui.QApplication.instance().quit)
             # Init context menu
             self.contextmenu = QtGui.QMenu(self)
             self.contextmenu.addAction("Start", recorder.start)
             self.contextmenu.addAction("Stop", recorder.stop)
             # self.contextmenu.addSeparator()
-            # self.contextmenu.addAction("Play to dump:", 
+            # self.contextmenu.addAction("Play to dump:",
             #                            lambda: self.playslot("dump:"))
             self.contextmenu.addSeparator()
             self.contextmenu.addAction(
-                "Write to file...", self._selectFileDialog)            
+                "Write to file...", self._selectFileDialog)
             self.contextmenu.addSeparator()
             self.contextmenu.addAction("Clear buffer", recorder._buffer.clear)
             self.graph.customContextMenuRequested.connect(self._contextMenuRequested)
@@ -703,7 +719,7 @@ class Recorder(Consumer):
             # self.addUrlAction("dump:")
             # self.addUrlAction(os.path.join(os.path.expanduser("~"), "log.osc"))
             # self.addUrlAction("buffer:")
-        
+
         def _contextMenuRequested(self, pos):
             self.contextmenu.exec_(self.graph.mapToGlobal(pos))
 
@@ -713,7 +729,7 @@ class Recorder(Consumer):
             for action in self.contextmenu.actions():
                 if action.text()=="Stop":
                     action.setEnabled(True)
-                elif not action.isSeparator():                    
+                elif not action.isSeparator():
                     action.setEnabled(False)
 
         def recorderStopped(self):
@@ -722,7 +738,7 @@ class Recorder(Consumer):
             for action in self.contextmenu.actions():
                 if action.text()=="Stop":
                     action.setEnabled(False)
-                elif not action.isSeparator():                    
+                elif not action.isSeparator():
                     action.setEnabled(True)
 
         def writerStarted(self):
@@ -743,8 +759,6 @@ class Recorder(Consumer):
             if dialog.exec_():
                 filepath, *useless = dialog.selectedFiles()
                 self.writeslot("json.slip.file://%s"%filepath)
-                
-
 
             '''DelayedReactive.__init__(self)
             QtGui.QWidget.__init__(self, parent)
@@ -753,7 +767,7 @@ class Recorder(Consumer):
             self.subscribeTo(self.buffer)
             # Init context menu
             self.actionurls = set()
-            self.menu = QtGui.QMenu(self)        
+            self.menu = QtGui.QMenu(self)
             self.separator = QtGui.QAction(self.menu)
             self.separator.setSeparator(True)
             self.menu.addAction(self.separator)
@@ -780,11 +794,11 @@ class Recorder(Consumer):
             action.triggered.connect(self._urlAction)
             self.menu.insertAction(self.separator, action)
             self.actionurls.add(url)
-        
+
         def _urlAction(self):
             sender = self.sender()
             if sender is not None: self.buffer.forwardTo(sender.text())
-        
+
         def _showUrlDialog(self):
             self.urldialog.url.setText("")
             self.urldialog.url.setFocus(QtCore.Qt.OtherFocusReason)

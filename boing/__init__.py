@@ -8,7 +8,6 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-
 MAJOR = 0
 MINOR = 2
 VERSION = "%d.%d"%(MAJOR,MINOR)
@@ -16,21 +15,21 @@ VERSION = "%d.%d"%(MAJOR,MINOR)
 # Facade pattern to make things easier.
 from boing import core
 
-class Offer(core.economy.Offer): 
+class Offer(core.economy.Offer):
     """An offer defines the list of products that a producer
     advertises to be its deliverable objects.
 
     """
     pass
 
-class Request(core.economy.Request): 
+class Request(core.economy.Request):
     """The Request abstract class defines objects for filtering
     products.  Each consumer has got a request so that producers know
     if it is useful or not to deliver a product to a consumer.
 
     Request.NONE and Request.ANY define respectively 'no product' and
     'any product' requests.
-    
+
     The Request class implements the Composite design
     pattern. Composite requests can be obtained simply adding singular
     requests, e.g. comp = r1 + r2. Request.NONE is the identity
@@ -48,15 +47,15 @@ class LambdaRequest(core.economy.LambdaRequest):
     """
     pass
 
-class QRequest(core.querypath.QRequest): 
+class QRequest(core.querypath.QRequest):
     """The QRequest is a Request defined by a QPath.
 
     """
     pass
 
-class Producer(core.economy.Producer): 
+class Producer(core.economy.Producer):
     """A Producer is an observable object enabled to post products to
-    a set of subscribed consumers. 
+    a set of subscribed consumers.
 
     When a producer is demanded to posts a product, for each
     registered consumer it tests the product with the consumer's
@@ -65,7 +64,7 @@ class Producer(core.economy.Producer):
     Each Producer has an Offer (a list of product templates), so it
     can say if a priori it can meet a consumer's request.
 
-    """        
+    """
     pass
 
 class Consumer(core.economy.Consumer):
@@ -91,10 +90,10 @@ class Consumer(core.economy.Consumer):
     """
     pass
 
-class Functor(core.economy.Functor): 
+class Functor(core.economy.Functor):
     pass
 
-class Identity(core.economy.Identity): 
+class Identity(core.economy.Identity):
     pass
 
 from boing.nodes.loader import create
@@ -119,9 +118,9 @@ def activateConsole(url="", locals=None, banner=None):
                                      __doc__=None)
     if banner is None:
         import sys
-        banner="Boing 0.2 Console\nPython %s on %s\n"%(sys.version, 
-                                                       sys.platform)      
-    if not url:        
+        banner="Boing 0.2 Console\nPython %s on %s\n"%(sys.version,
+                                                       sys.platform)
+    if not url:
         import sys
         from boing.utils.fileutils import CommunicationDevice, IODevice
         console = Console(CommunicationDevice(sys.stdin), IODevice(sys.stdout),
@@ -130,10 +129,9 @@ def activateConsole(url="", locals=None, banner=None):
         from boing.net import tcp
         from boing.utils.url import URL
         if not isinstance(url, URL): url = URL(url)
-        def newConnection(): 
+        def newConnection():
             socket = console.nextPendingConnection()
             c = Console(socket, socket, locals=locals, parent=console)
-        console = tcp.TcpServer(url.site.host, url.site.port, 
+        console = tcp.TcpServer(url.site.host, url.site.port,
                                 newConnection=newConnection)
     return console
-

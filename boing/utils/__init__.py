@@ -10,22 +10,16 @@
 from code import InteractiveConsole
 import collections
 import copy
-import io
-import itertools
 import sys
 
 from PyQt4 import QtCore
-
-from boing.net import tcp
-from boing.utils.url import URL
-from boing.utils.fileutils import IODevice, CommunicationDevice
 
 def assertIsInstance(obj, *valid):
     classes = tuple(map(lambda t: type(None) if t is None else t, valid))
     if not isinstance(obj, classes): raise TypeError(
         "Expected type %s, not '%s'"%(
-            " or ".join(map(lambda t: "None" if t is type(None) else t.__name__, 
-                            classes)), 
+            " or ".join(map(lambda t: "None" if t is type(None) else t.__name__,
+                            classes)),
             type(obj).__name__))
     return obj
 
@@ -84,7 +78,7 @@ def deepadd(obj, other, diff=False, reuse=False):
             objvalue = obj[key]
             if isinstance(value, collections.Mapping) \
                     and isinstance(objvalue, collections.Mapping):
-                inner = deepadd(objvalue, value, diff, reuse)                  
+                inner = deepadd(objvalue, value, diff, reuse)
                 if inner: rvalue[key] = inner
         else:
             obj[key] = value if reuse else copy.deepcopy(value)
@@ -148,7 +142,7 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
                 else:
                     print(repr(value), end="", file=fd)
                 if len(obj)>1: print(",", end="", file=fd)
-                if i<len(obj)-1: 
+                if i<len(obj)-1:
                     print(end=end, file=fd)
                 elif len(obj)>1:
                     print(end+" "*((level-1)*indent), end="", file=fd)
@@ -160,10 +154,10 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
         if sort:
             keys = list(obj.keys())
             keys.sort()
-        else: 
+        else:
             keys = obj.keys()
         if not obj:
-            print("}", end=end, file=fd)            
+            print("}", end=end, file=fd)
         if maxdepth is None or level<maxdepth:
             if len(obj)>1: print(end=end, file=fd)
             for i, key in enumerate(keys):
@@ -177,7 +171,7 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
                 else:
                     print("%s: %s"%(repr(key), repr(value)), end="", file=fd)
                 if len(obj)>1: print(",", end="", file=fd)
-                if i<len(obj)-1: 
+                if i<len(obj)-1:
                     print(end=end, file=fd)
                 elif len(obj)>1:
                     print(end+" "*((level-1)*indent), end="", file=fd)
@@ -238,7 +232,7 @@ class Console(InteractiveConsole, QtCore.QObject):
         self._backup = sys.stdout
         sys.stdout = self._cache
 
-    def pullStdout(self): 
+    def pullStdout(self):
         """Restore previous stdout."""
         sys.stdout = self._backup
 
@@ -253,7 +247,7 @@ class Console(InteractiveConsole, QtCore.QObject):
     def _writeBanner(self):
         self.write(self.banner)
         self.write(Console.ps1)
-            
+
     def write(self, text):
         """Write *text* to the output device."""
         self.__out.write(text if self.__out.isTextModeEnabled() \

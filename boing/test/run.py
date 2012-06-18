@@ -20,6 +20,8 @@ def additional_tests(modules=[]):
     if not modules or 'net' in modules:
         #from boing.test.net import test_dns_sd
         #tests += test_dns_sd.suite()
+        from boing.test.net import test__init__
+        tests += test__init__.suite()
         from boing.test.net import test_json
         tests += test_json.suite()
         from boing.test.net import test_osc

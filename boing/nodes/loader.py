@@ -15,6 +15,7 @@ import logging
 from PyQt4 import QtCore
 
 from boing import QRequest, Functor, Identity
+from boing.net import bytes, json, slip, tcp, udp
 from boing.nodes import encoding, ioport
 from boing.nodes.multitouch import attrToRequest
 from boing.net import tcp, udp
@@ -24,10 +25,10 @@ from boing.utils.fileutils \
 from boing.utils.url import URL
 
 def create(uri, mode="", logger=None, parent=None):
-    """Create a new node from *uri*."""    
+    """Create a new node from *uri*."""
     logger = logger if logger is not None else logging.getLogger("loader")
     if not isinstance(uri, URL): uri = URL(str(uri))
-    if not uri.opaque and not uri.scheme and not uri.path: 
+    if not uri.opaque and not uri.scheme and not uri.path:
         raise ValueError("Empty URI")
 
     # -------------------------------------------------------------------
@@ -44,7 +45,7 @@ def create(uri, mode="", logger=None, parent=None):
     # LOGGING
 
     elif uri.scheme=="log":
-        return create(str(uri).replace("log:", "log.json:", 1), 
+        return create(str(uri).replace("log:", "log.json:", 1),
                       mode, logger, parent)
 
     elif uri.scheme.startswith("log."):
@@ -58,7 +59,11 @@ def create(uri, mode="", logger=None, parent=None):
             query = parseQuery(uri, "loop", "speed", "interval", "noslip")
             assertUriQuery(uri, query)
             if scheme in ("json", "json.slip"):
-                player = encoding.JsonLogPlayer(uri.path, **query)
+                from boing.nodes.logger import FilePlayer
+                decoder = \
+                    slip.Decoder()+bytes.Decoder()+json.Decoder()
+                player = FilePlayer(uri.path, decoder,
+                                    FilePlayer.ProductSender(), **query)
                 node = player + encoding.TextEncoder()
             elif scheme in ("osc", "osc.slip",
                             "tuio", "tuio.osc", "tuio.osc.slip"):
@@ -66,13 +71,13 @@ def create(uri, mode="", logger=None, parent=None):
                 encoder = encoding.OscEncoder(blender=Functor.MERGE)
                 oscdebug = encoding.OscDebug(blender=Functor.MERGE)
                 node = player + encoder + oscdebug
-                if "tuio" in uri.scheme: 
+                if "tuio" in uri.scheme:
                     node += encoding.TuioDecoder(blender=Functor.MERGE)
             else:
                 raise ValueError("Unexpected encoding: %s"%uri)
             # FIXME: start should be triggered at outputs ready
             QtCore.QTimer.singleShot(300, player.start)
-        elif mode=="out":            
+        elif mode=="out":
             if scheme in ("json", "json.slip"):
                 query = parseQuery(uri, "request", "wrap")
                 assertUriQuery(uri, query)
@@ -88,12 +93,12 @@ def create(uri, mode="", logger=None, parent=None):
                 raise ValueError("Unknown log encoding: %s"%uri)
             device = create("slip.file://%s"%uri.path, "out", logger)
             node = encoder + device
-        
+
     elif uri.scheme=="rec":
         from boing.nodes.logger import Recorder
         assertUriModeIn(uri, mode, "", "out")
-        query = parseQuery(uri, 
-                           "timelimit", "sizelimit", 
+        query = parseQuery(uri,
+                           "timelimit", "sizelimit",
                            "oversizecut", "fps", "timewarping",
                            "request")
         assertUriQuery(uri, query)
@@ -102,12 +107,43 @@ def create(uri, mode="", logger=None, parent=None):
         node.gui.show()
         node.gui.raise_()
 
+    elif uri.scheme=="player":
+        return create(str(uri).replace("player:", "player.json:", 1),
+                      mode, logger, parent)
+
+    elif uri.scheme.startswith("player."):
+        from boing.nodes.player import Player
+        assertUriModeIn(uri, mode, "", "in")
+        query = parseQuery(uri, "interval", "open")
+        assertUriQuery(uri, query)
+        scheme = uri.scheme.replace("player.", "", 1)
+        if scheme in ("json", "json.slip"):
+            from boing.nodes.logger import FilePlayer
+            decoder = \
+                slip.Decoder()+bytes.Decoder()+json.Decoder()
+            player = Player(decoder, Player.ProductSender(), **query)
+            player.gui().show()
+            node = player + encoding.TextEncoder()
+        elif scheme in ("osc", "osc.slip",
+                        "tuio", "tuio.osc", "tuio.osc.slip"):
+            player = Player(encoding.OscLogPlayer._Decoder(),
+                            encoding.OscLogPlayer._Sender(),
+                            (".osc.bz2", ".osc"), **query)
+            player.gui().show()
+            encoder = encoding.OscEncoder(blender=Functor.MERGE)
+            oscdebug = encoding.OscDebug(blender=Functor.MERGE)
+            node = player + encoder + oscdebug
+            if "tuio" in scheme:
+                node += encoding.TuioDecoder(blender=Functor.MERGE)
+        else:
+            raise ValueError("Unknown log encoding: %s"%uri)
+
     # -------------------------------------------------------------------
     # IO DEVICES
     elif uri.scheme=="stdin":
         assertUriModeIn(uri, mode, "", "in")
         assertUriQuery(uri, None)
-        if uri.opaque or uri.path or uri.site or uri.fragment: 
+        if uri.opaque or uri.path or uri.site or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
         else:
             encoder = encoding.TextEncoder(blender=Functor.MERGE)
@@ -117,15 +153,15 @@ def create(uri, mode="", logger=None, parent=None):
     elif uri.scheme=="stdout":
         assertUriModeIn(uri, mode, "", "out")
         assertUriQuery(uri, None)
-        if uri.opaque or uri.path or uri.site or uri.fragment: 
+        if uri.opaque or uri.path or uri.site or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
         else:
             node = ioport.DataWriter(IODevice(sys.stdout))
 
     elif uri.scheme in ("", "file"):
-        if uri.kind==URL.OPAQUE or uri.site or uri.fragment: 
+        if uri.kind==URL.OPAQUE or uri.site or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
-        elif not uri.path: 
+        elif not uri.path:
             raise ValueError("URI's path cannot be empty: %s"%uri)
         assertUriModeIn(uri, mode, "in", "out")
         if mode=="in":
@@ -149,12 +185,12 @@ def create(uri, mode="", logger=None, parent=None):
 
     elif uri.scheme=="udp":
         assertUriModeIn(uri, mode, "in", "out")
-        if uri.kind==URL.OPAQUE or uri.path or uri.fragment: 
+        if uri.kind==URL.OPAQUE or uri.path or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
         elif mode=="in":
             assertUriQuery(uri, None)
             encoder = encoding.TextDecoder(blender=Functor.MERGE)
-            reader = ioport.DataReader(udp.UdpListener(uri))            
+            reader = ioport.DataReader(udp.UdpListener(uri))
             node = reader + encoder
             if uri.site.port==0: logger.info(
                 "Listening at %s"%reader.inputDevice().url())
@@ -166,7 +202,7 @@ def create(uri, mode="", logger=None, parent=None):
     elif uri.scheme=="tcp":
         assertUriModeIn(uri, mode, "in", "out")
         assertUriQuery(uri, None)
-        if uri.kind==URL.OPAQUE or uri.path or uri.fragment: 
+        if uri.kind==URL.OPAQUE or uri.path or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
         elif mode=="in":
             encoder = encoding.TextDecoder(blender=Functor.MERGE)
@@ -218,7 +254,7 @@ def create(uri, mode="", logger=None, parent=None):
                 logger.info(
                     "JSON over TCP is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
-            if "request" in query: 
+            if "request" in query:
                 raise ValueError("Unexpected query keys: 'request'")
             device = create(loweruri, "in", logger)
             decoder = encoding.JsonDecoder(blender=Functor.MERGE)
@@ -268,7 +304,7 @@ def create(uri, mode="", logger=None, parent=None):
     elif uri.scheme=="tuio":
         extended = copy.copy(uri)
         if uri.path: extended.scheme += ".osc.slip.file"
-        else:            
+        else:
             extended.scheme += ".osc.udp"
             if uri.site.port==0: extended.site.port = 3333
         logger.info(
@@ -278,19 +314,19 @@ def create(uri, mode="", logger=None, parent=None):
     elif uri.scheme.startswith("tuio."):
         assertUriModeIn(uri, mode, "in", "out")
         loweruri = lower(uri, "tuio")
-        if not loweruri.scheme.startswith("osc."): 
+        if not loweruri.scheme.startswith("osc."):
             loweruri.scheme = "osc.%s"%loweruri.scheme
         if mode=="in":
             device = create(loweruri, "in", logger)
             encoder = encoding.TuioDecoder(blender=Functor.MERGE)
             node = device + encoder
         elif mode=="out":
-            if loweruri.site.host and loweruri.site.port==0: 
+            if loweruri.site.host and loweruri.site.port==0:
                 loweruri.site.port = 3333
             encoder = encoding.TuioEncoder(blender=Functor.RESULTONLY)
             device = create(loweruri, "out")
             node = encoder + device
-    
+
         '''# MT-DEV
     elif uri.scheme=="mtdev":
         if sys.platform == "linux2":
@@ -331,13 +367,13 @@ def create(uri, mode="", logger=None, parent=None):
         query = parseQuery(uri, "request", "filter", "fps")
         stat = StatProducer(**query) # blender is fixed to  RESULTONLY
         encoder = encoding.TextEncoder(blender=Functor.MERGE)
-        device = create(lower(uri, "stat", query.keys()), "out", logger) 
+        device = create(lower(uri, "stat", query.keys()), "out", logger)
         node = stat + encoder + device
 
     elif uri.scheme=="viz":
         from boing.nodes.multitouch.ContactViz import ContactViz
         assertUriModeIn(uri, mode, "", "out")
-        if uri.opaque or uri.path or uri.site or uri.fragment: 
+        if uri.opaque or uri.path or uri.site or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
         else:
             query  = parseQuery(uri, "antialiasing", "fps")
@@ -374,9 +410,9 @@ def create(uri, mode="", logger=None, parent=None):
     elif uri.scheme=="calib":
         from boing.nodes.multitouch import Calibration
         matrix = None
-        query = parseQuery(uri, "matrix", "screen", "request", 
+        query = parseQuery(uri, "matrix", "screen", "request",
                            "merge", "copy", "result", "attr")
-        if "matrix" in query: 
+        if "matrix" in query:
             query["matrix"] = Calibration.buildMatrix(
                 tuple(map(float, query["matrix"].strip().split(","))))
         elif "screen" in query:
@@ -443,7 +479,7 @@ class NodeServer(tcp.TcpServer):
     def __init__(self, *args, **kwargs):
         tcp.TcpServer.__init__(self, *args, **kwargs)
         self.newConnection.connect(self.__newConnection)
-    def __newConnection(self): 
+    def __newConnection(self):
         conn = self.nextPendingConnection()
         reader = ioport.DataReader(conn, parent=conn)
         reader.addObserver(self.parent())
@@ -467,7 +503,7 @@ def parseQuery(uri, *restrictions):
                 rvalue["blender"] = Functor.MERGECOPY
             elif key=="result":
                 rvalue["blender"] = Functor.RESULTONLY
-            else:                
+            else:
                 rvalue[key] = _kwstr2value(uri.query.data[key])
     return rvalue
 
@@ -481,7 +517,7 @@ def _kwstr2value(string):
     else:
         try:
             rvalue = float(string)
-        except ValueError: 
+        except ValueError:
             rvalue = string
     return rvalue
 

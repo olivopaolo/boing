@@ -41,7 +41,7 @@ class Test_assertIsInstance(unittest.TestCase):
 
 # -------------------------------------------------------------------
 
-def suite():    
+def suite():
     testcases = (
         Test_assertIsInstance,
         )

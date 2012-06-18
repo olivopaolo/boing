@@ -59,7 +59,7 @@ from boing.utils import assertIsInstance
 class Offer(tuple):
     """An offer defines the list of products that a producer
     advertises to be its deliverable objects.
-    
+
     """
     pass
 
@@ -70,10 +70,10 @@ class Offer(tuple):
         predeterminated.
 
         """
-        def __repr__(self): return "Product.UNDEFINED"    
+        def __repr__(self): return "Product.UNDEFINED"
         def __eq__(self, other): return isinstance(other, Offer.UndefinedProduct)
         def __ne__(self, other): return not isinstance(other, Offer.UndefinedProduct)
-    
+
     def __new__(cls, *args, iter=None):
         """Constructor.
 
@@ -91,7 +91,7 @@ class Offer(tuple):
             rvalue = tuple.__new__(cls, filter(l, args))
         return rvalue
 
-    def __repr__(self): 
+    def __repr__(self):
         return "Offer(%s)"%", ".join(str(i) for i in self)
 
     def __add__(self, other):
@@ -117,7 +117,7 @@ class Request(metaclass=abc.ABCMeta):
 
     Request.NONE and Request.ANY define respectively a no product and
     any product requests.
-    
+
     The Request class implements the Composite design
     pattern. Composite requests can be obtained simply adding singular
     requests, e.g. comp = r1 + r2. Request.NONE is the identity
@@ -160,7 +160,7 @@ class Request(metaclass=abc.ABCMeta):
     def __eq__(self, other): raise NotImplementedError()
 
     def __ne__(self, other): return not self==other
-        
+
     def __add__(self, other):
         if other is Request.ANY or self==other:
             rvalue = other
@@ -176,7 +176,7 @@ class _AnyRequest(Request):
 
     def __init__(self):
         pass
-            
+
     def test(self, product):
         return True
 
@@ -214,7 +214,7 @@ class _NoneRequest(Request):
 
     def __init__(self):
         pass
-            
+
     def test(self, product):
         return False
 
@@ -246,7 +246,7 @@ Request.ANY = _AnyRequest()
 Request.NONE = _NoneRequest()
 
 class _CompositeRequest(Request):
-    
+
     def __init__(self, *requests):
         super().__init__()
         self._children = set()
@@ -348,7 +348,7 @@ class Producer(Observable):
 
            class MyProducer(Producer, Producer.ConfigurableOffer):
                pass
-        
+
         """
         def setOffer(self, offer):
             """Set *offer* as the new producer's offer."""
@@ -365,7 +365,7 @@ class Producer(Observable):
     demandedOfferChanged = QtCore.pyqtSignal()
     """Signal emitted when its own demanded offer changes."""
 
-    def __init__(self, offer, tags=None, 
+    def __init__(self, offer, tags=None,
                  store=None, retrieve=None, haspending=None,
                  parent=None):
         """Constructor.
@@ -373,11 +373,11 @@ class Producer(Observable):
         *offer* must be an instance of Offer.
 
         *tags* must be a dict or None.
-        
+
         *store* can be a callable object to be used as a handler for
         storing posted products (see *_store* for the handler arguments)
         or None.
-        
+
         *retrieve* can be a callable object to be used as a handler
         for retrieving stored products (see *_retrieveAndDeliver* for
         the handler arguments) or None.
@@ -395,9 +395,9 @@ class Producer(Observable):
         self.offerChanged.connect(self._refreshDemandedOffer)
         self.__store = assertIsInstance(store, None, collections.Callable)
         self.__retrieve = assertIsInstance(retrieve, None, collections.Callable)
-        self.__haspendingproducts = assertIsInstance(haspending, 
+        self.__haspendingproducts = assertIsInstance(haspending,
                                                      None, collections.Callable)
-        
+
     def aggregateDemand(self):
         """Return the union of all the subscribed consumers' requests."""
         return self._aggregatedemand
@@ -421,7 +421,7 @@ class Producer(Observable):
         for key, value in kwargs.items():
             if key=="tag": tag = value
             else: raise TypeError(
-                "'%s' is an invalid keyword argument for this function"%key)        
+                "'%s' is an invalid keyword argument for this function"%key)
         if product is None:
             if "tag" not in locals(): raise TypeError()
             else:
@@ -463,7 +463,7 @@ class Producer(Observable):
             else self._defaultHasPendingProducts(consumer)
 
     def _requireProducts(self, consumer):
-        """Notify that *consumer* required the products stored for it.""" 
+        """Notify that *consumer* required the products stored for it."""
         ref = self._getRef(consumer)
         if ref is None: raise Exception(
             "Unsubscribed consumers cannot get products: %s"%consumer)
@@ -488,7 +488,7 @@ class Producer(Observable):
         record = self._getRecord(consumer)
         if not hasattr(record, "products"):
             record.products = [product]
-        else: 
+        else:
             record.products.append(product)
         return record.products
 
@@ -521,15 +521,15 @@ class Producer(Observable):
             self.demandChanged.emit()
 
     def _refreshDemandedOffer(self):
-        """Recalculate the demanded offer."""        
+        """Recalculate the demanded offer."""
         refresh = Offer(iter=filter(self._aggregatedemand.test, self.offer()))
         if self._demandedoffer!=refresh:
             self._demandedoffer = refresh
             self._activetags = set(tag for tag, request in self._tags.items() \
-                                       if any(map(request.test, 
+                                       if any(map(request.test,
                                                   self._demandedoffer)))
             self.demandedOfferChanged.emit()
-            
+
     def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection, child=False):
         rvalue = super().addObserver(observer, mode, child)
         if rvalue and isinstance(observer, Consumer):

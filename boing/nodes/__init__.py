@@ -15,6 +15,8 @@ import weakref
 from PyQt4 import QtCore
 
 from boing import Offer, Request, Producer, Consumer, Functor, Identity
+from boing.net import Encoder as BaseEncoder
+from boing.net import Decoder as BaseDecoder
 from boing.core.graph import SimpleGrapher
 from boing.utils import assertIsInstance, deepDump, quickdict
 
@@ -334,6 +336,51 @@ class DiffArgumentFunctor(Functor):
                     item.pop(k, None)
             else:
                 raise ValueError("Unexpected action: %s", action)
+
+
+# -------------------------------------------------------------------
+# Encoder
+
+class Encoder(Functor):
+
+    def __init__(self, encoder, name, request, offer, blender, parent=None):
+        super().__init__(request, offer, blender, parent=parent)
+        self._encoder = assertIsInstance(encoder, BaseEncoder)
+        self._name = name
+
+    def encoder(self):
+        raise NotImplementedError()
+
+    def setEncoder(self, encoder):
+        raise NotImplementedError()
+
+    def _process(self, sequence, producer):
+        for operands in sequence:
+            for name, value in operands:
+                yield ((name, self.encoder().encode(value)), )
+
+# -------------------------------------------------------------------
+# Decoder
+
+class Decoder(Functor):
+
+    def __init__(self, decoder, name, request, offer, blender, parent=None):
+        super().__init__(request, offer, blender, parent=parent)
+        self._decoder = assertIsInstance(decoder, BaseDecoder)
+        self._name = name
+
+    def decoder(self):
+        raise NotImplementedError()
+
+    def setDecoder(self, decoder):
+        raise NotImplementedError()
+
+    def _process(self, sequence, producer):
+        for operands in sequence:
+            for name, value in operands:
+                for value in self.decoder().decode(value):
+                    yield ((name, value), )
+
 
 '''
 class RenameNode(Node):

@@ -53,11 +53,11 @@ class ContactViz(Consumer):
                 history = record.history
                 for key, event in product["diff"].items():
                     if key in ("added", "updated"):
-                        for gid, value in event.contacts.items():
+                        for gid, value in event["contacts"].items():
                             track = history.setdefault(gid, [])
                             if track or "rel_pos" in value: track.append(value)
                     elif key=="removed":
-                        for key in event.contacts:
+                        for key in event["contacts"]:
                             history.pop(key, None)
                     else:
                         raise ValueError("Unexpected diff key: %s", key)
@@ -163,12 +163,12 @@ class ContactWidget(QtGui.QWidget):
                 #gid, history in record.history.items():
                 #stateN = record.contacts.history[gid]
                 if "rel_pos" not in stateN: continue
-                posN = self.__tovizpos(stateN.rel_pos, deviceratio)
+                posN = self.__tovizpos(stateN["rel_pos"], deviceratio)
                 x, y = posN
                 history = record.history.setdefault(gid, [])
                 if len(history)>1:
                     # Draw first point
-                    pos0 = self.__tovizpos(history[0].rel_pos, deviceratio)
+                    pos0 = self.__tovizpos(history[0]["rel_pos"], deviceratio)
                     painter.save()
                     painter.setBrush(outline)
                     painter.drawEllipse(pos0[0]-3, pos0[1]-3, 6, 6)
@@ -179,19 +179,19 @@ class ContactWidget(QtGui.QWidget):
                     posI = pos0
                     for memento in history[1:]:
                         if "rel_pos" in memento: 
-                            posI = memento.rel_pos
+                            posI = memento["rel_pos"]
                             posI = self.__tovizpos(posI, deviceratio)
                             path.lineTo(*posI)
                             count += 1
                     painter.strokePath(path, painter.pen())
                 # Draw boundingbox if defined                
                 if "boundingbox" in stateN \
-                        and "rel_size" in stateN.boundingbox:
-                    bb = stateN.boundingbox
-                    bb_rel_size = bb.rel_size
+                        and "rel_size" in stateN["boundingbox"]:
+                    bb = stateN["boundingbox"]
+                    bb_rel_size = bb["rel_size"]
                     bb_angle = bb.get("si_angle")
                     bb_x, bb_y = (x, y) if "rel_pos" not in bb \
-                        else self.__tovizpos(bb.rel_pos, deviceratio)
+                        else self.__tovizpos(bb["rel_pos"], deviceratio)
                     painter.save()
                     painter.setPen(QtGui.QPen(fill, 2))
                     bb_brush_color = QtGui.QColor(fill)
@@ -206,7 +206,7 @@ class ContactWidget(QtGui.QWidget):
                     painter.restore()
                 # Draw objclass if defined
                 if "objclass" in stateN:
-                    painter.drawText(x+1.5*o, y-2*o, "obj: %d"%stateN.objclass)
+                    painter.drawText(x+1.5*o, y-2*o, "obj: %d"%stateN["objclass"])
                 # Draw orientation if defined
                 if "si_angle" in stateN:
                     painter.save()
@@ -214,7 +214,7 @@ class ContactWidget(QtGui.QWidget):
                     pencolor.setAlphaF(0.4)
                     painter.setPen(QtGui.QPen(pencolor, 16))
                     l = 10
-                    angle = stateN.si_angle[0]
+                    angle = stateN["si_angle"][0]
                     dx = math.cos(angle) * l
                     dy = math.sin(angle) * l
                     painter.drawLine(x-dx, y-dy, x+dx, y+dy)           
@@ -228,18 +228,18 @@ class ContactWidget(QtGui.QWidget):
                     pen.setCapStyle(QtCore.Qt.RoundCap)
                     painter.setPen(pen)
                     l = 25
-                    X, Y = self.__tovizpos(stateN.rel_speed, deviceratio)
-                    painter.drawLine(x, y, x+X*0.5, y+Y*0.5)           
+                    X, Y = self.__tovizpos(stateN["rel_speed"], deviceratio)
+                    painter.drawLine(x, y, x+X*0.5, y+Y*0.5)
                     painter.restore()
                 # Draw current position
                 count += 1
-                painter.drawEllipse(x-self.phi, y-self.phi, 
+                painter.drawEllipse(x-self.phi, y-self.phi,
                                     2*self.phi, 2*self.phi)
 
                 # Print additional information
                 if self.debuglevel>0:
                     painter.setPen(QtCore.Qt.black)
-                    painter.drawText(x+1.5*self.phi, y+self.phi, 
+                    painter.drawText(x+1.5*self.phi, y+self.phi,
                                      "%s (%s)"%(gid, len(history)))
                     if self.debuglevel>1:
                         i = 1 ;
@@ -248,7 +248,7 @@ class ContactWidget(QtGui.QWidget):
                         painter.drawText(
                             xx, yy,
                             "%.3f,%.3f (rel_pos)"%(
-                                stateN.rel_pos[0], stateN.rel_pos[1]))
+                                stateN["rel_pos"][0], stateN["rel_pos"][1]))
                         if "rel_speed" in stateN:
                             i += 1 ;
                             xx = x+1.5*self.phi
@@ -256,14 +256,14 @@ class ContactWidget(QtGui.QWidget):
                             painter.drawText(
                                 xx, yy,
                                 "%+.3f,%+.3f (rel_speed)"%(
-                                    stateN.rel_speed[0], stateN.rel_speed[1]))
+                                    stateN["rel_speed"][0], stateN["rel_speed"][1]))
                         if "si_angle" in stateN:
                             i += 1 ;
                             xx = x+1.5*self.phi
                             yy = y+self.phi+i*10
                             painter.drawText(
                                 xx, yy,
-                                "%+.3f (si_angle)"%(stateN.si_angle[0]))
+                                "%+.3f (si_angle)"%(stateN["si_angle"][0]))
                         if self.debuglevel>2:
                             i += 1
                             xx = x+1.5*self.phi
