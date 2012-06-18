@@ -7,14 +7,23 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+"""The json module provides methods and classes for supporting JSON
+object serialization. It uses the python json standard module, but it
+provides a default solution for serializing bytestrings and
+datetime.datetime objects.
+
+Encoder and Decoder classes provide a standard interface for the JSON
+encoding.
+
+"""
+
 import base64
 import logging
 import json as _json
 import datetime
 import struct
 
-import boing.utils as utils
-import boing.net.ntp as ntp
+from boing.net import ntp
 
 class _ProductEncoder(_json.JSONEncoder):
     def default(self, obj):
@@ -40,11 +49,45 @@ def _productHook(dct):
         ntptime = struct.unpack("d", pack)[0]
         rvalue = ntp.ntp2datetime(ntptime)
     else:
-        rvalue = utils.quickdict(dct)
+        rvalue = dct
     return rvalue
 
 def encode(obj):
-    return _json.dumps(obj, cls=_ProductEncoder, separators=(',',':')) 
+    """Return a string containing the json serialization of *obj*."""
+    return _json.dumps(obj, cls=_ProductEncoder, separators=(',',':'))
 
-def decode(data):
-    return _json.loads(data, object_hook=_productHook)
+def decode(string):
+    """Return the object obtained for decoding *string* using the JSON
+    decoding."""
+    return _json.loads(string, object_hook=_productHook)
+
+# -------------------------------------------------------------------
+
+from boing.net import Encoder as _AbstractEncoder
+from boing.net import Decoder as _AbstractDecoder
+
+class Encoder(_AbstractEncoder):
+    """The Encoder is able to serialize standard data types into json strings.
+
+    """
+    def encode(self, obj):
+        """Return a string containing the json serialization of *obj*."""
+        return encode(obj)
+
+    def reset(self):
+        """NOP method."""
+        pass
+
+class Decoder(_AbstractDecoder):
+    """The Decoder object is able to decode json strings into the
+    corrispetive python objects.
+
+    """
+    def decode(self, string):
+        """Return the list of object obtained from the deserialization
+        of *string*."""
+        return decode(string),
+
+    def reset(self):
+        """NOP method."""
+        pass

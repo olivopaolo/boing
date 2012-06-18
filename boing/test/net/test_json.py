@@ -9,11 +9,12 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import datetime
+import itertools
 import unittest
 
 import boing.net.json as json
 
-class Test__init__(unittest.TestCase):
+class TestJson(unittest.TestCase):
 
     def test_encode_decode(self):
         obj = {"timetag": datetime.datetime.now(), "data": b"unittest"}
@@ -21,13 +22,27 @@ class Test__init__(unittest.TestCase):
         decoded = json.decode(encoded)
         self.assertEqual(obj, decoded)
 
+    def test_SingleEncoderDecoder(self):
+        obj = {"timetag": datetime.datetime.now(), "data": b"unittest"}
+        encoder = json.Encoder()
+        decoder = json.Decoder()
+        encoded = encoder.encode(obj)
+        decoded = decoder.decode(encoded)
+        self.assertEqual(len(decoded), 1)
+        self.assertEqual(decoded[0], obj)
+
 # -------------------------------------------------------------------
 
+
 def suite():
-    tests = (t for t in Test__init__.__dict__ if t.startswith("test_"))
-    return unittest.TestSuite(map(Test__init__, tests))    
+    testcases = (
+        TestJson,
+        )
+    return unittest.TestSuite(itertools.chain(
+            *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
+                  for t in testcases)))
 
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(suite())

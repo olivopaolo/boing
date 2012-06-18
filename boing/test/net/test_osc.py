@@ -23,7 +23,7 @@ class TestClasses(unittest.TestCase):
     def test_Message_empty(self):
         self.assertRaises(TypeError, osc.Message, None)
 
-    def test_Message_address(self):        
+    def test_Message_address(self):
         msg1 = osc.Message(self.address)
         debug1 = io.StringIO()
         msg1.debug(debug1)
@@ -62,7 +62,7 @@ class TestClasses(unittest.TestCase):
         self.assertIsInstance(str(msg2), str)
         self.assertEqual(data1, data2)
         self.assertEqual(debug1.getvalue(), debug2.getvalue())
-        
+
     def test_Message_bad_typetag(self):
         msg = osc.Message(self.address,"",17)
         self.assertRaises(TypeError, msg.encode)
@@ -195,7 +195,7 @@ class TestClasses(unittest.TestCase):
         timetag = datetime.datetime.now()
         source = "test_osc.py"
         bdl1 = osc.Bundle(timetag,
-                          (osc.Message(self.address,"is",1,"unittest"), 
+                          (osc.Message(self.address,"is",1,"unittest"),
                            osc.Message(self.address,"TFNIib",2,b"unittest")))
         bdl1.source = source
         debug1 = io.StringIO()
@@ -214,56 +214,29 @@ class TestClasses(unittest.TestCase):
         self.assertEqual(data1, data2)
         self.assertEqual(debug1.getvalue(), debug2.getvalue())
 
-'''class TestLogPlayer(unittest.TestCase):
+class TestEncoder(unittest.TestCase):
 
-    class DebugConsumer(Consumer):
-        
-        def __init__(self):
-            Consumer.__init__(self)
-            self.store = []
-
-        def _consume(self, products, producer):
-            self.store.extend(products)
-
-    def setUp(self):
-        self.timeout = False
-
-    def timeoutEvent(self, *args, **kwargs):
-        self.timeout = True
-        EventLoop.stop()
-
-    def getTestLog(self):
-        dirname = os.path.dirname(__file__)
-        filepath = os.path.abspath(os.path.join(dirname, "..", 
-                                               "data", "osclog.osc.bz2"))
-        return File(filepath, uncompress=True)
-
-    def test_SinglePlay(self):
-        log = self.getTestLog()
-        player = LogPlayer(log)
-        consumer = TestLogPlayer.DebugConsumer()
-        consumer.subscribeTo(player)
-        player.stopped.connect(EventLoop.stop)
-        player.start(looping=False)
-        tid = EventLoop.after(10, self.timeoutEvent)
-        EventLoop.run()
-        self.assertFalse(self.timeout)
-        for p in consumer.store:
-            packet = p["osc"]
-            self.assertIsInstance(packet, osc.Packet)
-            """data = p.data
-            packet_debug = io.StringIO()
-            packet.debug(packet_debug)
-            data_debug = io.StringIO()
-            osc.decode(data).debug(data_debug)
-            self.assertEqual(packet_debug.getvalue(), data_debug.getvalue())
-            self.assertEqual(packet.encode(), data)"""'''
+    def test_SingleEncoderDecoder(self):
+        bdl = osc.Bundle(datetime.datetime.now(),
+                         (osc.Message("/test", "is", 1, "unittest"),
+                          osc.Message("/test/boing", "TFNIib", 2, b"unittest")))
+        encoder = osc.Encoder()
+        decoder = osc.Decoder()
+        encoded = encoder.encode(bdl)
+        decoded = decoder.decode(encoded)
+        self.assertEqual(len(decoded), 1)
+        stream = io.StringIO()
+        bdl.debug(stream)
+        decoded[0].debug(stream)
+        text = stream.getvalue()
+        self.assertEqual(text[:int(len(text)/2)], text[int(len(text)/2):])
 
 # -------------------------------------------------------------------
 
 def suite():
     testcases = (
         TestClasses,
+        TestEncoder,
         )
     return unittest.TestSuite(itertools.chain(
             *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \
@@ -272,4 +245,4 @@ def suite():
 # -------------------------------------------------------------------
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(suite())

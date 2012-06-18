@@ -13,12 +13,21 @@
 #     http://opensoundcontrol.org/spec-1_0
 #  "Features and Future of Open Sound Control version 1.1 for NIME"
 
+
+"""The osc module provides methods and classes for handling OSC
+formatted messages.
+
+Encoder and Decoder classes provide a standard interface for the OSC
+encoding.
+
+"""
+
 import io
 import datetime
 import struct
 import traceback
 
-import boing.net.ntp as ntp
+from boing.net import ntp
 
 # -----------------------------------------------------------------
 
@@ -46,7 +55,7 @@ def _pad(size, n=4):
     mod = size%n
     if mod==0: return size
     return size + n-mod
-   
+
 def _arg_type(arg):
     if arg is True: return 'T'
     elif arg is False: return 'F'
@@ -101,7 +110,7 @@ def _arg_decode(data, typetag):
     elif typetag=='b':
         realsize = struct.unpack("!i", data[0:4])[0]
         size = _pad(realsize)
-        if len(data)<size: 
+        if len(data)<size:
             raise ValueError("Wrong data size for a %d bytes blob"%realsize)
         arg, data = data[4:4+realsize], data[size:]
     elif typetag=='t':
@@ -114,17 +123,16 @@ def _arg_decode(data, typetag):
 
 # -----------------------------------------------------------------
 
-class Packet(object):
-    pass
+class Packet: pass
 
 # -----------------------------------------------------------------
 
 class EncodedPacket(Packet):
-    
+
     def __init__(self, data):
         self.data = data
         self.source = None
-        
+
     def encode(self):
         return self.data
 
@@ -133,7 +141,7 @@ class EncodedPacket(Packet):
 
     def debug(self, out, indent=''):
         print(indent+self.__class__.__name__, len(self.data), "bytes", file=out)
-    
+
 # -----------------------------------------------------------------
 
 class Message(Packet):
@@ -145,18 +153,18 @@ class Message(Packet):
         self.typetags = typetags
         self.arguments = arguments
         self.source = None # source is not encoded
-        
+
     def __str__(self):
         return """<%s instance at 0x%x [%s, %s, %d argument(s)]>"""%(
-            self.__class__.__name__, id(self), 
+            self.__class__.__name__, id(self),
             repr(self.address), repr(self.typetags), len(self.arguments))
-    
+
     def encode(self):
         data = io.BytesIO()
         data.write(_arg_encode(self.address, 's'))
         typetags = self.typetags
         if typetags is None: typetags = "".join(map(_arg_type, self.arguments))
-        elif len(self.typetags.strip('TFNI'))!=len(self.arguments): 
+        elif len(self.typetags.strip('TFNI'))!=len(self.arguments):
             raise TypeError("Typetag error")
         data.write(_arg_encode(','+typetags, 's'))
         ia = 0
@@ -181,7 +189,7 @@ class Bundle(Packet):
         self.timetag = timetag
         self.elements = elements
         self.source = None # source is not encoded
-        
+
     def __str__(self):
         return """<%s instance at 0x%x [@%s, %d element(s)]>"""%(
             self.__class__.__name__, id(self),
@@ -224,11 +232,11 @@ def decode(data, source=None):
             part = part[size:]
         packet = Bundle(timetag, elements)
     else:
-        if s[0]!='/': 
+        if s[0]!='/':
             print(s)
             raise ValueError("Address pattern should start with '/'")
         typetags, part = _arg_decode(part,'s')
-        if typetags[0]!=',': 
+        if typetags[0]!=',':
             raise ValueError("Type tag string should start with ','")
         arguments = []
         for tag in typetags[1:]:
@@ -249,7 +257,7 @@ def dict2bundle(d, address):
         msg = Message(address, fmt, *args)
         msgs.append(msg)
     return Bundle(None, msgs)
-                    
+
 def bundle2dict(b, address):
     d = {}
     for msg in b.elements:
@@ -262,23 +270,21 @@ def bundle2dict(b, address):
 # -----------------------------------------------------------------
 
 def streamTimeWarp(osc_stream, startTime=None, speedFactor=1, recursive=False):
-    """ This method modifies the OSC bundles's timetag so that the
+    """This method modifies the OSC bundles's timetag so that the
     first of the stream has timetag as startTime and the distance
     between bundles is dependant from speedFactor. When recursive is
-    True also the internal bundles are affected.
-    """
+    True also the internal bundles are affected."""
     def __bundleTimeWarp(osc_bundle) :
         """ Recoursive method for exploring bundles inside bundles. """
         timedelta = osc_bundle.timetag - t0
         microseconds = timedelta.days * 24 *60 * 60 * 1000000 + timedelta.seconds * 1000000 + timedelta.microseconds
-        microseconds = microseconds / speedFactor        
+        microseconds = microseconds / speedFactor
         osc_bundle.timetag = startTime + datetime.timedelta(microseconds=microseconds)
         if recursive :
             # recursive exploration
             for elem in osc_bundle.elements :
                 if isinstance(elem, Bundle) :
                     bundleTimeWarp(elem, t0, startTime, speedFactor)
-    
     t0 = None
     for packet in osc_stream :
         if isinstance(packet, Bundle):
@@ -290,32 +296,32 @@ def streamTimeWarp(osc_stream, startTime=None, speedFactor=1, recursive=False):
 
 # -----------------------------------------------------------------
 
-if __name__=="__main__":
-    import math
-    import sys
-    import traceback
-    for msg1 in (
-        Message("/msg","iii",23,10,2009),
-        Message("/msg","","this should fail", "bad typetag"),
-        Message("/msg","TFNIi",23),
-        Message("/msg",None,23),
-        Message("/msg",None,math.pi),
-        Message("/msg",None,"this is a string"),
-        Message("/msg",None,"this one\0should be passed as a buffer"),
-        Message("/msg","b","this is a string\0 passed as a buffer"),
-        Bundle(datetime.datetime.now(), 
-               (Message("/bndl",None,1), Message("/bndl",None,2.0))),
-        Bundle(None, 
-               (Bundle(None,(Message("/bndl",None,1),Message("/bndl",None,2))), 
-                Message("/bndl",None,2.0)))
-        ):
-        print("TST", msg1)
-        try:
-            data = msg1.encode()
-            print("OSC",repr(data))
-            msg2 = decode(data)
-            msg2.debug(sys.stdout)
-        except:
-            print("Test failed:", sys.exc_info()[1])
-            traceback.print_exc()
-        print()
+from boing.net import Encoder as _AbstractEncoder
+from boing.net import Decoder as _AbstractDecoder
+
+class Encoder(_AbstractEncoder):
+    """The Encoder is able to encode OSC packet objects into byte strings.
+
+    """
+    def encode(self, packet):
+        """Return the bytestring obtained from serializing the OSC
+        packet *obj*."""
+        return packet.encode()
+
+    def reset(self):
+        """NOP method."""
+        pass
+
+class Decoder(_AbstractDecoder):
+    """The Decoder is able to convert valid byte string objects into
+    OSC Packet objects.
+
+    """
+    def decode(self, obj):
+        """Return the list of OSC packets decoded from the bytestring
+        *obj*."""
+        return decode(obj),
+
+    def reset(self):
+        """NOP method."""
+        pass
