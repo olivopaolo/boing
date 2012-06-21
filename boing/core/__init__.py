@@ -4,6 +4,8 @@
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
+# Copyright © INRIA
+#
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
@@ -30,7 +32,7 @@ def _merge(previous, items):
                     if isinstance(node, _collections.Sequence):
                         key = int(key)
                     node = node[key]
-                key = split[-1] 
+                key = split[-1]
                 if isinstance(node, _collections.Sequence):
                     key = int(key)
                 node[key] = value
@@ -41,7 +43,7 @@ class _ConcreteMerge(economy.Functor.MergeBlender):
         for product, items in _itertools.zip_longest(products, results):
             yield _merge(product, items)
 
-class _ConcreteMergeCopy(economy.Functor.MergeBlender):    
+class _ConcreteMergeCopy(economy.Functor.MergeBlender):
     def __repr__(self): return "Blender.MERGECOPY"
 
     def blend(self, products, results):
@@ -49,7 +51,7 @@ class _ConcreteMergeCopy(economy.Functor.MergeBlender):
             yield  product if not items \
                 else _merge(_copy.deepcopy(product), items)
 
-class _ConcreteResultOnly(economy.Functor.ResultOnlyBlender):    
+class _ConcreteResultOnly(economy.Functor.ResultOnlyBlender):
     def blend(self, products, results):
         for product, items in _itertools.zip_longest(products, results):
             yield _merge(_quickdict(), items)

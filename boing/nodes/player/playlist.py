@@ -2,6 +2,8 @@
 #
 # boing/nodes/player/playlist.py -
 #
+# Copyright © INRIA
+#
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
 # See the file LICENSE for information on usage and redistribution of

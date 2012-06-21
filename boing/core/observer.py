@@ -4,6 +4,8 @@
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
+# Copyright © INRIA
+#
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
@@ -27,7 +29,7 @@ from boing.core.graph import Node
 from boing.utils import assertIsInstance
 
 class Observable(QtCore.QObject, Node):
-    """    
+    """
     An Observable can be subscribed by a list of Observer objects;
     then the observable can trigger all or a subset of the subscribed
     observers by invoking its method named *trigger*.
@@ -35,7 +37,7 @@ class Observable(QtCore.QObject, Node):
     An Observable does not own the subscribed observers, since weak
     references are used.
     """
-    
+
     # FIXME: Add unittest for these signals
     observerAdded = QtCore.pyqtSignal(QtCore.QObject)
     """Signal emitted when a new observer is added."""
@@ -52,7 +54,7 @@ class Observable(QtCore.QObject, Node):
     def __init__(self, parent=None):
         """
         Constructor.
-        
+
         *parent* defines the observable's parent.
         """
         QtCore.QObject.__init__(self, parent)
@@ -81,7 +83,7 @@ class Observable(QtCore.QObject, Node):
         *observer* has been correctly added. If *child* is true, the
         observer is set to be child of the current observable."""
         assertIsInstance(observer, Observer)
-        if observer in self.observers(): 
+        if observer in self.observers():
             rvalue = False
         else:
             observer._Observer__addObservable(self)
@@ -128,7 +130,7 @@ class Observable(QtCore.QObject, Node):
     def _notifyRecord(self, record):
         """Notify the observers associated to *record*."""
         record.trigger.emit(self)
-            
+
     def _checkRefs(self):
         """Discard all invalid weak references."""
         f = lambda kw: kw[0]() is not None
@@ -151,7 +153,7 @@ class Observable(QtCore.QObject, Node):
             if observer is None: raise ValueError(
                 "At least an argument is mandatory.")
             else:
-                ref = self._getRef(observer)          
+                ref = self._getRef(observer)
         return self.__observers.get(ref, None)
 
     def deleteLater(self):
@@ -168,7 +170,7 @@ class Observable(QtCore.QObject, Node):
 # -------------------------------------------------------------------
 
 class Observer(QtCore.QObject, Node):
-    """    
+    """
     An observer can subscribe itself to many observables in order to listen
     to their notifications.
 
@@ -177,7 +179,7 @@ class Observer(QtCore.QObject, Node):
     It is possible to configure the Observer to immediately react to
     the observer notification, or to enqueue the triggered
     observables and to react at regular time interval.
-    
+
     An Observer does not own the observables it is subscribed to,
     since weak references are used.
     """
@@ -199,10 +201,10 @@ class Observer(QtCore.QObject, Node):
         observable."""
         return self._internal.observableRemoved
 
-    def __init__(self, react=None, hz=None, parent=None):        
+    def __init__(self, react=None, hz=None, parent=None):
         """
         Constructor.
-        
+
         *react* can be a callable object to be used as a handler to the
          observer notifications (see *_react* for the handler arguments)
          or None.
@@ -215,7 +217,7 @@ class Observer(QtCore.QObject, Node):
 
         *parent* defines the observer's parent.
         """
-        if not sip.ispycreated(self): 
+        if not sip.ispycreated(self):
             QtCore.QObject.__init__(self, parent)
             Node.__init__(self)
         self._internal = self._InternalQObject()
@@ -225,11 +227,11 @@ class Observer(QtCore.QObject, Node):
         self.__hz = None if hz is None else float(hz)
         if self.__hz: self.__timer.start(1000/float(hz))
         self.__react = assertIsInstance(react, None, collections.Callable)
-        
+
     def __del__(self):
         if not sip.isdeleted(self):
             for obs in self.observed():
-                # Notify of the subscribed Observables that they have a None 
+                # Notify of the subscribed Observables that they have a None
                 # reference
                 if obs is not None: obs._checkRefs()
         Node.__del__(self)
@@ -249,7 +251,7 @@ class Observer(QtCore.QObject, Node):
 
     def unsubscribeFrom(self, observable):
         """Unsubscribe from *observable*. Return whether *observable*
-        has been successfully found and removed."""        
+        has been successfully found and removed."""
         return observable.removeObserver(self) \
             if observable in self.observed() else False
 
@@ -275,9 +277,9 @@ class Observer(QtCore.QObject, Node):
         """Slot attached to the observables' trigger signal."""
         if self.__hz is None:
             self._react(observable)
-        elif observable not in self.queue(): 
+        elif observable not in self.queue():
             self.__queue.add(weakref.ref(observable))
-                
+
     def _react(self, observable):
         """React to the *observable*'s trigger."""
         return self.__react(self, observable) \
@@ -295,7 +297,7 @@ class Observer(QtCore.QObject, Node):
                 self.__queue.discard(ref)
                 self.__observed.remove(ref)
                 if observable.parent() is self: observable.setParent(None)
-                self.observableRemoved.emit(observable)                
+                self.observableRemoved.emit(observable)
                 break
 
     def _update(self):
