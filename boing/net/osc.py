@@ -303,10 +303,10 @@ class Encoder(_AbstractEncoder):
     """The Encoder is able to encode OSC packet objects into byte strings.
 
     """
-    def encode(self, packet):
+    def encode(self, obj):
         """Return the bytestring obtained from serializing the OSC
         packet *obj*."""
-        return packet.encode()
+        return obj.encode()
 
     def reset(self):
         """NOP method."""

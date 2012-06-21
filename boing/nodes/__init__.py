@@ -25,9 +25,9 @@ from boing.utils import assertIsInstance, deepDump, quickdict
 
 class Dump(Functor, Functor.ConfigurableRequest):
 
-    def __init__(self, src=False, dest=False, depth=None, 
+    def __init__(self, src=False, dest=False, depth=None,
                  request=Request.ANY, parent=None):
-        super().__init__(request, Offer(quickdict(str=str())), Functor.RESULTONLY, 
+        super().__init__(request, Offer(quickdict(str=str())), Functor.RESULTONLY,
                          parent=parent)
         self.dumpsrc = assertIsInstance(src, bool)
         self.dumpdest = assertIsInstance(dest, bool)
@@ -35,9 +35,9 @@ class Dump(Functor, Functor.ConfigurableRequest):
 
     def _process(self, sequence, producer):
         stream = io.StringIO()
-        if self.dumpsrc: 
+        if self.dumpsrc:
             stream.write("from: %s\n"%str(producer))
-        if self.dumpdest: 
+        if self.dumpdest:
             stream.write("DumpNode(request=%s)\n"%repr(str(self.request())))
         for operands in sequence:
             deepDump(quickdict(operands), stream, self.depth)
@@ -57,9 +57,9 @@ class StatProducer(Functor, Functor.ConfigurableRequest):
             self.lagmax = None
 
     def __init__(self, request=Request.ANY, fps=1, parent=None):
-        super().__init__(request, Offer(quickdict(str=str())), Functor.RESULTONLY, 
+        super().__init__(request, Offer(quickdict(str=str())), Functor.RESULTONLY,
                          parent=parent)
-        self.__timer = QtCore.QTimer(timeout=self.__produce)        
+        self.__timer = QtCore.QTimer(timeout=self.__produce)
         self.__timer.start(1000/float(fps))
         self._inittime = datetime.datetime.now()
         self.__stat = {}
@@ -94,7 +94,7 @@ class StatProducer(Functor, Functor.ConfigurableRequest):
 
     def __removeRecord(self, observable):
         for ref in self.__stat.keys():
-            if ref() is observable: 
+            if ref() is observable:
                 del self.__sources[ref] ; break
 
     def __produce(self):
@@ -117,8 +117,8 @@ class StatProducer(Functor, Functor.ConfigurableRequest):
                             +record.lagmax.microseconds/1000
                         record.lagmax = None
                         data.write("  tot=%d, hz=%g, lagmax=%f ms\n"%(
-                                record.tot, 
-                                record.partial*1000/self.__timer.interval(), 
+                                record.tot,
+                                record.partial*1000/self.__timer.interval(),
                                 msecs))
                     else:
                         data.write("  tot=%d, hz=%d\n"%(record.tot, record.partial))
@@ -131,7 +131,7 @@ class StatProducer(Functor, Functor.ConfigurableRequest):
 # SimpleGrapherProducer
 
 class SimpleGrapherProducer(Producer):
-    
+
     _SEPARATOR = """
 
 ================================================================================
@@ -173,7 +173,7 @@ class Lag(Identity):
 
     def __timeout(self):
         self.postProduct(self.__buffer.popleft())
-        
+
     def _consume(self, products, producer):
         for p in products:
             self.__buffer.append(p)
@@ -183,12 +183,12 @@ class Lag(Identity):
 
 class Timekeeper(Functor):
     """Add to each product the timestamp at the time the product is
-    received as the item with keyword "timetag".""" 
+    received as the item with keyword "timetag"."""
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(Request.NONE, 
+        super().__init__(Request.NONE,
                          Offer(quickdict(timetag=datetime.datetime.now())),
                          blender, parent=parent)
-  
+
     def _process(self, sequence, producer):
         for operands in sequence:
             yield (("timetag", datetime.datetime.now()), )
@@ -198,7 +198,7 @@ class Timekeeper(Functor):
 class Editor(Functor):
 
     def __init__(self, dict, blender, parent=None):
-        super().__init__(Request.NONE, Offer(quickdict(**dict)), blender, 
+        super().__init__(Request.NONE, Offer(quickdict(**dict)), blender,
                          parent=parent)
         self.__dict = dict
 
@@ -258,7 +258,7 @@ class Filter(Identity):
         FunctionalNode.__init__(self, *args, **kwargs)
         self.__factory = functorfactory
         self.__functors = utils.quickdict()
-    
+
     def _function(self, paths, values):
         for key, value in zip(paths, values):
             item = self.__functors
@@ -267,7 +267,7 @@ class Filter(Identity):
                 item = item[step]
             if isinstance(value, collections.Sequence):
                 functor = item.setdefault(
-                    split[-1], 
+                    split[-1],
                     tuple(self.__factory.create() for i in range(len(value))))
                 if hasattr(value, "__setitem__") \
                         and self._resultmode==FunctionalNode.MERGE:
@@ -289,7 +289,7 @@ class DiffArgumentFunctor(Functor):
     it creates a new functor which is applied to the argument
     value. The args must be a diff-based path so that functor can be
     removed depending on 'diff.removed' instances."""
-    def __init__(self, functorfactory, 
+    def __init__(self, functorfactory,
                  request, blender=Functor.MERGECOPY, parent=None):
         super().__init__(request, Functor.TUNNELING, blender, parent=parent)
         self.__factory = functorfactory

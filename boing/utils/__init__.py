@@ -226,29 +226,29 @@ class Console(InteractiveConsole, QtCore.QObject):
             text = data if self.__in.isTextModeEnabled() else data.decode()
             self.push(text)
 
-    def pushStdout(self):
+    def _pushStdout(self):
         """Replace standard output, so that the current console's
         output can be redirected."""
         self._backup = sys.stdout
         sys.stdout = self._cache
 
-    def pullStdout(self):
+    def _pullStdout(self):
         """Restore previous stdout."""
         sys.stdout = self._backup
 
     def push(self, line):
         """Pass *line* to the Python interpreter."""
-        self.pushStdout()
+        self._pushStdout()
         more = super().push(line)
-        self.pullStdout()
-        self.write(Console.ps2 if more else self._cache.flush()+Console.ps1)
+        self._pullStdout()
+        self._write(Console.ps2 if more else self._cache.flush()+Console.ps1)
         return more
 
     def _writeBanner(self):
-        self.write(self.banner)
-        self.write(Console.ps1)
+        self._write(self.banner)
+        self._write(Console.ps1)
 
-    def write(self, text):
+    def _write(self, text):
         """Write *text* to the output device."""
         self.__out.write(text if self.__out.isTextModeEnabled() \
                                    else text.encode())

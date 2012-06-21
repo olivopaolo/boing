@@ -42,10 +42,10 @@ def decode(data, previous=None):
     """Return the list of bytearrays obtained from the slip decoding
     of *data* followed by the undecoded bytes. If previous is not
     None, *data* is appended to previous before decoding.
-    A typical usage would be:
+    A typical usage would be::
 
-    buffer = bytearray()
-    decoded, buffer = decode(data, buffer)
+      buffer = bytearray()
+      decoded, buffer = decode(data, buffer)
 
     """
     decoded = previous if previous else bytearray()

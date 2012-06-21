@@ -7,9 +7,9 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""The net module and its submodules provide classes and methods to
-ease the usage of sockets and different networking encoding like json,
-osc, slip, etc.
+"""The *boing.net* module provides classes and methods to ease the
+usage of sockets and different networking encoding like json, osc,
+slip, etc.
 
 """
 

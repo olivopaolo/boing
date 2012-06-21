@@ -616,7 +616,7 @@ class Consumer(Observer):
 
            class MyConsumer(Consumer, Consumer.ConfigurableRequest):
                pass
-        
+
         """
         def setRequest(self, request):
             """Set *request* as the consumer's request."""
@@ -640,7 +640,7 @@ class Consumer(Observer):
         *consume* can be a callable object to be used as a handler for
         consuming received products (see *_consume* for the handler arguments)
          or None.
-        
+
         *hz* defines when the consumer should react to the observervables'
          notifications. Accepted values:
           - None   : immediately ;
@@ -653,20 +653,20 @@ class Consumer(Observer):
         super().__init__(hz=hz, parent=parent)
         self._request = assertIsInstance(request, Request)
         self.__consume = assertIsInstance(consume, None, collections.Callable)
-    
+
     def request(self):
         """Return the consumer's request."""
         return self._request
 
     def _react(self, observable):
         """If *observable* is a producer, require its products."""
-        if isinstance(observable, Producer): 
+        if isinstance(observable, Producer):
             observable._requireProducts(self)
 
     def productsDelivery(self, products, producer=None):
         """Slot for delivering *products*."""
         self._consume(products, producer)
-            
+
     def _consume(self, products, producer):
         """Consume *products* posted from *producer*."""
         # Call custom function if defined, otherwise use default method.
