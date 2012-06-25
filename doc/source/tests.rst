@@ -15,6 +15,7 @@ Run tests for specific boing modules::
 Available modules:
 
 * core
+* gesture
 * net
 * nodes
 * utils

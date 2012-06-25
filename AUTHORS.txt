@@ -1,2 +1,2 @@
-Nicolas Roussel   <nicolas.roussel@inria.fr>
 Paolo Olivo       <paolo.olivo@inria.fr>
+Nicolas Roussel   <nicolas.roussel@inria.fr>

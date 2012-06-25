@@ -12,7 +12,7 @@ from setuptools import setup, find_packages
 setup(
     name = "boing",
     version = "0.2.0",
-    packages = find_packages(), 
+    packages = find_packages(),
     entry_points = {'console_scripts': ["boing = boing.run"]},
     test_suite = "boing.test.run",
 
@@ -22,5 +22,6 @@ setup(
 On demand producer-consumer architecture for connecting different
 sources (e.g. devices, sockets, files, etc.) to different outputs, while
 applying flexible data processing.""",
-    license = "GPLv2", 
+    license = "GPLv2",
+    install_requires = ['numpy>=1.6.1'],
 )

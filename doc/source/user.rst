@@ -2,7 +2,8 @@
 User guide
 ==========
 
-Redirect data streams from multiple inputs to multiple outputs::
+The *boing* tool enables to redirect data streams from multiple inputs
+sources to multiple target outputs::
 
   usage: boing [-h] [-i INPUT [INPUT ...]] [-o OUTPUT [OUTPUT ...]]
   	       [-C [HOST:PORT]] [-G [URI]] [-L LEVEL] [-T [INTEGER]] [-f]
@@ -23,6 +24,10 @@ Inputs and outputs must be defined using :doc:`URIs <uris>` .
 
 Generic utilities examples
 --------------------------
+
+Redirect the standard input to a target UDP socket::
+
+  boing -i stdin: -o udp://[::1]:7777
 
 Dump to console all the available products received from the inputs::
 
@@ -53,6 +58,11 @@ Record events using a buffed recorder (with GUI), while dumping them
 to the standard output::
 
   boing -o rec: stdout:
+
+Use the player (with GUI) to replay logged files to an UDP socket::
+
+  boing -i player: -o udp://[::1]:7777
+
 
 OSC examples
 ------------
@@ -113,6 +123,10 @@ Merge two TUIO streams into a single TUIO stream, then show and record it::
 
   boing -i tuio://:3334 tuio://:3335 -o viz: log:///tmp/log
 
+Use the player (with GUI) to replay logged files an show the stored
+multi-touch events::
+
+  boing -i player: -o viz:
 
 SLIP encoding is added by default for OSC packages written or read on
 TCP sockets or files. Use the URI attribute 'noslip' to avoid default
@@ -138,26 +152,30 @@ Calibrate a multi-touch source by applying a 4x4 transformation matrix::
 Filtering examples
 ------------------
 
-Filter contacts' position of a multi-touch source::
+In order to run these examples the library filtering_ must be installed.
 
-  boing -i tuio:?post=filtering:?uri=fltr:/moving/mean?winsize=5 -o viz:
+Filter contacts' position of a multi-touch source using the default filter::
 
-Filter contacts' bounding box size of a multi-touch source::
+  boing -i tuio:+filtering: -o viz:
 
-  boing -i "tuio:?post='filtering:?uri=fltr:/exponential/single?alpha=0.9&attr=boundingbox.rel_size'" -o viz:
+Filter contacts' position using an exponential filter::
+
+  boing -i tuio:+filtering:?uri=fltr:/exponential/single?alpha=0.9 -o viz:
+
+Filter only the contact speed::
+
+  boing -i tuio:+filtering:?attr=rel_speed -o viz:
 
 Display contact's raw data and filtered data on separate windows::
 
-  boing -i tuio: -o viz:?pre=filtering: viz:
+  boing -i tuio: -o filtering:+viz: viz:
 
 Add noise to the contacts' position of a multi-touch source::
 
-  boing -i "tuio:?post=filtering:?uri=noise:numpy.random.normal(0.0,0.01)" -o viz:
-
-Add noise to the X coordinate only of the contacts' position::
-
-  boing -i "tuio:?post='filtering:?uri=noise:numpy.random.normal(0.0,0.03)&attr=rel_pos[0]'" -o viz:
+  boing -i tuio:+filtering:?uri=noise:numpy.random.normal(0.0,0.01) -o viz:
 
 Add noise and then filter the contacts' position::
 
-  boing -i "tuio:?post=filtering:?uri=noise:numpy.random.normal(0.0,0.01)&post1=filtering:" -o viz:
+  boing -i tuio:+filtering:?uri=noise:numpy.random.normal(0.0,0.01)+filtering: -o viz:
+
+.. _filtering: http://interaction.lille.inria.fr/hg-mint/code/filtering/

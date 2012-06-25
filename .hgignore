@@ -10,5 +10,6 @@ boing.egg-info
 
 xtra*
 
-#syntax: regexp
-
+syntax: regexp
+doc/html
+doc/doctrees

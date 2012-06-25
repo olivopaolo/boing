@@ -34,6 +34,9 @@ def additional_tests(modules=[]):
         tests += test_tcp.suite()
         from boing.test.net import test_udp
         tests += test_udp.suite()
+    if not modules or 'gesture' in modules:
+        from boing.test.gesture import test_rubine
+        tests += test_rubine.suite()
     if not modules or 'nodes' in modules:
         from boing.test.nodes import test_loader
         tests += test_loader.suite()
@@ -58,8 +61,8 @@ if __name__=="__main__":
 If no module is specified, all modules are tested; otherwise only the
 specified modules will be executed.
 
-Available modules: 
- core, net, nodes, utils""")
+Available modules:
+ core, gesture, net, nodes, utils""")
 
     parser.add_argument("module", metavar="MODULE", nargs="*", default=[],
                         help="module to be tested")

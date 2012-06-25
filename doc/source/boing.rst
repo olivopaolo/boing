@@ -27,6 +27,7 @@ Submodules:
 
 .. toctree::
    boing.core
+   boing.gesture
    boing.net
    boing.nodes
    boing.utils

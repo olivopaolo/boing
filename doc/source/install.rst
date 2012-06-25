@@ -2,9 +2,11 @@
 Install instructions
 ====================
 
-Boing requires `Python <http://http://python.org/download/>`_ version
-3.2 or newer and `PyQt 4
-<http://www.riverbankcomputing.co.uk/software/pyqt/download>`_.
+Boing requires:
+
+* `Python 3.2`_
+* `PyQt 4`_
+* numpy_
 
 Specific notes are available for the following platforms:
 
@@ -17,7 +19,9 @@ Specific notes are available for the following platforms:
 
 It also uses the following packages in few places, that you might need to install:
 
-* `filtering
-  <http://interaction.lille.inria.fr/hg-mint/code/filtering/>`_
-  (access restricted)
+* filtering_ (access restricted)
 
+.. _filtering: http://interaction.lille.inria.fr/hg-mint/code/filtering
+.. _`Python 3.2`: http://python.org/download
+.. _`PyQt 4`: http://www.riverbankcomputing.co.uk/software/pyqt/download
+.. _numpy: http://numpy.scipy.org/
