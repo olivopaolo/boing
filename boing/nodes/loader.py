@@ -170,7 +170,10 @@ def create(uri, mode="", logger=None, parent=None):
             filequery = parseQuery(uri, "uncompress")
             readerquery = parseQuery(uri, "postend")
             assertUriQuery(uri, tuple(filequery)+tuple(readerquery))
-            if os.path.isfile(str(uri.path)):
+            path = str(uri.path)
+            # Consider c:/tmp instead of /c:/tmp
+            if sys.platform=="win32" and uri.path.absolute: path = path[1:]
+            if os.path.isfile(path):
                 inputfile = FileReader(uri, **filequery)
                 # FIXME: start should be triggered at outputs ready
                 QtCore.QTimer.singleShot(300, inputfile.start)

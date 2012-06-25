@@ -11,6 +11,7 @@
 
 import io
 import os
+import sys
 
 from PyQt4 import QtCore
 
@@ -131,7 +132,10 @@ class BaseFile(object):
 
     def __init__(self, url):
         if not isinstance(url, URL): url = URL(str(url))
-        self._fileinfo = QtCore.QFileInfo(str(url.path))
+        path = str(url.path)
+        # Consider c:/tmp instead of /c:/tmp
+        if sys.platform=="win32" and url.path.absolute: path = path[1:]
+        self._fileinfo = QtCore.QFileInfo(path)
 
     def absoluteDir(self):
         return str(self._fileinfo.absoluteDir())

@@ -21,10 +21,10 @@ from PyQt4 import QtGui
 import boing
 import boing.utils.QPath as QPath
 
-
 readable = os.path.abspath(__file__)
 target = os.path.abspath(os.path.normpath(
-    os.path.join(os.path.split(__file__)[0], "..", "data", "test.txt")))
+    os.path.join(os.path.split(__file__)[0], "test.txt")))
+prefix = "/" if sys.platform=="win32" else ""
 
 uris = \
     {"stdin":
@@ -70,20 +70,20 @@ uris = \
      "file":
          {"valid":
               {"in": (
-                    "%s"%readable,
+                    "%s%s"%(prefix, readable),
                     "%s"%os.path.relpath(readable),
-                    "file://%s"%readable,
-                    "%s?uncompress"%readable,
-                    "file://%s?uncompress"%readable,
-                    "file://%s?uncompress=False"%readable,
-                    "%s?postend"%readable,
-                    "file://%s?postend"%readable,
-                    "file://%s?postend=False"%readable,
+                    "file://%s%s"%(prefix, readable),
+                    "%s%s?uncompress"%(prefix, readable),
+                    "file://%s%s?uncompress"%(prefix, readable),
+                    "file://%s%s?uncompress=False"%(prefix, readable),
+                    "%s%s?postend"%(prefix, readable),
+                    "file://%s%s?postend"%(prefix, readable),
+                    "file://%s%s?postend=False"%(prefix, readable),
                     ),
                "out": (
-                    "%s"%target,
+                    "%s%s"%(prefix, target),
                     "%s"%os.path.relpath(target),
-                    "file://%s"%target,
+                    "file://%s%s"%(prefix, target),
                     ),
                },
           "invalid":
@@ -95,10 +95,10 @@ uris = \
                     ("file://[::]/path", ValueError),
                     ("file://[::]:7777/path", ValueError),
                     ("file://[::]:7777/path", ValueError),
-                    ("%s?wrong=wrong"%readable, ValueError),
-                    ("%s?uncompress=wrong"%readable, TypeError),
-                    ("%s?postend=wrong"%readable, TypeError),
-                    ("%s#fragment"%readable, ValueError),
+                    ("%s%s?wrong=wrong"%(prefix, readable), ValueError),
+                    ("%s%s?uncompress=wrong"%(prefix, readable), TypeError),
+                    ("%s%s?postend=wrong"%(prefix, readable), TypeError),
+                    ("%s%s#fragment"%(prefix, readable), ValueError),
                     ),
                "out": (
                     ("file:opaque", ValueError),
@@ -108,8 +108,8 @@ uris = \
                     ("file://[::]/path", ValueError),
                     ("file://[::]:7777/path", ValueError),
                     ("file://[::]:7777/path", ValueError),
-                    ("%s?wrong=wrong"%target, ValueError),
-                    ("%s#fragment"%readable, ValueError),
+                    ("%s%s?wrong=wrong"%(prefix, target), ValueError),
+                    ("%s%s#fragment"%(prefix, readable), ValueError),
                     ),
                },
           },
@@ -234,18 +234,18 @@ uris = \
      "log":
          {"valid":
               {"in": (
-                    "log://%s"%readable,
-                    "log://%s?loop"%readable,
-                    "log://%s?loop=false"%readable,
-                    "log://%s?speed=1"%readable,
-                    "log://%s?speed=inf"%readable,
-                    "log://%s?speed=0"%readable,
-                    "log://%s?interval=0"%readable,
-                    "log://%s?interval=2000"%readable,
+                    "log://%s%s"%(prefix, readable),
+                    "log://%s%s?loop"%(prefix, readable),
+                    "log://%s%s?loop=false"%(prefix, readable),
+                    "log://%s%s?speed=1"%(prefix, readable),
+                    "log://%s%s?speed=inf"%(prefix, readable),
+                    "log://%s%s?speed=0"%(prefix, readable),
+                    "log://%s%s?interval=0"%(prefix, readable),
+                    "log://%s%s?interval=2000"%(prefix, readable),
                     ),
                "out": (
-                    "log://%s"%target,
-                    "log://%s?request=query"%target,
+                    "log://%s%s"%(prefix, target),
+                    "log://%s%s?request=query"%(prefix, target),
                     ),
                },
           "invalid":
@@ -257,13 +257,13 @@ uris = \
                     ("log://[::]", ValueError),
                     ("log://[::]/path", ValueError),
                     ("log://[::]:7777/path", ValueError),
-                    ("log://%s?wrong=wrong"%readable, ValueError),
-                    ("log://%s#fragment"%readable, ValueError),
-                    ("log://%s?loop=wrong"%readable, TypeError),
-                    ("log://%s?speed=wrong"%readable, ValueError),
-                    ("log://%s?interval=wrong"%readable, ValueError),
+                    ("log://%s%s?wrong=wrong"%(prefix, readable), ValueError),
+                    ("log://%s%s#fragment"%(prefix, readable), ValueError),
+                    ("log://%s%s?loop=wrong"%(prefix, readable), TypeError),
+                    ("log://%s%s?speed=wrong"%(prefix, readable), ValueError),
+                    ("log://%s%s?interval=wrong"%(prefix, readable), ValueError),
                     ("log.stdin:", ValueError),
-                    ("log.stdin://%s"%readable, ValueError),
+                    ("log.stdin://%s%s"%(prefix, readable), ValueError),
                     ),
                "out": (
                     ("log:", ValueError),
@@ -273,9 +273,9 @@ uris = \
                     ("log://[::]", ValueError),
                     ("log://[::]/path", ValueError),
                     ("log://[::]:7777/path", ValueError),
-                    ("log://%s?wrong=wrong"%target, ValueError),
-                    ("log://%s#fragment"%target, ValueError),
-                    ("log.stdout://%s"%target, ValueError),
+                    ("log://%s%s?wrong=wrong"%(prefix, target), ValueError),
+                    ("log://%s%s#fragment"%(prefix, target), ValueError),
+                    ("log.stdout://%s%s"%(prefix, target), ValueError),
                     ("log.stdout:", ValueError),
                     ),
                },
@@ -293,7 +293,7 @@ uris = \
                     ("viz.stdout:", ValueError),
                     ("viz:opaque", ValueError),
                     ("viz:./relative", ValueError),
-                    ("viz://%s"%target, ValueError),
+                    ("viz://%s%s"%(prefix, target), ValueError),
                     ("viz://:7777", ValueError),
                     ("viz://[::]", ValueError),
                     ("viz://[::]/path", ValueError),
@@ -348,7 +348,7 @@ uris["json"] = \
                         "json://:7777",
                         "json://[::]",
                         "json://[::]:7777",
-                        "json://%s"%readable,
+                        "json://%s%s"%(prefix, readable),
                         "json:?noslip",
                         "json:?noslip=false",
                         ),
@@ -362,7 +362,7 @@ uris["json"] = \
                     ("json.%s"%url for url in uris["slip"]["valid"]["out"]),
                     (
                         "json://[::1]:7777",
-                        "json://%s"%target,
+                        "json://%s%s"%(prefix, target),
                         "json.stdout:",
                         "json://[::1]:7777?noslip",
                         "json://[::1]:7777?noslip=false",
@@ -415,7 +415,7 @@ uris["osc"] = \
                         "osc://:7777",
                         "osc://[::]",
                         "osc://[::]:7777",
-                        "osc://%s"%readable,
+                        "osc://%s%s"%(prefix, readable),
                         "osc.stdin:",
                         "osc:?noslip",
                         "osc:?noslip=false",
@@ -432,12 +432,12 @@ uris["osc"] = \
                     ("osc.%s"%url for url in uris["slip"]["valid"]["out"]),
                     (
                         "osc://[::1]:7777",
-                        "osc://%s"%target,
+                        "osc://%s%s"%(prefix, target),
                         "osc.stdout:",
                         "osc://[::1]:7777?noslip",
-                        "osc://[::1]:7777?noslip=false",                        
+                        "osc://[::1]:7777?noslip=false",
                         "osc://[::1]:7777?rt",
-                        "osc://[::1]:7777?rt=false",                        
+                        "osc://[::1]:7777?rt=false",
                         )
                     )),
           },
@@ -494,7 +494,7 @@ uris["tuio"] = \
                         "tuio://:7777",
                         "tuio://[::]",
                         "tuio://[::]:7777",
-                        "tuio://%s"%readable,
+                        "tuio://%s%s"%(prefix, readable),
                         "tuio.stdin:",
                         ),
                     )),
@@ -509,7 +509,7 @@ uris["tuio"] = \
                     (
                         "tuio://[::1]:7777",
                         "tuio://[::1]",
-                        "tuio://%s"%target,
+                        "tuio://%s%s"%(prefix, target),
                         "tuio://[::1]",
                         "tuio.stdout:",
                         "tuio.udp://[::1]",
@@ -518,8 +518,8 @@ uris["tuio"] = \
                         "tuio.slip.tcp://[::1]",
                         "tuio://[::1]?noslip",
                         "tuio://[::1]?noslip=false",
-                        "tuio://%s?noslip"%target,
-                        "tuio://%s?noslip=false"%target,
+                        "tuio://%s%s?noslip"%(prefix, target),
+                        "tuio://%s%s?noslip=false"%(prefix, target),
                         )
                     )),
           },
@@ -595,7 +595,7 @@ uris["dump"] = \
                     ("dump.%s"%url for url in uris["slip"]["valid"]["out"]),
                     (
                         "dump:",
-                        "dump://%s"%target,
+                        "dump://%s%s"%(prefix, target),
                         "dump://[::1]:7777",
                         "dump:?request=query",
                         "dump:?src",
@@ -638,7 +638,7 @@ uris["stat"] = \
                     ("stat.%s"%url for url in uris["slip"]["valid"]["out"]),
                     (
                         "stat:",
-                        "stat://%s"%target,
+                        "stat://%s%s"%(prefix, target),
                         "stat://[::1]:7777",
                         "stat:?request=query",
                         "stat:?fps=10",
@@ -714,12 +714,9 @@ class IOTest(QtTest):
         for uri in uris[self.scheme]["valid"]["in"]:
             self.assertIsNotNone(boing.create(uri, "in"))
             self.assertIsNotNone(boing.create("in:%s"%uri))
-        try:
-            for uri, exc in uris[self.scheme]["invalid"]["in"]:
-                self.assertRaises(exc, boing.create, uri, "in")
-                self.assertRaises(exc, boing.create, "in:%s"%uri)
-        except Exception:
-            print(uri)
+        for uri, exc in uris[self.scheme]["invalid"]["in"]:
+            self.assertRaises(exc, boing.create, uri, "in")
+            self.assertRaises(exc, boing.create, "in:%s"%uri)
         for uri in uris[self.scheme]["valid"]["out"]:
             self.assertIsNotNone(boing.create(uri, "out"))
             self.assertIsNotNone(boing.create("out:%s"%uri))

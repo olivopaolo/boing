@@ -14,6 +14,7 @@ setup(
     version = "0.2.0",
     packages = find_packages(),
     entry_points = {'console_scripts': ["boing = boing.run"]},
+    test_suite = "boing.test.run",
     author = "Paolo Olivo",
     author_email = "paolo.olivo@inria.fr",
     description = """

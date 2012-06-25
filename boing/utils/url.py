@@ -94,15 +94,15 @@ class URL_path(collections.UserList):
             self.absolute = (aString[0]=='/')
             if self.absolute: aString = aString[1:]
             self.data = aString.split('/')
-           
+
     def __str__(self):
         result = '/' if self.absolute else ''
         if self.data: result = result + '/'.join(self.data)
-        if sys.platform=="win32" \
-            and self.absolute \
-            and os.path.splitdrive(result[1:])[0]:
-            # instead of returning "/C:\\", return "C:\"
-            result = result[1:]
+        # if sys.platform=="win32" \
+        #     and self.absolute \
+        #     and os.path.splitdrive(result[1:])[0]:
+        #     # instead of returning "/C:\\", return "C:\"
+        #     result = result[1:]
         return result
 
     def __bool__(self):
@@ -158,7 +158,7 @@ class URL_query(object):
             lst = aString.split('&')
             for kv in lst:
                 tmp = kv.split('=', 1)
-                k = tmp[0]                
+                k = tmp[0]
                 value = innertag.sub(decode_inner, tmp[1]) if len(tmp)>1 \
                     else ""
                 try: v = self._decode(value)
@@ -186,9 +186,9 @@ class URL_query(object):
     def keys(self): return self.data.keys()
     def items(self): return self.data.items()
     def values(self): return self.data.values()
-    def has_key(self, key): return key in self.data  
+    def has_key(self, key): return key in self.data
     def get(self, key, default): return self.data.get(key, default)
-    
+
 # ---------------------------------------------------------------------
 
 class URL(object):
@@ -227,6 +227,7 @@ class URL(object):
         self.query = URL_query('')
         self.fragment = ''
         if aString:
+            aString.replace("\\", "/") # Windows path to Unix path
             m = URL.generic.match(aString)
             if m:
                 self.scheme = m.group(1)
@@ -253,9 +254,7 @@ class URL(object):
                 traceback.print_exc()
                 opaque = True
             if opaque \
-               or (self.kind==URL.GENERIC \
-                   and self.path \
-                   and (not self.path.absolute)):
+               or self.kind==URL.GENERIC and self.path and not self.path.absolute:
                 self.kind = URL.OPAQUE
                 self.opaque = aString
                 self.path = URL_path('')
