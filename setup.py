@@ -13,7 +13,7 @@ setup(
     name = "boing",
     version = "0.2.0",
     packages = find_packages(),
-    entry_points = {'gui_scripts': ["boing = boing.run"]},
+    entry_points = {'console_scripts': ["boing = boing.run"]},
     author = "Paolo Olivo",
     author_email = "paolo.olivo@inria.fr",
     description = """
