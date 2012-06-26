@@ -11,7 +11,7 @@
 
 from PyQt4 import QtGui
 
-from boing import Offer, QRequest, Functor
+from boing.core import Offer, QRequest, Functor
 from boing.utils import assertIsInstance
 
 def attrToRequest(attributes):

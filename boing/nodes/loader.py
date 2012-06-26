@@ -16,7 +16,7 @@ import logging
 
 from PyQt4 import QtCore
 
-from boing import QRequest, Functor, Identity
+from boing.core import QRequest, Functor, Identity
 from boing.net import bytes, json, slip, tcp, udp
 from boing.nodes import encoding, ioport
 from boing.nodes.multitouch import attrToRequest
@@ -405,6 +405,7 @@ def create(uri, mode="", logger=None, parent=None):
 
     elif uri.scheme=="filter":
         from boing.nodes import Filter
+        uri = copy.copy(uri)
         query = parseQuery(uri, "attr")
         assertUriQuery(uri, query)
         uri.opaque = QRequest(uri.opaque) if uri.opaque else QRequest.NONE

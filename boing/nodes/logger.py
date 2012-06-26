@@ -18,7 +18,7 @@ import weakref
 
 from PyQt4 import QtCore, QtGui, uic
 
-from boing import Offer, Request, Producer, Consumer
+from boing.core import Offer, Request, Producer, Consumer
 from boing.net import Decoder
 from boing.utils import fileutils, quickdict, assertIsInstance
 

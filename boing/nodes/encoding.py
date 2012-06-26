@@ -16,7 +16,7 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing import Offer, QRequest, Functor
+from boing.core import Offer, QRequest, Functor
 from boing.nodes.logger import FilePlayer
 from boing.net import json, osc, slip, tuio, Decoder
 from boing.utils import assertIsInstance, deepupdate, quickdict

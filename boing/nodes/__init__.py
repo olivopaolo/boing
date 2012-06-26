@@ -16,10 +16,10 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing import Offer, Request, Producer, Consumer, Functor, Identity
+from boing.core import Offer, Request, Producer, Consumer, Functor, Identity
+from boing.core.graph import SimpleGrapher
 from boing.net import Encoder as BaseEncoder
 from boing.net import Decoder as BaseDecoder
-from boing.core.graph import SimpleGrapher
 from boing.utils import assertIsInstance, deepDump, quickdict
 
 # -------------------------------------------------------------------
@@ -222,17 +222,17 @@ class Editor(Functor):
 class Filter(Identity):
     def __init__(self, query, parent=None):
         super().__init__(parent=parent)
-        self.__query = assertIsInstance(query, Request)
+        self._query = assertIsInstance(query, Request)
 
     def query(self):
-        return self.__query
+        return self._query
 
     def setQuery(self, query):
-        self.__query = assertIsInstance(query, Request)
+        self._query = assertIsInstance(query, Request)
 
     def _consume(self, products, producer):
         for product in products:
-            subset = self.__query.filter(product)
+            subset = self._query.filter(product)
             if subset: self.postProduct(subset)
 
     def _propagateOffer(self):

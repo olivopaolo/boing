@@ -20,7 +20,7 @@ class StateMachine(object):
         self._state = utils.quickdict(initial) \
             if isinstance(initial, collections.Mapping) \
             else utils.quickdict()
-        
+
     def state(self):
         return self._state
 
@@ -49,7 +49,7 @@ class StateMachine(object):
             if "updated" in diff: utils.deepupdate(self._state, diff["updated"])
             if "removed" in diff: utils.deepremove(self._state, diff["removed"])
         return rvalue
-    
+
 '''
 class StateNode(Node, StateMachine):
     """Everytime the state changes, the diff is posted as a product."""
@@ -58,7 +58,7 @@ class StateNode(Node, StateMachine):
         #FIXME: set productoffer
         Node.__init__(self, request=request, parent=parent)
         StateMachine.__init__(self, initial)
-        
+
     def applyDiff(self, diff, additional=None):
         realdiff = StateMachine.applyDiff(self, diff, True)
         if realdiff:
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     obs.append(DumpNode("diff"))
     obs.append(DumpNode(request="diff.*.contacts.1"))
     obs.append(DumpNode(request="diff.removed"))
-    for o in obs:        
+    for o in obs:
         o.subscribeTo(m)
         o.dumpdest = True
     QtCore.QTimer.singleShot(

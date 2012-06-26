@@ -11,7 +11,7 @@
 
 from PyQt4 import QtCore
 
-from boing import Offer, QRequest, Producer, Consumer
+from boing.core import Offer, QRequest, Producer, Consumer
 from boing.utils import assertIsInstance, quickdict
 
 class DataReader(Producer):

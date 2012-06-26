@@ -15,6 +15,12 @@ import unittest
 def additional_tests(modules=[]):
 
     tests = []
+    if not modules or 'utils' in modules:
+        from boing.test.utils import test_QPath, test__init__
+        tests += test__init__.suite()
+        tests += test_QPath.suite()
+        #from boing.test.utils import test_display
+        #tests += test_display.suite()
     if not modules or 'core' in modules:
         from boing.test.core import test_observer, test_economy
         tests += test_observer.suite()
@@ -42,12 +48,6 @@ def additional_tests(modules=[]):
         tests += test_loader.suite()
         from boing.test.nodes import test_logger
         tests += test_logger.suite()
-    if not modules or 'utils' in modules:
-        from boing.test.utils import test_QPath, test__init__
-        tests += test__init__.suite()
-        tests += test_QPath.suite()
-        #from boing.test.utils import test_display
-        #tests += test_display.suite()
     return unittest.TestSuite(tests)
 
 

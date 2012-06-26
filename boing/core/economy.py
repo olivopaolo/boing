@@ -128,6 +128,7 @@ class Request(metaclass=abc.ABCMeta):
     Request instances are immutable objects.
 
     """
+
     @abc.abstractmethod
     def test(self, product):
         """Return whether *product* matches the request."""
@@ -332,7 +333,7 @@ from boing.core.observer import Observable, Observer
 class Producer(Observable):
     """
     A Producer is an observable object enabled to post products to
-    a set of subscribed consumers. 
+    a set of subscribed consumers.
 
     When a producer is demanded to posts a product, for each
     registered consumer it tests the product with the consumer's
@@ -340,6 +341,7 @@ class Producer(Observable):
 
     Each Producer has an Offer (a list of product templates), so it
     can say if a priori it can meet a consumer's request.
+
     """
 
     class ConfigurableOffer:
@@ -1128,7 +1130,7 @@ class WiseWorker(_PropagatingWorker):
         rvalue.move_to_end('id', last=False)
         return rvalue
 
-class Functor(WiseWorker):  
+class Functor(WiseWorker):
 
     class Blender(metaclass=abc.ABCMeta):
         @abc.abstractmethod
@@ -1151,12 +1153,12 @@ class Functor(WiseWorker):
 
     def blender(self):
         return self._blender
-        
+
     def _consume(self, products, producer):
         results = tuple() if not self.isActive() \
             else self._process(map(self._selfRequest().items, products),
                                producer)
-        products = self.blender().blend(products, 
+        products = self.blender().blend(products,
                                         results if results is not None else tuple())
         for product in filter(None, products):
             self.postProduct(product)
@@ -1166,7 +1168,7 @@ class Functor(WiseWorker):
             return self.__process(operands, producer)
         else:
             raise NotImplementedError()
-        
+
     def isPropagatingRequest(self):
         return isinstance(self.blender(), Functor.MergeBlender)
 

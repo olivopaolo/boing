@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # boing documentation build configuration file, created by
-# sphinx-quickstart on Wed May  9 18:02:36 2012.
+# sphinx-quickstart on Tue Jun 26 09:47:37 2012.
 #
 # This file is execfile()d with the current directory set to its containing dir.
 #
@@ -185,7 +185,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'boing.tex', 'boing Documentation',
-   'Paolo Olivo', 'manual'),
+   'Paolo Olivo \\& Nicolas Roussel', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -215,7 +215,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'boing', 'boing Documentation',
-     ['Paolo Olivo'], 1)
+     ['Paolo Olivo & Nicolas Roussel'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -229,7 +229,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'boing', 'boing Documentation',
-   'Paolo Olivo', 'boing', 'One line description of project.',
+   'Paolo Olivo & Nicolas Roussel', 'boing', 'One line description of project.',
    'Miscellaneous'),
 ]
 

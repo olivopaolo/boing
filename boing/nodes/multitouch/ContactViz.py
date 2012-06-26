@@ -16,7 +16,7 @@ import weakref
 
 from PyQt4 import QtCore, QtGui
 
-from boing import QRequest, Consumer
+from boing.core import QRequest, Consumer
 from boing.core.StateMachine import StateMachine
 from boing.utils import quickdict, deepDump
 

@@ -15,7 +15,7 @@ import io
 import pydot
 from PyQt4 import QtCore
 
-from boing import Request
+from boing.core import Request
 from boing.core.graph import Grapher
 from boing.utils import assertIsInstance, deepDump
 

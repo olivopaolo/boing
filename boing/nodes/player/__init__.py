@@ -29,7 +29,7 @@ PLAYALL - Play until the end of the playlist.
 LOOPALL - Loop over the entire playlist.
 """
 
-from boing import Offer
+from boing.core import Offer
 from boing.nodes.logger import FilePlayer
 from boing.nodes.player import gui, playlist
 
