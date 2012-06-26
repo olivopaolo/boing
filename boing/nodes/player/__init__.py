@@ -52,7 +52,9 @@ class Player(FilePlayer):
         self.stopped.connect(self._gui.stopped)
         self._gui.playFile.connect(self.play)
         self._gui.togglePlayStop.connect(self.toggleStartStop)
-        if open: self._playlist.addElements(open.split(":"))
+        if open:
+            l = lambda path: os.path.abspath(os.path.expanduser(path))
+            self._playlist.addElements(map(l, open.split(":")))
 
     def gui(self): return self._gui
     def mode(self): return self._mode
@@ -72,7 +74,7 @@ class Player(FilePlayer):
             if track is not None: self.play(track.filepath())
 
     def _finished(self):
-        self._parser.reset()
+        self._stopPlaying()
         if self.mode()==PLAYONE:
             track, loop = self._playlist.getNextTrack()
             self.stop()

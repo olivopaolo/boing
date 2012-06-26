@@ -364,10 +364,7 @@ class Player(Producer):
         """Stop the player."""
         if self._running:
             self._running = False
-            self._parser.reset()
-            self._waittimer.stop()
-            self._queue.clear()
-            self._date = None
+            self._stopPlaying()
             self.stopped.emit()
 
     def isRunning(self):
@@ -438,12 +435,15 @@ class Player(Producer):
                     msec = 0 if delta.days<0 else delta.total_seconds()*1000
                 self._waittimer.start(msec)
 
-    def _finished(self):
+    def _stopPlaying(self):
         self._parser.reset()
-        if self._loop:
-            self._waittimer.start(self._interval)
-        else:
-            self.stop()
+        self._waittimer.stop()
+        self._queue.clear()
+        self._date = None
+
+    def _finished(self):
+        self._stopPlaying()
+        self._waittimer.start(self._interval) if self._loop else self.stop()
 
 
 class FilePlayer(Player):
