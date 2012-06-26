@@ -29,6 +29,8 @@ class PlayerWidget(QtGui.QMainWindow, Ui_player):
     togglePlayStop = QtCore.pyqtSignal()
     nextMode = QtCore.pyqtSignal()
     setSpeed = QtCore.pyqtSignal(float)
+    closed = QtCore.pyqtSignal()
+    """Emitted when the Widget is closed."""
 
     def __init__(self, playlist, parent=None):
         super().__init__(parent=parent)
@@ -267,6 +269,10 @@ class PlayerWidget(QtGui.QMainWindow, Ui_player):
         self._playlistview.scrollTo(
             self._playlistview.model().modelIndex(track))
         self._playlistview.model().layoutChanged.emit()
+
+    def closeEvent(self, event):
+        self.closed.emit()
+        super().closeEvent(event)
 
 
 class PlaylistView(QtGui.QTreeView):

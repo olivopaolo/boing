@@ -48,6 +48,8 @@ class Player(FilePlayer):
         self._gui = gui.PlayerWidget(self._playlist)
         self._gui.nextMode.connect(self.nextMode)
         self._gui.setSpeed.connect(self.setSpeed)
+        self._gui.closed.connect(self.clear)
+        self._gui.closed.connect(self.stop)
         self.started.connect(self._gui.started)
         self.stopped.connect(self._gui.stopped)
         self._gui.playFile.connect(self.play)
