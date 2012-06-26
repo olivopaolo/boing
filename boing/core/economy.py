@@ -109,6 +109,18 @@ class Offer(tuple):
     def __radd__(self, other):
         return self if other is None else NotImplemented
 
+    def __copy__(self):
+        return Offer(iter=self)
+
+    def __deepcopy__(self, memo):
+        ref = id(self)
+        if ref in memo: rvalue = memo[ref]
+        else:
+            rvalue = Offer(iter=map(lambda item: copy.deepcopy(item, memo),
+                                    self))
+            memo[ref] = rvalue
+        return rvalue
+
 # -------------------------------------------------------------------
 # Request
 
@@ -694,13 +706,13 @@ class Consumer(Observer):
 
 class _PropagatingProducer(Producer):
 
-    class ConfigurableOffer(Producer.ConfigurableOffer):          
+    class ConfigurableOffer(Producer.ConfigurableOffer):
         def setOffer(self, offer):
             if self._offer!=offer:
                 self._offer = offer
                 self._propagateOffer()
 
-    def __init__(self, consumer, offer, tags=None, 
+    def __init__(self, consumer, offer, tags=None,
                  store=None, retrieve=None, haspending=None,
                  parent=None):
         super().__init__(offer, tags, store, retrieve, haspending, parent)
@@ -762,7 +774,7 @@ class _PropagatingConsumer(Consumer):
             if self._request!=request:
                 self._request = assertIsInstance(request, Request)
                 self._propagateRequest()
-    
+
     def __init__(self, producer, request, consume=None, hz=None, parent=None):
         super().__init__(request, consume, hz, parent)
         self._cumulatedrequest = request
@@ -772,7 +784,7 @@ class _PropagatingConsumer(Consumer):
             self.__prod.demandedOfferChanged.connect(self._propagateRequest)
             self.__prod.demandChanged.connect(self._propagateRequest)
         self.requestChanged.connect(self._propagateRequest)
-        
+
     def request(self):
         return self._cumulatedrequest
 
@@ -795,7 +807,7 @@ class _PropagatingConsumer(Consumer):
 
     def _propagateRequest(self):
         updated = self._selfRequest()
-        if self.isPropagatingRequest() and self._producer() is not None: 
+        if self.isPropagatingRequest() and self._producer() is not None:
             updated += self._producer().aggregateDemand()
         if self.request()!=updated:
             self._cumulatedrequest = updated
@@ -809,16 +821,16 @@ class Worker:
     requests of all the connected consumers are summed to the worker's
     own request to form its real request and the offers of all
     the connected producers are summed to the worker's own offer to
-    form its real offer.    
+    form its real offer.
     """
     pass
 
 class _PropagatingWorker(Worker, _PropagatingProducer, _PropagatingConsumer):
 
-    def __init__(self, request, offer, 
+    def __init__(self, request, offer,
                  tags=None, store=None, retrieve=None, haspending=None,
                  consume=None, hz=None, parent=None):
-        _PropagatingProducer.__init__(self, None, offer, tags, 
+        _PropagatingProducer.__init__(self, None, offer, tags,
                                       store, retrieve, haspending, parent)
         _PropagatingConsumer.__init__(self, weakref.proxy(self),
                                       request, consume, hz,
@@ -865,15 +877,15 @@ class _PropagatingWorker(Worker, _PropagatingProducer, _PropagatingConsumer):
 
 
 class Identity(_PropagatingWorker):
-    
+
     def __init__(self, store=None, retrieve=None, hz=None, parent=None):
-        super().__init__(request=Request.NONE, offer=Offer(), 
+        super().__init__(request=Request.NONE, offer=Offer(),
                          store=store, retrieve=retrieve, hz=hz, parent=parent)
 
     def _consume(self, products, producer):
         for product in products:
             self.postProduct(product)
-        
+
 # -------------------------------------------------------------------
 # Composite
 
@@ -888,7 +900,7 @@ class Composite(QtCore.QObject):
     pass
 
 class _CompositeProducer(_PropagatingProducer, Composite):
-    
+
     def __init__(self, *producers, parent=None):
         super().__init__(_ForwardingConsumer(None, Request.NONE),
                          offer=Offer(), parent=parent)
@@ -903,7 +915,7 @@ class _CompositeProducer(_PropagatingProducer, Composite):
             child.removeObserver(self._consumer())
             worker.subscribeTo(child, child=True)
         self._consumer().subscribeTo(worker, child=True)
-                        
+
     def __add__(self, other):
         if other is None:
             rvalue = self
@@ -925,13 +937,13 @@ class _CompositeProducer(_PropagatingProducer, Composite):
         rvalue = super()._debugSiblings()
         rvalue.update(consumer=self._consumer())
         rvalue.move_to_end('consumer', last=False)
-        return rvalue        
-    
+        return rvalue
+
 class _CompositeConsumer(_ForwardingConsumer, Composite):
-    
+
     def __init__(self, *consumers, parent=None):
         super().__init__(_PropagatingProducer(None, Offer()),
-                         Request.NONE, parent=parent)        
+                         Request.NONE, parent=parent)
         self._producer()._setConsumer(weakref.proxy(self))
         for cons in consumers:
             assertIsInstance(cons, Consumer)
@@ -968,7 +980,7 @@ class _CompositeConsumer(_ForwardingConsumer, Composite):
         rvalue = super()._debugSiblings()
         rvalue.update(producer=self._producer())
         rvalue.move_to_end('producer', last=False)
-        return rvalue        
+        return rvalue
 
 
 class _CompositeWorker(_CompositeProducer, _CompositeConsumer, Worker):
@@ -987,8 +999,8 @@ class _CompositeWorker(_CompositeProducer, _CompositeConsumer, Worker):
 
     def clear(self):
         _CompositeProducer.clear(self)
-        _CompositeConsumer.clear(self)        
-            
+        _CompositeConsumer.clear(self)
+
     def __add__(self, other):
         if other is None:
             rvalue = self
@@ -999,7 +1011,7 @@ class _CompositeWorker(_CompositeProducer, _CompositeConsumer, Worker):
             # Warning! this case destroyes self
             consumers = self._producer().children()
             for consumer in consumers:
-                consumer.unsubscribeFrom(self._producer())                
+                consumer.unsubscribeFrom(self._producer())
             rvalue = _CompositeConsumer(*consumers)
             for producer in self._consumer().children():
                 producer.removeObserver(self._consumer())
@@ -1019,7 +1031,7 @@ class _CompositeWorker(_CompositeProducer, _CompositeConsumer, Worker):
             # Warning! this case destroyes self
             producers = self._consumer().children()
             for producer in producers:
-                producer.removeObserver(self._consumer())                
+                producer.removeObserver(self._consumer())
             rvalue = _CompositeProducer(*producers)
             for consumer in self._producer().children():
                 consumer.unsubscribeFrom(self._producer())
@@ -1056,7 +1068,7 @@ class WiseWorker(_PropagatingWorker):
 
      Moreover, if blender is a MergeBlender, request and offer are
      propagated from its Observers and Observed.
-    ''' 
+    '''
 
     class _Forcing: pass
     ACTIVATED = _Forcing()
@@ -1069,11 +1081,11 @@ class WiseWorker(_PropagatingWorker):
     receives. This is necessary since the worker cannot have a
     predefined offer, but it always depend from the offer of the
     observed producers."""
-    
-    
+
+
     def __init__(self, request, offer, **kwargs):
         self._tunneling = offer is WiseWorker.TUNNELING
-        super().__init__(request, 
+        super().__init__(request,
                          Offer() if offer is WiseWorker.TUNNELING else offer,
                          **kwargs)
         self._active = False
@@ -1097,11 +1109,11 @@ class WiseWorker(_PropagatingWorker):
         self._forced = forcing
         self._propagateRequest()
 
-    def _selfRequest(self): 
+    def _selfRequest(self):
         return super()._selfRequest() if self.isActive() else Request.NONE
 
     def _selfOffer(self):
-        # Self offer is proposed only if its request is met by at least one 
+        # Self offer is proposed only if its request is met by at least one
         # registered Producer.
         satisfied = False
         for obs in self.observed():
@@ -1117,7 +1129,7 @@ class WiseWorker(_PropagatingWorker):
     def _refreshActive(self):
         if self.forcing() is WiseWorker.ACTIVATED:
             self._active = True
-        if self.forcing() is WiseWorker.DEACTIVATED:
+        elif self.forcing() is WiseWorker.DEACTIVATED:
             self._active = False
         else:
             offer = self.offer() if self.isTunneling() else super()._selfOffer()
