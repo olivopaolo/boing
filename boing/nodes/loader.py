@@ -245,7 +245,6 @@ def create(uri, mode="", logger=None, parent=None):
         return create(extended, mode, logger, parent)
 
     elif uri.scheme.startswith("json."):
-        assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "request", "noslip")
         loweruri = lower(uri, "json", query.keys())
         noslip = assertIsInstance(query.pop("noslip", False), bool)
@@ -360,7 +359,9 @@ def create(uri, mode="", logger=None, parent=None):
     elif uri.scheme.startswith("dump."):
         from boing.nodes import Dump
         assertUriModeIn(uri, mode, "", "out")
-        query = parseQuery(uri, "request", "src", "dest", "depth")
+        query = parseQuery(uri,
+                           "request", "src", "dest", "depth",
+                           "separator", "mode")
         dump = Dump(**query) # blender is fixed to  RESULTONLY
         encoder = encoding.TextEncoder(blender=Functor.MERGE)
         device = create(lower(uri, "dump", query.keys()), "out", logger)
@@ -433,15 +434,36 @@ def create(uri, mode="", logger=None, parent=None):
             query["request"] = query.get("request", QRequest.NONE) + request
         elif "request" not in query:
             query["request"] = attrToRequest("rel_pos,rel_speed")
-        query.setdefault("blender", Functor.MERGECOPY)
         node = Calibration(**query)
+
+    # elif uri.scheme=="stroke":
+    #     from boing.nodes.multitouch import StrokeFinder
+    #     query = parseQuery(uri, "merge", "copy", "result")
+    #     node = StrokeFinder(**query)
+
+    # elif uri.scheme=="rubine":
+    #     from boing.gesture import rubine
+    #     from boing.nodes.multitouch import GestureRecognizer
+    #     from boing.utils import QPath, quickdict
+    #     query = parseQuery(uri, "merge", "copy", "result")
+    #     log = File("/home/paolo/Documents/INRIA/workspace/boing/gestures/ipad-keyboard")
+    #     decoder = slip.Decoder() + bytes.Decoder() + json.Decoder()
+    #     data = decoder.decode(log.readAll())
+    #     ql = lambda stroke: (quickdict(x=s["x"], y=s["y"], t=s["t"]) for s in stroke)
+    #     l = lambda g: (QPath.get(g, "gestures.*.cls")[0],
+    #                    tuple(ql(QPath.get(g, "gestures.*.stroke")[0])))
+    #     data = tuple(map(l, data))
+    #     recognizer = rubine.RubineRecognizer()
+    #     recognizer.buildRecognizer(data)
+    #     #recognizer.loadTestTemplates()
+    #     node = GestureRecognizer(recognizer, **query)
 
     # -------------------------------------------------------------------
     # LIB FILTERING PORT
     elif uri.scheme=="filtering":
         from boing.nodes import DiffArgumentFunctor
         import boing.extra.filtering as filtering
-        query = parseQuery(uri, "attr", "request", "blender")
+        query = parseQuery(uri, "attr", "request", "merge", "copy", "result")
         filteruri = uri.query.data.get("uri", "fltr:/moving/mean?winsize=5")
         query["functorfactory"] = filtering.getFunctorFactory(filteruri)
         if "attr" in query:

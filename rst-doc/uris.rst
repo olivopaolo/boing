@@ -82,7 +82,7 @@ I = Input, O = Output, F = Function
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>O</ossupport></td>
 	   <td><url>dump&lt;&lt;OUTPUT-DEVICE&gt;|:&gt;</url></td>
-	   <td><url>request, src, dest, depth</url></td>
+	   <td><url>request, mode, separator, src, dest, depth</url></td>
 	   <td>Dump products to an output device (default stdout:)</td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
@@ -100,8 +100,14 @@ I = Input, O = Output, F = Function
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>F</ossupport></td>
 	   <td><url>filter:[&lt;QUERY&gt;]</url></td>
-	   <td>&nbsp;</td>
+	   <td>attr</td>
 	   <td>Discard the products that do not match 'query'</td></tr>
+	 <tr>
+	   <td><ossupport>OLW</ossupport></td>
+	   <td><ossupport>F</ossupport></td>
+	   <td><url>edit:</url></td>
+	   <td>merge, copy, result, **dict</td>
+	   <td>Apply to all the received products <i>dict</i></td></tr>
 	 <!-- <tr> -->
 	 <!-- 	<td><ossupport>OLW</ossupport></td> -->
 	 <!-- 	<td><ossupport>F</ossupport></td> -->
@@ -111,27 +117,29 @@ I = Input, O = Output, F = Function
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>F</ossupport></td>
-	   <td><url>lag:[&lt;MSEC&gt;]</url></td>
-	   <td>&nbsp;</td>
-	   <td>Add a lag to each received product</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>F</ossupport></td>
-	   <td><url>timekeeper:</url></td>
-	   <td>&nbsp;</td>
-	   <td>Mark each received product with a timetag</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>F</ossupport></td>
 	   <td><url>calib:</url></td>
-	   <td><url>matrix, screen, attr, request</url></td>
+	   <td><url>matrix, screen, attr, request, merge, copy, result</url></td>
 	   <td>Apply a 4x4 transformation matrix</td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>F</ossupport></td>
 	   <td><url>filtering:</url></td>
-	   <td><url>uri, attr, request</url></td>
+	   <td><url>uri, attr, request, merge, copy, result</url></td>
 	   <td>Filter product data using <code>filtering</code> library</td></tr>
+	 <!-- Timing utils -->
+	 <tr><th colspan="5"><small>Timing utils</small></th></tr>
+	 <tr>
+	   <td><ossupport>OLW</ossupport></td>
+	   <td><ossupport>F</ossupport></td>
+	   <td><url>timekeeper:</url></td>
+	   <td>merge, copy, result</td>
+	   <td>Mark each received product with a timetag</td></tr>
+	 <tr>
+	   <td><ossupport>OLW</ossupport></td>
+	   <td><ossupport>F</ossupport></td>
+	   <td><url>lag:[&lt;MSEC&gt;]</url></td>
+	   <td>&nbsp;</td>
+	   <td>Add a lag to each received product</td></tr>
 	 <!-- IO devices -->
 	 <tr><th colspan="5">IO devices</th></tr>
 	 <tr>

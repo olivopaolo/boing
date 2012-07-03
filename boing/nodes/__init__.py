@@ -9,6 +9,10 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+"""The :mod:`boing.nodes` module contains a set of generic utility nodes.
+
+"""
+
 import collections
 import datetime
 import io
@@ -16,6 +20,7 @@ import weakref
 
 from PyQt4 import QtCore
 
+from boing.core.economy import WiseWorker
 from boing.core import Offer, Request, Producer, Consumer, Functor, Identity
 from boing.core.graph import SimpleGrapher
 from boing.net import Encoder as BaseEncoder
@@ -26,14 +31,55 @@ from boing.utils import assertIsInstance, deepDump, quickdict
 # Dump
 
 class Dump(Functor, Functor.ConfigurableRequest):
+    r"""Instances of the :class:`Dump` class produce a string
+    representation of the products they receive. The string is
+    obtained using the function :func:`boing.utils.deepDump`.
 
-    def __init__(self, src=False, dest=False, depth=None,
-                 request=Request.ANY, parent=None):
+    The parameter *request* must be an instance of the class
+    :class:`boing.core.Request` and it is used to select the product
+    to be dumped. The default value for request is
+    :attr:`Request.ALL<boing.core.Request.ALL>`. *mode* defines how the received
+    products will be dumped. The available values are:
+
+    * ``'keys'``, only the matched keys are written;
+    * ``'values'``, only the values of the matched keys are written;
+    * ``'items'``, both the keys and values are written.
+
+    *separator* defines the string to be written between two
+    products. The default value for separator is ``'\n\n'``. *src*
+    defines whether the node also dumps the producer of the received
+    products. The default for src is False. The paramenter *dest*
+    defines whether the node adds a reference to itself when it dumps
+    the received products; its default value is False. The parameter
+    *depth* defines how many levels of the data hierarchy are explored
+    and it is directly passed to the :func:`boing.utils.deepDump`
+    function.
+
+    """
+    def __init__(self, request=Request.ANY, mode="items", separator="\n\n",
+                 src=False, dest=False, depth=None, parent=None):
         super().__init__(request, Offer(quickdict(str=str())), Functor.RESULTONLY,
                          parent=parent)
         self.dumpsrc = assertIsInstance(src, bool)
         self.dumpdest = assertIsInstance(dest, bool)
         self.depth = None if depth is None else int(depth)
+        if mode not in ("items", "values", "keys"): raise ValueError(
+            "mode must be 'items' or 'values' or 'keys', not '%s'"%mode)
+        else:
+            self._mode = mode
+        self.separator = assertIsInstance(separator, str, None)
+        if self.separator is None: self.separator = ""
+
+    def mode(self):
+        """Return the node's mode."""
+        return self._mode
+
+    def setMode(self, mode):
+        """Set the node's dump *mode*."""
+        if mode not in ("items", "values", "keys"): raise ValueError(
+            "mode must be 'items' or 'values' or 'keys', not '%s'"%mode)
+        else:
+            self._mode = mode
 
     def _process(self, sequence, producer):
         stream = io.StringIO()
@@ -42,8 +88,18 @@ class Dump(Functor, Functor.ConfigurableRequest):
         if self.dumpdest:
             stream.write("DumpNode(request=%s)\n"%repr(str(self.request())))
         for operands in sequence:
-            deepDump(quickdict(operands), stream, self.depth)
-            stream.write("\n\n")
+            data = quickdict(operands)
+            if self.mode()=="items":
+                deepDump(data, stream, self.depth)
+                stream.write(self.separator)
+            elif self.mode()=="values":
+                values = tuple(data.values())
+                deepDump(values if len(values)>1 else values[0],
+                         stream, self.depth)
+                stream.write(self.separator)
+            elif self.mode()=="keys":
+                deepDump(tuple(data.keys()), stream, self.depth)
+                stream.write(self.separator)
         yield (("str", stream.getvalue()),)
 
 # -------------------------------------------------------------------
@@ -167,16 +223,26 @@ class SimpleGrapherProducer(Producer):
 # -------------------------------------------------------------------
 
 class Lag(Identity):
-    """Add a lag to the product pipeline."""
+    """Instances of the :class:`Lag` class forward the received
+    products after a delay.
+
+    The parameter *msec* defines the lag in milliseconds. *parent*
+    must be a :class:`PyQt4.QtCore.QObject` and it defines the node's
+    parent.
+
+    """
     def __init__(self, msec, parent=None):
         super().__init__(parent=parent)
         self.lag = msec
         self.__buffer = collections.deque()
 
     def __timeout(self):
+        """Pop a product an forward it."""
         self.postProduct(self.__buffer.popleft())
 
     def _consume(self, products, producer):
+        """For each received product, add it to the buffer and start a
+        new timer."""
         for p in products:
             self.__buffer.append(p)
             QtCore.QTimer.singleShot(self.lag, self.__timeout)
@@ -184,8 +250,14 @@ class Lag(Identity):
 # -------------------------------------------------------------------
 
 class Timekeeper(Functor):
-    """Add to each product the timestamp at the time the product is
-    received as the item with keyword "timetag"."""
+    """Instances of the :class:`Timekeeper` class tag each received
+    product with the timestamp when the product is
+    received; then they forward the product.
+
+    *blender* defines the output of the node (see
+    :class:`boing.core.Functor`). *parent* must be a
+    :class:`PyQt4.QtCore.QObject` and it defines the node's parent.
+    """
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
         super().__init__(Request.NONE,
                          Offer(quickdict(timetag=datetime.datetime.now())),
@@ -198,19 +270,31 @@ class Timekeeper(Functor):
 # -------------------------------------------------------------------
 
 class Editor(Functor):
+    """Instances of the :class:`Editor` class apply to the received
+    products the (key, values) pairs of *dict*.
 
+    *blender* defines the output of the node (see
+    :class:`boing.core.Functor`). *parent* must be a
+    :class:`PyQt4.QtCore.QObject` and it defines the node's parent.
+    """
     def __init__(self, dict, blender, parent=None):
         super().__init__(Request.NONE, Offer(quickdict(**dict)), blender,
                          parent=parent)
         self.__dict = dict
 
     def items(self):
+        """Return a new view of the editor dictionary's items ((key,
+        value) pairs)."""
         return self.__dict.items()
 
     def get(self, key, default=None):
+        """Return the value for *key* if *key* is in the editor's
+        dictionary, else *default*. If *default* is not given, it
+        defaults to None."""
         return self.__dict.get(key, default)
 
     def set(self, key, value):
+        """Set the value for *key* to *value*."""
         self.__dict[key] = value
 
     def _process(self, sequence, producer):
@@ -219,32 +303,49 @@ class Editor(Functor):
 
 # -------------------------------------------------------------------
 
-class Filter(Identity):
+class Filter(WiseWorker):
+    """Instances of the :class:`Filter` class forward only the subset
+    of the received products that matches the filtering *query*.
+
+    *query* must be a :class:`boing.core.Request` and it is used to
+    filter the received products by using the method
+    :meth:`Request.filter()<boing.core.Request.filter>`. *parent* must be a
+    :class:`PyQt4.QtCore.QObject` and it defines the node's parent.
+
+    Instances of the :class:`Filter` class do not have their own
+    request and offer; they only propagate their sibling's ones with the
+    exeption that the offer is also filtered using the query.
+
+    """
     def __init__(self, query, parent=None):
-        super().__init__(parent=parent)
+        super().__init__(Request.NONE, WiseWorker.TUNNELING, parent=parent)
         self._query = assertIsInstance(query, Request)
 
     def query(self):
+        """Return the :class:`Filter`'s query."""
         return self._query
 
     def setQuery(self, query):
+        """Set the new :class:`Filter`'s *query*. *query*
+        must be a :class:`boing.core.Request`."""
         self._query = assertIsInstance(query, Request)
 
     def _consume(self, products, producer):
         for product in products:
-            subset = self._query.filter(product)
+            subset = self.query().filter(product)
             if subset: self.postProduct(subset)
 
     def _propagateOffer(self):
         if self._consumer() is not None:
             if self.isPropagatingOffer():
-                offers = (obs.offer() for obs in self._consumer().observed() \
+                offers = (obs.offer() \
+                              for obs in self._consumer().observed() \
                               if isinstance(obs, Producer))
-                updated = self._selfOffer()
-                for offer in offers:
-                    updated += Offer(self.query().filter(offer))
+                cumulated = sum(offers, Offer())
+                filtered = Offer(iter=map(self.query().filter, cumulated))
+                updated = self._selfOffer() + filtered
             else:
-                update = self._selfOffer()
+                updated = self._selfOffer()
             if self.offer()!=updated:
                 self._cumulatedoffer = updated
                 self.offerChanged.emit()
@@ -313,7 +414,7 @@ class DiffArgumentFunctor(Functor):
                     item = item[step]
                 if isinstance(value, collections.Sequence):
                     functor = item.setdefault(
-                        split[-1], 
+                        split[-1],
                         tuple(self.__factory.create() \
                                   for i in range(len(value))))
                     if hasattr(value, "__setitem__") \
@@ -329,7 +430,7 @@ class DiffArgumentFunctor(Functor):
                 else:
                     functor = item.setdefault(split[-1], self.__factory.create())
                     yield (key, type(value)(functor(value)))
-            elif action=="removed":                
+            elif action=="removed":
                 split = key.split(".")
                 item = self.__functors
                 for step in split[2:]:
@@ -395,7 +496,7 @@ class RenameNode(Node):
 
     def _consume(self, products, producer):
         for p in products:
-            if isinstance(p, collections.Mapping) and self.target in p: 
+            if isinstance(p, collections.Mapping) and self.target in p:
                 self._postProduct({self.rename: p[self.target]})
 
 class Timer(HierarchicalProducer):
