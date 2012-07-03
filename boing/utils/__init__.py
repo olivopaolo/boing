@@ -59,7 +59,8 @@ class quickdict(dict):
 
     def __deepcopy__(self, memo):
         ref = id(self)
-        if ref in memo: rvalue = memo[ref]
+        if ref in memo:
+            rvalue = memo[ref]
         else:
             rvalue = quickdict()
             memo[ref] = rvalue
@@ -142,7 +143,7 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
                         and value:
                     _deepDump(value, fd, level+1, maxdepth, indent, end, sort)
                 else:
-                    print(repr(value), end="", file=fd)
+                    print(str(value), end="", file=fd)
                 if len(obj)>1: print(",", end="", file=fd)
                 if i<len(obj)-1:
                     print(end=end, file=fd)
@@ -171,7 +172,7 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
                     print("%s: "%repr(key), end="", file=fd)
                     _deepDump(value, fd, level+1, maxdepth, indent, end, sort)
                 else:
-                    print("%s: %s"%(repr(key), repr(value)), end="", file=fd)
+                    print("%s: %s"%(repr(key), str(value)), end="", file=fd)
                 if len(obj)>1: print(",", end="", file=fd)
                 if i<len(obj)-1:
                     print(end=end, file=fd)
@@ -181,7 +182,7 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
         else:
             print("...}", end="", file=fd)
     else:
-        print(repr(obj), end="", file=fd)
+        print(str(obj), end="", file=fd)
     if level==0: print(end=end, file=fd)
 
 # -------------------------------------------------------------------
