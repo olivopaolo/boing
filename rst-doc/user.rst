@@ -152,8 +152,6 @@ Calibrate a multi-touch source by applying a 4x4 transformation matrix::
 Filtering examples
 ------------------
 
-In order to run these examples the library filtering_ must be installed.
-
 Filter contacts' position of a multi-touch source using the default filter::
 
   boing -i tuio:+filtering: -o viz:
@@ -177,5 +175,3 @@ Add noise to the contacts' position of a multi-touch source::
 Add noise and then filter the contacts' position::
 
   boing -i tuio:+filtering:?uri=noise:numpy.random.normal(0.0,0.01)+filtering: -o viz:
-
-.. _filtering: http://interaction.lille.inria.fr/hg-mint/code/filtering/

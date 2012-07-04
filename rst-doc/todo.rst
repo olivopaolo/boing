@@ -67,6 +67,6 @@ Someday:
 - Handle lib pointing runtime exceptions in pylibpointing.
 - Develop lib tIO cython bindings.
 - When Qt4.8 will be available, add multicast support to UdpSocket.
-
+- Consider adding the libfilter.filtering.signal module to boing.filtering .
 
 
