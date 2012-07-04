@@ -459,13 +459,22 @@ def create(uri, mode="", logger=None, parent=None):
     #     node = GestureRecognizer(recognizer, **query)
 
     # -------------------------------------------------------------------
-    # LIB FILTERING PORT
-    elif uri.scheme=="filtering":
+    # FILTERING
+    elif uri.scheme=="filtering" and uri.kind==URL.GENERIC:
         from boing.nodes import DiffArgumentFunctor
-        import boing.extra.filtering as filtering
+        from boing.nodes.filtering import getFunctorFactory
+        # Default filter is /moving/mean?winsize=5
+        if not uri.path:
+            uri = URL(str(uri).replace("filtering:",
+                                       "filtering:/moving/mean", 1))
+            uri.query.data["winsize"] = "5"
         query = parseQuery(uri, "attr", "request", "merge", "copy", "result")
-        filteruri = uri.query.data.get("uri", "fltr:/moving/mean?winsize=5")
-        query["functorfactory"] = filtering.getFunctorFactory(filteruri)
+        filteruri = copy.copy(uri)
+        filteruri.scheme = ""
+        filteruri.kind = URL.ABSOLUTE
+        query["functorfactory"] = getFunctorFactory(lower(
+                filteruri, "",
+                ("attr", "request", "merge", "copy", "result")))
         if "attr" in query:
             request = attrToRequest(query.pop("attr"))
             query["request"] = query.get("request", QRequest.NONE) + request
@@ -555,7 +564,8 @@ def lower(uri, schemecut="", keys=tuple()):
         - all keys in *keys* are removed from the uri's query data ;"""
     rvalue = URL(str(uri))
     # Cut scheme
-    if schemecut: rvalue.scheme = rvalue.scheme.replace("%s."%schemecut, "", 1)
+    if schemecut:
+        rvalue.scheme = rvalue.scheme.replace("%s."%schemecut, "", 1)
     # Cut query keys
     f = lambda kw: kw[0] not in keys
     rvalue.query.data = dict(filter(f, rvalue.query.data.items()))

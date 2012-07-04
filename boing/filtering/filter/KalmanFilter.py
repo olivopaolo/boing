@@ -12,8 +12,6 @@
 
 import numpy
 
-# -------------------------------------------------------------------------------------
-
 class LinearKalmanFilter:
 
     """From http://greg.czerniak.info/node/5"""
@@ -87,7 +85,7 @@ class ConstantValueKalmanFilter(LinearKalmanFilter):
         return state[0,0]
 
     def getURL(self):
-        return "fltr:kalman/constant?"+self.__args
+        return "fltr:/kalman/constant?"+self.__args
 
     def __str__(self):
         return self.getURL()
@@ -123,54 +121,7 @@ class DerivativeBasedKalmanFilter(LinearKalmanFilter):
         return state[0,0]
 
     def getURL(self):
-        return "fltr:kalman/derivative?"+self.__args
+        return "fltr:/kalman/derivative?"+self.__args
 
     def __str__(self):
         return self.getURL()
-
-# -------------------------------------------------------------------------------------
-
-# if __name__=="__main__":
-
-#     # See http://greg.czerniak.info/node/5
-
-#     import matplotlib.pyplot as pyplot
-#     import random
-
-#     class Voltmeter:
-#         def __init__(self,_truevoltage,_noiselevel):
-#             self.truevoltage = _truevoltage
-#             self.noiselevel = _noiselevel
-#         def GetVoltage(self):
-#             return self.truevoltage
-#         def GetVoltageWithNoise(self):
-#             return random.gauss(self.GetVoltage(),self.noiselevel)
-
-#     A = numpy.matrix([1]) # Since this is a constant voltage, we just multiply by 1
-#     B = numpy.matrix([0]) # It's a constant voltage and there's no input in the model we can change to affect anything, so we'll set it to 0
-#     H = numpy.matrix([1]) # Since we get the voltage directly, we just multiply by 1
-#     xhat = numpy.matrix([0.0]) # Your initial prediction of the voltage
-#     P = numpy.matrix([1]) # We'll just pick an arbitrary value because we don't know any better
-#     Q = numpy.matrix([0.00001]) # Since we know the exact situation, we'll use a very small variance
-#     R = numpy.matrix([0.1]) # We'll use a conservative estimate of 0.1
-
-#     kalmanfilter = LinearKalmanFilter(A,B,H,xhat,P,Q,R)
-#     voltmeter = Voltmeter(1.25,0.25)
-
-#     numsteps = 60
-#     truevoltage, measuredvoltage, kalman = [], [], []
-#     for i in range(numsteps):
-#         measured = voltmeter.GetVoltageWithNoise()
-#         measuredvoltage.append(measured)
-#         truevoltage.append(voltmeter.GetVoltage())
-#         kalman.append(kalmanfilter.GetCurrentState()[0,0])
-#         kalmanfilter.Step(numpy.matrix([0]),numpy.matrix([measured]))
-
-#     pyplot.plot(range(numsteps),measuredvoltage,'b',
-#                 range(numsteps),truevoltage,'r',
-#                 range(numsteps),kalman,'g')
-#     pyplot.xlabel('Time')
-#     pyplot.ylabel('Voltage')
-#     pyplot.title('Voltage Measurement with Kalman Filter')
-#     pyplot.legend(('measured','true voltage','kalman'))
-#     pyplot.show()

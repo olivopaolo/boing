@@ -11,6 +11,7 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 import math
+
 import numpy
 
 # -----------------------------------------------------------------------
@@ -59,7 +60,7 @@ class SingleExponentialFilter:
         return self.__s
 
     def getURL(self):
-        return "fltr:exponential/single?alpha=%s"%self.__alpha
+        return "fltr:/exponential/single?alpha=%s"%self.__alpha
 
     def __str__(self):
         return self.getURL()
@@ -67,12 +68,12 @@ class SingleExponentialFilter:
     @staticmethod
     def generateConfigurations(step):
         nbsteps = int(math.floor((1.0-step)/step))
-        return ["fltr:exponential/single?alpha=%s"%(step*(i+1)) for i in range(nbsteps+1)]
+        return ["fltr:/exponential/single?alpha=%s"%(step*(i+1)) for i in range(nbsteps+1)]
 
     @staticmethod
     def randomConfiguration():
         alpha = 1.0 - numpy.random.random_sample() # will be in (0.0, 1.0]
-        return "fltr:exponential/single?alpha=%s"%alpha
+        return "fltr:/exponential/single?alpha=%s"%alpha
 
 # -----------------------------------------------------------------------
 
@@ -105,7 +106,7 @@ class DoubleExponentialFilter:
         return s
 
     def getURL(self):
-        return "fltr:exponential/double?alpha=%s&gamma=%s"%(self.__alpha, self.__gamma)
+        return "fltr:/exponential/double?alpha=%s&gamma=%s"%(self.__alpha, self.__gamma)
 
     def __str__(self):
         return self.getURL()
@@ -118,7 +119,7 @@ class DoubleExponentialFilter:
             for ig in range(nbsteps+1):
                 if ia==0 and ig==0: continue
                 configs.append((ia*step, ig*step))
-        return ["fltr:exponential/double?alpha=%s&gamma=%s"%args for args in configs]
+        return ["fltr:/exponential/double?alpha=%s&gamma=%s"%args for args in configs]
 
     @staticmethod
     def randomConfiguration(**params):
@@ -126,7 +127,7 @@ class DoubleExponentialFilter:
             params["alpha"] = 1.0 - numpy.random.random_sample() # FIXME: will be in (0.0, 1.0]
         if "gamma" not in params:
             params["gamma"] = 1.0 - numpy.random.random_sample() # FIXME: will be in (0.0, 1.0]
-        return "fltr:exponential/double?alpha=%s&gamma=%s"%(params["alpha"],params["gamma"])
+        return "fltr:/exponential/double?alpha=%s&gamma=%s"%(params["alpha"],params["gamma"])
 
 # -----------------------------------------------------------------------
 
@@ -145,7 +146,7 @@ class DESPFilter:
         if alpha<0 or alpha>=1.0:
             raise ValueError("alpha (%s) should be in [0.0, 1.0)"%alpha)
         self.__alpha = float(alpha)
-        if tau<1:
+        if int(tau)<=0:
             raise ValueError("tau (%s) should be >0"%alpha)
         self.__tau = int(tau)
         self.__hatxiprev = None
@@ -166,7 +167,7 @@ class DESPFilter:
                - (1.0 + (self.__alpha*self.__tau)/(1.0-self.__alpha)) * hatxi2
 
     def getURL(self):
-        return "fltr:exponential/desp?alpha=%s&tau="%(self.__alpha,self.__tau)
+        return "fltr:/exponential/desp?alpha=%g&tau=%d"%(self.__alpha,self.__tau)
 
     def __str__(self):
         return self.getURL()
@@ -174,32 +175,11 @@ class DESPFilter:
     @staticmethod
     def generateConfigurations(step, mintau=1, maxtau=1):
         nbsteps = int(math.floor((0.999-step)/step))
-        return ["fltr:exponential/desp?alpha=%f&tau=%d"%(step*i,tau) \
+        return ["fltr:/exponential/desp?alpha=%g&tau=%d"%(step*i,tau) \
                 for i in range(nbsteps+1) for tau in range(mintau, maxtau+1)]
 
     @staticmethod
     def randomConfiguration(mintau=1, maxtau=1):
         alpha = numpy.random.random_sample() # will be in [0.0, 1.0)
         tau = numpy.random.random_integers(mintau, maxtau)
-        return "fltr:exponential/desp?alpha=%f&tau=%d"%(alpha,tau)
-
-# -----------------------------------------------------------------------
-
-if __name__=="__main__":
-    configs = SingleExponentialFilter.generateConfigurations(0.1)
-    print(len(configs), "configurations")
-    for config in configs: print("  ", config)
-    print()
-    print(SingleExponentialFilter.randomConfiguration())
-    print()
-    configs = DoubleExponentialFilter.generateConfigurations(0.4)
-    print(len(configs), "configurations")
-    for config in configs: print("  ", config)
-    print()
-    print(DoubleExponentialFilter.randomConfiguration())
-    print()
-    configs = DESPFilter.generateConfigurations(0.3)
-    print(len(configs), "configurations")
-    for config in configs: print("  ", config)
-    print()
-    print(DESPFilter.randomConfiguration())
+        return "fltr:/exponential/desp?alpha=%g&tau=%d"%(alpha, tau)

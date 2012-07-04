@@ -12,9 +12,13 @@
 
 import urllib.parse
 
-from boing.filtering.filter.MovingWindowFilter import MovingMeanFilter, MovingMedianFilter
-from boing.filtering.filter.ExponentialFilter import SingleExponentialFilter, DoubleExponentialFilter, DESPFilter
-from boing.filtering.filter.KalmanFilter import LinearKalmanFilter, ConstantValueKalmanFilter, DerivativeBasedKalmanFilter
+from boing.filtering.filter.MovingWindowFilter \
+    import MovingMeanFilter, MovingMedianFilter
+from boing.filtering.filter.ExponentialFilter \
+    import SingleExponentialFilter, DoubleExponentialFilter, DESPFilter
+from boing.filtering.filter.KalmanFilter \
+    import LinearKalmanFilter, ConstantValueKalmanFilter, \
+    DerivativeBasedKalmanFilter
 from boing.filtering.filter.OneEuroFilter import OneEuroFilter
 
 def __registerURLs():
@@ -62,25 +66,3 @@ def createFilter(uri):
         else:
             raise ValueError("Unknown OneEuroFilter subclass (%s)"%fsubclass)
     raise ValueError("Unknown or unspecified filter class (%s)"%fclass)
-
-if __name__=="__main__":
-    import traceback
-    tests = [
-        "fltr:/moving/mean?winsize=5", "fltr:/moving/average",
-        "/moving/median",
-        "exponential/single?alpha=9.0",
-        "exponential/double?alpha=9.0&gamma=8.0",
-        "kalman/constant?x=3.0",
-        "kalman/derivative?v=3.0",
-        "oneeuro?frequency=60&cutoff=40",
-        ]
-    for uri in tests:
-        try:
-            flter = createFilter(uri)
-            print(uri.ljust(50), flter)
-        except:
-            print('-'*80)
-            print(uri)
-            print()
-            traceback.print_exc()
-            print('-'*80)

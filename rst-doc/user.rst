@@ -158,7 +158,7 @@ Filter contacts' position of a multi-touch source using the default filter::
 
 Filter contacts' position using an exponential filter::
 
-  boing -i tuio:+filtering:?uri=fltr:/exponential/single?alpha=0.9 -o viz:
+  boing -i tuio:+filtering:/exponential/single?alpha=0.9 -o viz:
 
 Filter only the contact speed::
 
@@ -170,8 +170,8 @@ Display contact's raw data and filtered data on separate windows::
 
 Add noise to the contacts' position of a multi-touch source::
 
-  boing -i tuio:+filtering:?uri=noise:numpy.random.normal(0.0,0.01) -o viz:
+  boing -i tuio:+filtering:/noise/numpy.random.normal(0.0,0.01) -o viz:
 
 Add noise and then filter the contacts' position::
 
-  boing -i tuio:+filtering:?uri=noise:numpy.random.normal(0.0,0.01)+filtering: -o viz:
+  boing -i tuio:+filtering:/noise/numpy.random.normal(0.0,0.01)+filtering: -o viz:

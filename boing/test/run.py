@@ -43,6 +43,9 @@ def additional_tests(modules=[]):
     if not modules or 'gesture' in modules:
         from boing.test.gesture import test_rubine
         tests += test_rubine.suite()
+    if not modules or 'filtering' in modules:
+        from boing.test.filtering import test_filter
+        tests += test_filter.suite()
     if not modules or 'nodes' in modules:
         from boing.test.nodes import test_loader
         tests += test_loader.suite()
@@ -62,7 +65,7 @@ If no module is specified, all modules are tested; otherwise only the
 specified modules will be executed.
 
 Available modules:
- core, gesture, net, nodes, utils""")
+ core, filtering, gesture, net, nodes, utils""")
 
     parser.add_argument("module", metavar="MODULE", nargs="*", default=[],
                         help="module to be tested")

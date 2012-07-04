@@ -11,7 +11,6 @@
 
 from boing.filtering.filter import createFilter
 from boing.filtering.noise import NoiseFunctor
-from boing.utils.url import URL
 
 class _Factory:
 
@@ -24,14 +23,12 @@ class _Factory:
 
 def getFunctorFactory(uri):
     """Returns a factory that can be used to build functor objects."""
-    url = URL(str(uri))
-    if url.scheme=="fltr":
-        test = createFilter(uri)
-        rvalue = _Factory(lambda: createFilter(uri))
-    elif url.scheme=="noise":
-        noise = NoiseFunctor(url.opaque)
+    uri = str(uri)
+    if uri.startswith("/noise/"):
+        noise = NoiseFunctor(uri.replace("/noise/", "", 1))
         functor = lambda value: value + noise()
         rvalue = _Factory(lambda: functor)
     else:
-        raise Exception("Invalid filtering URI: %s"%uri)
+        test = createFilter(uri)
+        rvalue = _Factory(lambda: createFilter(uri))
     return rvalue

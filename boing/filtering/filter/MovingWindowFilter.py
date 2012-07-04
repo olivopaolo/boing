@@ -33,19 +33,19 @@ class MovingWindowFilter:
         return self.__filter(self.__window)
 
     def getURL(self):
-        return "fltr:moving/%s?winsize=%s"%(self.__name, self.__winsize)
+        return "fltr:/moving/%s?winsize=%s"%(self.__name, self.__winsize)
 
     def __str__(self):
         return self.getURL()
 
     @staticmethod
     def generateConfigurations(subclass, maxwinsize, step):
-        return ["fltr:moving/%s?winsize=%d"%(subclass,i) for i in range(1, maxwinsize, step)]
+        return ["fltr:/moving/%s?winsize=%d"%(subclass,i) for i in range(1, maxwinsize, step)]
 
     @staticmethod
     def randomConfiguration(subclass, maxwinsize):
         winsize = numpy.random.random_integers(1, maxwinsize)
-        return "fltr:moving/%s?winsize=%d"%(subclass,winsize)
+        return "fltr:/moving/%s?winsize=%d"%(subclass,winsize)
 
 # -----------------------------------------------------------------------
 
@@ -71,19 +71,20 @@ class MovingMeanFilterSmart(MovingWindowFilter):
         return result
 
     def getURL(self):
-        return "fltr:moving/%s?winsize=%s"%(self.__name, self.__winsize)
+        return "fltr:/moving/%s?winsize=%s"%(self.__name, self.__winsize)
 
     def __str__(self):
         return self.getURL()
 
     @staticmethod
     def generateConfigurations(maxwinsize, step):
-        return ["fltr:moving/mean?winsize=%d"%i for i in range(1, int(maxwinsize), int(step))]
+        return ["fltr:/moving/mean?winsize=%d"%i for i in range(1, int(maxwinsize), int(step))]
 
     @staticmethod
     def randomConfiguration(maxwinsize):
         winsize = numpy.random.random_integers(1, int(maxwinsize))
-        return "fltr:moving/mean?winsize=%d"%winsize
+        return "fltr:/moving/mean?winsize=%d"%winsize
+
 
 class MovingMeanFilter(MovingWindowFilter):
 
@@ -98,6 +99,7 @@ class MovingMeanFilter(MovingWindowFilter):
     def randomConfiguration(maxwinsize):
         return MovingWindowFilter.randomConfiguration("mean", int(maxwinsize))
 
+
 class MovingMedianFilter(MovingWindowFilter):
 
     def __init__(self, winsize):
@@ -110,20 +112,3 @@ class MovingMedianFilter(MovingWindowFilter):
     @staticmethod
     def randomConfiguration(maxwinsize):
         return MovingWindowFilter.randomConfiguration("median", int(maxwinsize))
-
-# -----------------------------------------------------------------------
-
-if __name__=="__main__":
-    mm1 = MovingMeanFilterBis(134)
-    mm2 = MovingMeanFilter(134)
-    for i in range(1000):
-        value = numpy.random.sample()
-        f1, f2 = mm1(value), mm2(value)
-        print(f1==f2, f1-f2, f1, f2)
-
-if __name__=="__main__2":
-    configs = MovingMeanFilter.generateConfigurations(20, 3)
-    print(len(configs), "configurations")
-    for config in configs: print("  ", config)
-    print()
-    print(MovingMedianFilter.randomConfiguration(1000))
