@@ -78,10 +78,9 @@ class Observable(QtCore.QObject, Node):
         """Return an iterator over the subscribed observers."""
         return (ref() for ref in self.__observers.keys())
 
-    def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection, child=False):
+    def addObserver(self, observer, mode=QtCore.Qt.QueuedConnection):
         """Subscribe *observer* as a new observer. Return whether
-        *observer* has been correctly added. If *child* is true, the
-        observer is set to be child of the current observable."""
+        *observer* has been correctly added."""
         assertIsInstance(observer, Observer)
         if observer in self.observers():
             rvalue = False
@@ -89,7 +88,6 @@ class Observable(QtCore.QObject, Node):
             observer._Observer__addObservable(self)
             self.__observers[weakref.ref(observer)] = \
                 Observable._ObserverRecord(observer, mode)
-            if child: observer.setParent(self)
             self.observerAdded.emit(observer)
             rvalue = True
         return rvalue
@@ -240,13 +238,11 @@ class Observer(QtCore.QObject, Node):
         """Return an iterator over the observables it is subscribed to."""
         return (ref() for ref in self.__observed)
 
-    def subscribeTo(self, observable, mode=QtCore.Qt.QueuedConnection,
-                    child=False):
+    def subscribeTo(self, observable, mode=QtCore.Qt.QueuedConnection):
         """Subscribe to *observable*. Return whether *observer* has
         been successfully subscribed to."""
         assertIsInstance(observable, Observable)
         rvalue = observable.addObserver(self, mode)
-        if rvalue and child: observable.setParent(self)
         return rvalue
 
     def unsubscribeFrom(self, observable):

@@ -16,7 +16,10 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing.core.economy import Offer, Request, Producer, Consumer, LambdaRequest
+from boing.core.economy import \
+    Offer, Request, LambdaRequest, \
+    Producer, Consumer, _PropagatingWorker, \
+    Composite, CompositeProducer, CompositeConsumer, CompositeWorker
 from boing.core.observer import Observer
 from boing.test import QtBasedTest
 from boing.test.core.test_observer import testReact
@@ -73,7 +76,7 @@ class TestLambdaRequest(unittest.TestCase):
     def test_equal(self):
         self.assertEqual(LambdaRequest(), LambdaRequest())
         self.assertEqual(LambdaRequest(None), LambdaRequest(None))
-        self.assertEqual(LambdaRequest(self.functor), 
+        self.assertEqual(LambdaRequest(self.functor),
                          LambdaRequest(self.functor))
 
     def test_hash(self):
@@ -105,7 +108,7 @@ class Test_CompositeRequest(unittest.TestCase):
 
 # -------------------------------------------------------------------
 
-def eqRequestFactory(other): 
+def eqRequestFactory(other):
     return LambdaRequest(
         lambda product: isinstance(product, Offer.UndefinedProduct) \
             or product==other)
@@ -185,7 +188,7 @@ class TestProducer(QtBasedTest):
         # Init consumers
         consumers, requests = [], {}
         for item in ("statue", "painting", "obelisk"):
-            requests[item] = eqRequestFactory(item)      
+            requests[item] = eqRequestFactory(item)
         for request in (Request.NONE, #0
                         requests["statue"],   #1
                         requests["statue"],   #2
@@ -228,7 +231,7 @@ class TestProducer(QtBasedTest):
         self.assertFalse(self.offerTrigger)
         # 3
         producer.addObserver(consumers[3])
-        self.assertEqual(producer.aggregateDemand(), 
+        self.assertEqual(producer.aggregateDemand(),
                          requests["statue"] + requests["obelisk"])
         self.assertEqual(producer.demandedOffer(), Offer("statue", "obelisk"))
         self.assertTrue(self.demandTrigger)
@@ -240,7 +243,7 @@ class TestProducer(QtBasedTest):
         self.demandTrigger = False
         self.offerTrigger = False
         producer.addObserver(consumers[4])
-        self.assertEqual(producer.aggregateDemand(), 
+        self.assertEqual(producer.aggregateDemand(),
                          requests["statue"] + requests["obelisk"])
         self.assertEqual(producer.demandedOffer(), Offer("statue", "obelisk"))
         self.assertFalse(self.demandTrigger)
@@ -248,7 +251,7 @@ class TestProducer(QtBasedTest):
         # 5
         producer.addObserver(consumers[5])
         self.assertEqual(producer.aggregateDemand(), Request.ANY)
-        self.assertEqual(producer.demandedOffer(), 
+        self.assertEqual(producer.demandedOffer(),
                          Offer("statue", "painting", "obelisk"))
         self.assertTrue(self.demandTrigger)
         self.assertTrue(self.offerTrigger)
@@ -260,7 +263,7 @@ class TestProducer(QtBasedTest):
         self.offerTrigger = False
         producer.addObserver(consumers[6])
         self.assertEqual(producer.aggregateDemand(), Request.ANY)
-        self.assertEqual(producer.demandedOffer(), 
+        self.assertEqual(producer.demandedOffer(),
                          Offer("statue", "painting", "obelisk"))
         self.assertFalse(self.demandTrigger)
         self.assertFalse(self.offerTrigger)
@@ -268,7 +271,7 @@ class TestProducer(QtBasedTest):
         # 6
         producer.removeObserver(consumers[6])
         self.assertEqual(producer.aggregateDemand(), Request.ANY)
-        self.assertEqual(producer.demandedOffer(), 
+        self.assertEqual(producer.demandedOffer(),
                          Offer("statue", "painting", "obelisk"))
         self.assertFalse(self.demandTrigger)
         self.assertFalse(self.offerTrigger)
@@ -286,9 +289,9 @@ class TestProducer(QtBasedTest):
         self.demandTrigger = False
         self.offerTrigger = False
         producer.removeObserver(consumers[4])
-        self.assertEqual(producer.aggregateDemand(), 
+        self.assertEqual(producer.aggregateDemand(),
                          requests["statue"] + requests["obelisk"])
-        self.assertEqual(producer.demandedOffer(), 
+        self.assertEqual(producer.demandedOffer(),
                          Offer("statue", "obelisk"))
         self.assertFalse(self.demandTrigger)
         self.assertFalse(self.offerTrigger)
@@ -327,7 +330,7 @@ class TestProducer(QtBasedTest):
         for cons in consumers:
             producer.addObserver(cons)
         self.assertEqual(producer.aggregateDemand(), Request.ANY)
-        self.assertEqual(producer.demandedOffer(), 
+        self.assertEqual(producer.demandedOffer(),
                          Offer("statue", "painting", "obelisk"))
         self.demandTrigger = False
         self.offerTrigger = False
@@ -342,7 +345,7 @@ class TestProducer(QtBasedTest):
             producer.addObserver(cons)
         del cons
         self.assertEqual(producer.aggregateDemand(), Request.ANY)
-        self.assertEqual(producer.demandedOffer(), 
+        self.assertEqual(producer.demandedOffer(),
                          Offer("statue", "painting", "obelisk"))
         self.demandTriggerCount = 0
         self.offerTriggerCount = 0
@@ -367,20 +370,20 @@ class TestProducer(QtBasedTest):
         self.assertTrue(self.offerTrigger)
         self.assertEqual(self.demandTriggerCount, 3)
         self.assertEqual(self.offerTriggerCount, 3)
-        
+
     def production_test(self, mode):
         # Init producers
         producers = []
         def makeFunctor(producer, product, n):
             proxy = weakref.proxy(producer)
             return lambda : self.assertEqual(proxy.postProduct(product), n)
-        # Consumers are defined by the product they produce and the number of 
+        # Consumers are defined by the product they produce and the number of
         # Consumers that will be interested to their products.
-        for i, (template, n) in enumerate((("statue", 4), 
+        for i, (template, n) in enumerate((("statue", 4),
                                            ("painting", 3),
                                            ("obelisk", 3))):
             producers.append(Producer(Offer(Offer.UndefinedProduct())))
-            tid = QtCore.QTimer(producers[i], 
+            tid = QtCore.QTimer(producers[i],
                                 timeout=makeFunctor(producers[i], template, n))
             tid.start(20)
         reffirstproducer = weakref.ref(producers[0])
@@ -403,7 +406,7 @@ class TestProducer(QtBasedTest):
         consumers = []
         for request in (Request.NONE,
                         Request.NONE, Request.ANY,
-                        eqRequestFactory("statue"), 
+                        eqRequestFactory("statue"),
                         eqRequestFactory("painting"),
                         eqRequestFactory("statue") + eqRequestFactory("obelisk")):
             consumers.append(
@@ -433,7 +436,7 @@ class TestProducer(QtBasedTest):
         self.assertIsNone(reffirstproducer())
         self.assertIsNone(reffirstconsumer())
         for prod in filter(None, producers):
-            self.assertEqual(set(prod.observers()), 
+            self.assertEqual(set(prod.observers()),
                              set(itertools.chain(consumers[1:],
                                                 (observer, ))))
         for cons in filter(None, consumers):
@@ -458,6 +461,123 @@ class TestProducer(QtBasedTest):
     def test_production_queued(self):
         self.production_test(QtCore.Qt.QueuedConnection)
 
+    def test__add__None(self):
+        # prod + None = prod
+        prod = Producer(Offer())
+        self.assertEqual(prod+None, prod)
+
+    def test__radd__None(self):
+        # None + prod = prod
+        prod = Producer(Offer())
+        self.assertEqual(None+prod, prod)
+
+    def test__add__Producer(self):
+        # prod + prod => Exception
+        prod = Producer(Offer())
+        try: prod + Producer(Offer())
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Consumer(self):
+        # prod + cons => Composite
+        prod = Producer(Offer())
+        cons = Consumer(Request.ANY)
+        result = prod + cons
+        self.assertIsInstance(result, Composite)
+        self.assertEqual(set(result.internals()), {prod, cons})
+
+    def test__add__Worker(self):
+        # prod + worker => CompositeProducer
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        result = prod + worker
+        self.assertIsInstance(result, CompositeProducer)
+        self.assertEqual(set(result.producers()), {worker})
+        self.assertEqual(set(result.internals()), {prod, worker})
+
+    def test__add__Composite(self):
+        # prod + composite => Exception
+        prod = Producer(Offer())
+        try: prod + (Producer(Offer()) + Consumer(Request.ANY))
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeProducer(self):
+        # prod + composite => Exception
+        prod = Producer(Offer())
+        composite = Producer(Offer()) + _PropagatingWorker(Request.ANY, Offer())
+        try: prod + composite
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeConsumer(self):
+        # prod + composite => Composite
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons = Consumer(Request.ANY)
+        result = prod + (worker + cons)
+        self.assertIsInstance(result, Composite)
+        self.assertEqual(set(result.internals()), {prod, worker, cons})
+        self.assertEqual(set(prod.observers()), {worker})
+        self.assertEqual(set(worker.observed()), {prod})
+        self.assertEqual(set(worker.observers()), {cons})
+        self.assertEqual(set(cons.observed()), {worker})
+
+    def test__add__CompositeWorker(self):
+        # prod + composite => Composite
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        result = prod + (worker + worker2)
+        self.assertIsInstance(result, CompositeProducer)
+        self.assertEqual(set(result.internals()), {prod, worker, worker2})
+        self.assertEqual(set(prod.observers()), {worker})
+        self.assertEqual(set(worker.observed()), {prod})
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(len(set(worker2.observers())), 1)
+
+    # def test__or__None(self):
+    #     prod = Producer(Offer())
+    #     # prod | None = prod
+    #     self.assertEqual(prod|None, prod)
+
+    # def test__or__Producer(self):
+    #     # prod | prod2 => CompositeProducer(prod, prod2)
+    #     prod = Producer(Offer())
+    #     prod2 = Producer(Offer())
+    #     result = prod | prod2
+    #     self.assertIsInstance(result, CompositeProducer)
+    #     self.assertEqual(set(result._consumer().observed()), {prod, prod2})
+
+    # def test__or__Consumer(self):
+    #     # prod | cons => Exception
+    #     prod = Producer(Offer())
+    #     try: prod | Consumer(Request.NONE)
+    #     except TypeError: pass
+    #     else: self.fail("TypeError not raised by __or__")
+
+    # def test__or__Worker(self):
+    #     # prod | worker => CompositeWorker
+    #     prod = Producer(Offer())
+    #     worker = _PropagatingWorker(Request.ANY, Offer())
+    #     result = prod | worker
+    #     self.assertIsInstance(result, CompositeWorker)
+    #     self.assertEqual(set(result._consumer().observed()), {prod, worker})
+    #     self.assertEqual(set(result._producer().observers()), {worker})
+
+    # def test__or_CompositeProducer(self):
+    #     # prod[0] | prod[1] | prod[2] => CompositeProducer
+    #     prods = tuple(Producer(Offer()) for i in range(3))
+    #     result = prods[0] | prods[1] | prods[2]
+    #     self.assertIsInstance(result, CompositeProducer)
+    #     self.assertEqual(set(result._consumer().observed()), set(prods))
+
+    # def test__ror__None(self):
+    #     prod = Producer(Offer())
+    #     # None | prod = prod
+    #     self.assertEqual(None|prod, prod)
+
 
 class TestConsumer(unittest.TestCase):
 
@@ -466,7 +586,7 @@ class TestConsumer(unittest.TestCase):
 
     def setUp(self):
         self.triggered = False
-        
+
     def test_creation(self):
         consumer = Consumer(Request.ANY)
 
@@ -480,6 +600,106 @@ class TestConsumer(unittest.TestCase):
     def test_request(self):
         consumer = Consumer(Request.ANY)
         self.assertEqual(consumer.request(), Request.ANY)
+
+    def test__add__None(self):
+        # cons + None = cons
+        cons = Consumer(Request.ANY)
+        self.assertEqual(cons+None, cons)
+
+    def test__radd__None(self):
+        # None + cons = cons
+        cons = Consumer(Request.ANY)
+        self.assertEqual(None+cons, cons)
+
+    def test__add__Producer(self):
+        # cons + prod => Exception
+        cons = Consumer(Request.ANY)
+        try: cons + Producer(Offer())
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Consumer(self):
+        # cons + cons => Exception
+        cons = Consumer(Request.ANY)
+        try: cons + Consumer(Request.ANY)
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Worker(self):
+        # cons + worker => Exception
+        cons = Consumer(Request.ANY)
+        try: cons + _PropagatingWorker(Request.ANY, Offer())
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Composite(self):
+        # cons + composite => Exception
+        cons = Consumer(Request.ANY)
+        composite = Producer(Offer())+Consumer(Request.ANY)
+        try: cons + composite
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeProducer(self):
+        # cons + composite => Exception
+        cons = Consumer(Request.ANY)
+        composite = Producer(Offer())+_PropagatingWorker(Request.ANY, Offer())
+        try: cons + composite
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeConsumer(self):
+        # cons + composite => Exception
+        cons = Consumer(Request.ANY)
+        composite = _PropagatingWorker(Request.ANY, Offer())+Consumer(Request.ANY)
+        try: cons + composite
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeWorker(self):
+        # cons + composite => Exception
+        cons = Consumer(Request.ANY)
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        composite = worker + worker2
+        try: cons + composite
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    # def test__or__None(self):
+    #     cons = Consumer(Request.ANY)
+    #     # cons | None = cons
+    #     self.assertEqual(cons|None, cons)
+
+    # def test__or__Consumer(self):
+    #     # cons | cons2 => CompositeConsumer(cons, cons2)
+    #     cons = Consumer(Request.ANY)
+    #     cons2 = Consumer(Request.ANY)
+    #     result = cons | cons2
+    #     self.assertIsInstance(result, CompositeConsumer)
+    #     self.assertEqual(set(result._producer().observers()), {cons, cons2})
+
+    # def test__or__Producer(self):
+    #     # cons | prod => Exception
+    #     cons = Consumer(Request.ANY)
+    #     try: cons | Producer(Offer())
+    #     except TypeError: pass
+    #     else: self.fail("TypeError not raised by __or__")
+
+    # def test__or__Worker(self):
+    #     # cons | worker => CompositeWorker
+    #     cons = Consumer(Request.ANY)
+    #     worker = _PropagatingWorker(Request.ANY, Offer())
+    #     result = cons | worker
+    #     self.assertIsInstance(result, CompositeWorker)
+    #     self.assertEqual(set(result._producer().observers()), {cons, worker})
+    #     self.assertEqual(set(result._consumer().observed()), {worker})
+
+    # def test__ror__None(self):
+    #     cons = Consumer(Request.ANY)
+    #     # None | cons = cons
+    #     self.assertEqual(None|cons, cons)
+
 
 class TestConfigurableConsumer(unittest.TestCase):
 
@@ -507,9 +727,494 @@ class TestConfigurableConsumer(unittest.TestCase):
         self.assertEqual(consumer.request(), Request.ANY)
         self.assertFalse(self.triggered)
 
+
+class Test_PropagatingWorker(unittest.TestCase):
+
+    def test__add__None(self):
+        # worker + None = worker
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        self.assertEqual(worker+None, worker)
+
+    def test__radd__None(self):
+        # None + worker = worker
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        self.assertEqual(None+worker, worker)
+
+    def test__add__Producer(self):
+        # worker + producer => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        try: worker + Producer(Offer())
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Consumer(self):
+        # worker + cons => CompositeConsumer
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons = Consumer(Request.ANY)
+        result = worker + cons
+        self.assertIsInstance(result, CompositeConsumer)
+        self.assertEqual(set(result.consumers()), {worker})
+        self.assertEqual(set(result.internals()), {worker, cons})
+        self.assertEqual(len(set(worker.observed())), 1)
+        self.assertEqual(set(worker.observers()), {cons})
+        self.assertEqual(set(cons.observed()), {worker})
+
+    def test__add__Worker(self):
+        # worker + worker => CompositeWorker
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        result = worker + worker2
+        self.assertIsInstance(result, CompositeWorker)
+        self.assertEqual(set(result.producers()), {worker2})
+        self.assertEqual(set(result.consumers()), {worker})
+        self.assertEqual(set(result.internals()), {worker, worker2})
+        self.assertEqual(len(set(worker.observed())), 1)
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(len(set(worker.observers())), 1)
+
+    def test__add__Composite(self):
+        # worker + composite => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        composite = Producer(Offer()) + Consumer(Request.ANY)
+        try: worker + composite
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeProducer(self):
+        # worker + composite => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        composite = Producer(Offer()) + _PropagatingWorker(Request.ANY, Offer())
+        try: worker + composite
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeConsumer(self):
+        # worker + composite => CompositeConsumer
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 =_PropagatingWorker(Request.ANY, Offer())
+        cons = Consumer(Request.ANY)
+        result = worker + (worker2 + cons)
+        self.assertIsInstance(result, CompositeConsumer)
+        self.assertEqual(set(result.consumers()), {worker})
+        self.assertEqual(set(result.internals()), {worker, worker2, cons})
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(set(worker2.observers()), {cons})
+        self.assertEqual(set(cons.observed()), {worker2})
+
+    def test__add__CompositeWorker(self):
+        # worker + composite => CompositeConsumer
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 =_PropagatingWorker(Request.ANY, Offer())
+        worker3 =_PropagatingWorker(Request.ANY, Offer())
+        result = worker + (worker2 + worker3)
+        self.assertIsInstance(result, CompositeWorker)
+        self.assertEqual(set(result.consumers()), {worker})
+        self.assertEqual(set(result.producers()), {worker3})
+        self.assertEqual(set(result.internals()), {worker, worker2, worker3})
+        self.assertEqual(len(set(worker.observed())), 1)
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(set(worker2.observers()), {worker3})
+        self.assertEqual(set(worker3.observed()), {worker2})
+        self.assertEqual(len(set(worker3.observers())), 1)
+
+    # def test__or__None(self):
+    #     worker = _PropagatingWorker(Request.ANY, Offer())
+    #     # worker | None = worker
+    #     self.assertEqual(worker|None, worker)
+
+    # def test__or__Producer(self):
+    #     # worker | prod => CompositeWorker
+    #     worker = _PropagatingWorker(Request.ANY, Offer())
+    #     prod = Producer(Offer())
+    #     result = worker | prod
+    #     self.assertIsInstance(result, CompositeWorker)
+    #     self.assertEqual(set(result._producer().observers()), {worker})
+    #     self.assertEqual(set(result._consumer().observed()), {worker, prod})
+
+    # def test__or__Consumer(self):
+    #     # worker | cons => CompositeWorker
+    #     worker = _PropagatingWorker(Request.ANY, Offer())
+    #     cons = Consumer(Request.ANY)
+    #     result = worker | cons
+    #     self.assertIsInstance(result, CompositeWorker)
+    #     self.assertEqual(set(result._producer().observers()), {worker, cons})
+    #     self.assertEqual(set(result._consumer().observed()), {worker})
+
+    # def test__or__Worker(self):
+    #     # worker | worker2 => CompositeWorker
+    #     worker = _PropagatingWorker(Request.ANY, Offer())
+    #     worker2 = _PropagatingWorker(Request.ANY, Offer())
+    #     result = worker | worker2
+    #     self.assertIsInstance(result, CompositeWorker)
+    #     self.assertEqual(set(result._producer().observers()), {worker, worker2})
+    #     self.assertEqual(set(result._consumer().observed()), {worker, worker2})
+
+    # def test__ror__None(self):
+    #     worker = _PropagatingWorker(Request.ANY, Offer())
+    #     # None | worker = worker
+    #     self.assertEqual(None|worker, worker)
+
+
+class TestCompositeProducer(unittest.TestCase):
+
+    def test__add__None(self):
+        # composite + None = composite
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        composite = prod + worker
+        self.assertEqual(composite+None, composite)
+
+    def test__radd__None(self):
+        # None + composite = composite
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        composite = prod + worker
+        self.assertEqual(None+composite, composite)
+
+    def test__add__Producer(self):
+        # composite + prod => Exception
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        composite = prod + worker
+        try: composite + Producer(Offer())
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Consumer(self):
+        # composite + cons => Composite
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons = Consumer(Request.ANY)
+        result = (prod + worker) + cons
+        self.assertIsInstance(result, Composite)
+        self.assertEqual(set(result.internals()), {prod, worker, cons})
+        self.assertEqual(set(prod.observers()), {worker})
+        self.assertEqual(set(worker.observed()), {prod})
+        self.assertEqual(set(worker.observers()), {cons})
+        self.assertEqual(set(cons.observed()), {worker})
+
+    def test__add__Worker(self):
+        # composite + worker => CompositeProducer
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        result = (prod + worker) + worker2
+        self.assertIsInstance(result, CompositeProducer)
+        self.assertEqual(set(result.producers()), {worker2})
+        self.assertEqual(set(result.internals()), {prod, worker, worker2})
+        self.assertEqual(set(prod.observers()), {worker})
+        self.assertEqual(set(worker.observed()), {prod})
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(len(set(worker2.observers())), 1)
+
+    def test__add__Composite(self):
+        # composite + composite => Exception
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        composite = prod + worker
+        try: composite + (Producer(Offer()) + Consumer(Request.ANY))
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeProducer(self):
+        # composite + composite => Exception
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        composite = prod + worker
+        composite2 = Producer(Offer()) + _PropagatingWorker(Request.ANY, Offer())
+        try: composite + composite2
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeConsumer(self):
+        # composite + composite => Composite
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        cons = Consumer(Request.ANY)
+        result =  (prod + worker) + (worker2 + cons)
+        self.assertIsInstance(result, Composite)
+        self.assertEqual(set(result.internals()), {prod, worker, worker2, cons})
+        self.assertEqual(set(prod.observers()), {worker})
+        self.assertEqual(set(worker.observed()), {prod})
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(set(worker2.observers()), {cons})
+        self.assertEqual(set(cons.observed()), {worker2})
+
+    def test__add__CompositeWorker(self):
+        # composite + composite => Composite
+        prod = Producer(Offer())
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        worker3 = _PropagatingWorker(Request.ANY, Offer())
+        compprod = (prod + worker)
+        compworker = (worker2 + worker3)
+        result = compprod + compworker
+        del compprod, compworker
+        self.assertIsInstance(result, CompositeProducer)
+        self.assertEqual(set(result.internals()), {prod, worker, worker2, worker3})
+        self.assertEqual(set(prod.observers()), {worker})
+        self.assertEqual(set(worker.observed()), {prod})
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(set(worker2.observers()), {worker3})
+        self.assertEqual(set(worker3.observed()), {worker2})
+        self.assertEqual(len(set(worker3.observers())), 1)
+
+    # def test__or__None(self):
+    #     # composite | None = worker
+    #     composite = Producer(Offer()) | Producer(Offer())
+    #     self.assertEqual(composite|None, composite)
+
+    # def test__or__Producer(self):
+    #     # composite | prod => CompositeProducer
+    #     prods = tuple(Producer(Offer()) for i in range(3))
+    #     composite = prods[0] | prods[1]
+    #     result = composite | prods[2]
+    #     self.assertIsInstance(result, CompositeProducer)
+    #     self.assertEqual(set(result._consumer().observed()), set(prods))
+
+    # def test__or__Consumer(self):
+    #     # composite | cons => Exception
+    #     composite = Producer(Offer()) | Producer(Offer())
+    #     try: composite | Consumer(Request.NONE)
+    #     except TypeError: pass
+    #     else: self.fail("TypeError not raised by __or__")
+
+    # def test__or__Worker(self):
+    #     # composite | worker => CompositeWorker
+    #     prods = tuple(Producer(Offer()) for i in range(2))
+    #     composite = prods[0] | prods[1]
+    #     worker = _PropagatingWorker(Request.ANY, Offer())
+    #     result = composite | worker
+    #     self.assertIsInstance(result, CompositeWorker)
+    #     self.assertEqual(set(result._consumer().observed()),
+    #                      {prods[0], prods[1], worker})
+    #     self.assertEqual(set(result._producer().observers()),
+    #                      {worker})
+
+    # def test__or_CompositeConsumer(self):
+    #     # composite | compositeConsumer => Exception
+    #     composite = Producer(Offer()) | Producer(Offer())
+    #     compositeConsumer = (Consumer(Request.NONE) | Consumer(Request.NONE))
+    #     try: composite | compositeConsumer
+    #     except TypeError: pass
+    #     else: self.fail("TypeError not raised by __or__")
+
+    # def test__ror__None(self):
+    #     worker = _PropagatingWorker(Request.ANY, Offer())
+    #     # None | worker = worker
+    #     self.assertEqual(None|worker, worker)
+
+class TestCompositeConsumer(unittest.TestCase):
+
+    def test__add__None(self):
+        # composite + None = composite
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons= Consumer(Request.ANY)
+        composite = worker + cons
+        self.assertEqual(composite+None, composite)
+
+    def test__radd__None(self):
+        # None + composite = composite
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons= Consumer(Request.ANY)
+        composite = worker + cons
+        self.assertEqual(None+composite, composite)
+
+    def test__add__Producer(self):
+        # composite + prod => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons= Consumer(Request.ANY)
+        composite = worker + cons
+        try: composite + Producer(Offer())
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Consumer(self):
+        # composite + cons => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons= Consumer(Request.ANY)
+        composite = worker + cons
+        try: composite + Consumer(Request.ANY)
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Worker(self):
+        # composite + worker => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons= Consumer(Request.ANY)
+        composite = worker + cons
+        try: composite + _PropagatingWorker(Request.ANY, Offer())
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Composite(self):
+        # composite + composite => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons= Consumer(Request.ANY)
+        composite = worker + cons
+        composite2 = Producer(Offer())+Consumer(Request.ANY)
+        try: composite + composite2
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeProducer(self):
+        # composite + composite => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons= Consumer(Request.ANY)
+        composite = worker + cons
+        composite2 = Producer(Offer())+_PropagatingWorker(Request.ANY, Offer())
+        try: composite + composite2
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeConsumer(self):
+        # composite + composite => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons= Consumer(Request.ANY)
+        composite = worker + cons
+        composite2 = _PropagatingWorker(Request.ANY, Offer())+Consumer(Request.ANY)
+        try: composite + composite2
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeWorker(self):
+        # composite + composite => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        cons= Consumer(Request.ANY)
+        composite = worker + cons
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        worker3 = _PropagatingWorker(Request.ANY, Offer())
+        composite2 = worker2 + worker3
+        try: composite + composite2
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+class TestCompositeWorker(unittest.TestCase):
+
+    def test__add__None(self):
+        # composite + None = composite
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        composite = worker + worker2
+        self.assertEqual(composite+None, composite)
+
+    def test__radd__None(self):
+        # None + composite = composite
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        composite = worker + worker2
+        self.assertEqual(None+composite, composite)
+
+    def test__add__Producer(self):
+        # composite + producer => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        composite = worker + worker2
+        try: composite + Producer(Offer())
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Consumer(self):
+        # composite + cons => CompositeConsumer
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        cons = Consumer(Request.ANY)
+        result = (worker + worker2) + cons
+        self.assertIsInstance(result, CompositeConsumer)
+        self.assertEqual(set(result.consumers()), {worker})
+        self.assertEqual(set(result.internals()), {worker, worker2, cons})
+        self.assertEqual(len(set(worker.observed())), 1)
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(set(worker2.observers()), {cons})
+        self.assertEqual(set(cons.observed()), {worker2})
+
+    def test__add__Worker(self):
+        # composite + worker => CompositeWorker
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        worker3 = _PropagatingWorker(Request.ANY, Offer())
+        result = (worker + worker2) + worker3
+        self.assertIsInstance(result, CompositeWorker)
+        self.assertEqual(set(result.consumers()), {worker})
+        self.assertEqual(set(result.producers()), {worker3})
+        self.assertEqual(set(result.internals()), {worker, worker2, worker3})
+        self.assertEqual(len(set(worker.observed())), 1)
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(set(worker2.observers()), {worker3})
+        self.assertEqual(set(worker3.observed()), {worker2})
+        self.assertEqual(len(set(worker3.observers())), 1)
+
+    def test__add__Composite(self):
+        # composite + composite => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        composite = worker + worker2
+        composite2 = Producer(Offer()) + Consumer(Request.ANY)
+        try: composite + composite2
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__Composite(self):
+        # composite + composite => Exception
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        composite = worker + worker2
+        composite2 = Producer(Offer()) + _PropagatingWorker(Request.ANY, Offer())
+        try: composite + composite2
+        except TypeError: pass
+        else: self.fail("TypeError not raised by __add__")
+
+    def test__add__CompositeConsumer(self):
+        # composite + cons => CompositeConsumer
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 = _PropagatingWorker(Request.ANY, Offer())
+        worker3 = _PropagatingWorker(Request.ANY, Offer())
+        cons = Consumer(Request.ANY)
+        result = (worker + worker2) + (worker3 + cons)
+        self.assertIsInstance(result, CompositeConsumer)
+        self.assertEqual(set(result.consumers()), {worker})
+        self.assertEqual(set(result.internals()), {worker, worker2, worker3, cons})
+        self.assertEqual(len(set(worker.observed())), 1)
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(set(worker2.observers()), {worker3})
+        self.assertEqual(set(worker3.observed()), {worker2})
+        self.assertEqual(set(worker3.observers()), {cons})
+        self.assertEqual(set(cons.observed()), {worker3})
+
+    def test__add__CompositeWorker(self):
+        # worker + composite => CompositeConsumer
+        worker = _PropagatingWorker(Request.ANY, Offer())
+        worker2 =_PropagatingWorker(Request.ANY, Offer())
+        worker3 =_PropagatingWorker(Request.ANY, Offer())
+        worker4 =_PropagatingWorker(Request.ANY, Offer())
+        result = (worker + worker2) + (worker3 + worker4)
+        self.assertIsInstance(result, CompositeWorker)
+        self.assertEqual(set(result.consumers()), {worker})
+        self.assertEqual(set(result.producers()), {worker4})
+        self.assertEqual(set(result.internals()), {worker, worker2,
+                                                   worker3, worker4})
+        self.assertEqual(len(set(worker.observed())), 1)
+        self.assertEqual(set(worker.observers()), {worker2})
+        self.assertEqual(set(worker2.observed()), {worker})
+        self.assertEqual(set(worker2.observers()), {worker3})
+        self.assertEqual(set(worker3.observed()), {worker2})
+        self.assertEqual(set(worker3.observers()), {worker4})
+        self.assertEqual(set(worker4.observed()), {worker3})
+        self.assertEqual(len(set(worker4.observers())), 1)
+
 # -------------------------------------------------------------------
 
-def suite():    
+def suite():
     testcases = (
         TestRequest,
         TestLambdaRequest,
@@ -517,6 +1222,10 @@ def suite():
         TestProducer,
         TestConsumer,
         TestConfigurableConsumer,
+        Test_PropagatingWorker,
+        TestCompositeProducer,
+        TestCompositeConsumer,
+        TestCompositeWorker,
         )
     return unittest.TestSuite(itertools.chain(
             *(map(t, filter(lambda f: f.startswith("test_"), dir(t))) \

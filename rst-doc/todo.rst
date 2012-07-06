@@ -4,13 +4,14 @@ Todo list
 
 Today or tomorrow:
 
+- Add | (parallel) operator to nodes.
+- Remove from boing.create the mode argument.
+- Add to boing script the command mode.
 - Prepare the directory with the gesture templates that the recognizer can use.
 - Fix the recognition nodes;
 
-
 This week:
 
-- move filtering into boing;
 - create good docs;
 - update module boing.core.economy docs (After Consumer);
 - well document classes in boing.core.economy.
@@ -34,10 +35,8 @@ Someday:
 - The playlist has some model trouble. When I drag and drop some files
   from a folder to the root level before the folder an Exception is
   raised. Sometimes files desappears.
-- Add to boing script the command mode.
 - Check which ubuntu packages are really necessary to install boing.
 - Improve Graphers (Graphers should draw themselves).
-- Add | (parallel) operator to nodes.
 - Add methods 'addPost' and 'addPre'.
 - json decoder should someway now what it produces
 - Add to text, slip and json encoder the compact option
