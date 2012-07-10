@@ -574,16 +574,19 @@ class Producer(Observable):
     def __add__(self, other):
         if other is None:
             rvalue = self
-        elif isinstance(other, Composite):
-            # Let the Composite '__radd__' method be used
-            rvalue = NotImplemented
-        elif isinstance(other, Worker):
-            other.subscribeTo(self)
-            rvalue = CompositeProducer(other, internals=(self, ))
         elif isinstance(other, Consumer):
-            # Warning: such composite is closed
-            self.addObserver(other)
-            rvalue = Composite(self, other)
+            # Subscribe current producers to the other's consumers
+            it = other.consumers() if isinstance(other, Composite) else (other, )
+            for cons in it:
+                cons.subscribeTo(self)
+            internals = (self, )+tuple(other.internals()) \
+                if isinstance(other, Composite) else (self, other)
+            if isinstance(other, Worker):
+                producers = tuple(other.producers()) \
+                    if isinstance(other, Composite) else (other, )
+                rvalue = CompositeProducer(*producers, internals=internals)
+            else:
+                rvalue = Composite(*internals)
         else:
             rvalue = NotImplemented
         return rvalue
@@ -591,30 +594,26 @@ class Producer(Observable):
     def __radd__(self, other):
         return self if other is None else NotImplemented
 
-    # def __or__(self, other):
-    #     if other is None:
-    #         rvalue = self
-    #     elif isinstance(other, Composite):
-    #         # Let the Composite's '__ror__' method to be used
-    #         rvalue = NotImplemented
-    #     else:
-    #         if tuple(self.observers()): raise NotImplementedError() # FIXME
-    #         if isinstance(other, Worker):
-    #             if tuple(other.observers()) or tuple(other.observed()):
-    #                 raise NotImplementedError() # FIXME
-    #             rvalue = CompositeWorker(consumers=(other, ),
-    #                                       producers=(self, other))
-    #         elif isinstance(other, Producer):
-    #             if tuple(other.observers()): raise NotImplementedError() # FIXME
-    #             rvalue = CompositeProducer(self, other)
-    #         else:
-    #             rvalue = NotImplemented
-    #     return rvalue
+    def __or__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Composite):
+            # Let the Composite's '__ror__' method to be used
+            rvalue = NotImplemented
+        else:
+            if isinstance(other, Worker):
+                rvalue = CompositeWorker(consumers=(other, ),
+                                         producers=(self, other))
+            elif isinstance(other, Producer):
+                rvalue = CompositeProducer(self, other)
+            else:
+                rvalue = NotImplemented
+        return rvalue
 
-    # def __ror__(self, other):
-    #     """Return the result of self|other, since | operator is
-    #     commutative."""
-    #     return self.__or__(other)
+    def __ror__(self, other):
+        """Return the result of self|other, since | operator is
+        commutative."""
+        return self.__or__(other)
 
     def _debugData(self):
         rvalue = super()._debugData()
@@ -719,31 +718,24 @@ class Consumer(Observer):
     def __radd__(self, other):
         return self if other is None else NotImplemented
 
-    # def __or__(self, other):
-    #     if other is None:
-    #         rvalue = self
-    #     elif isinstance(other, Composite):
-    #         # Let the Composite's '__ror__' method to be used
-    #         rvalue = NotImplemented
-    #     else:
-    #         if tuple(self.observed()): raise NotImplementedError() # FIXME
-    #         if isinstance(other, Worker):
-    #             if tuple(other.observers()) or tuple(other.observed()):
-    #                 raise NotImplementedError() # FIXME
-    #             rvalue = CompositeWorker(consumers=(self, other),
-    #                                       producers=(other, ))
-    #         elif isinstance(other, Consumer):
-    #             if tuple(other.observed()): raise NotImplementedError() # FIXME
-    #             rvalue = CompositeConsumer(self, other)
-    #         else:
-    #             rvalue = NotImplemented
-    #     return rvalue
+    def __or__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Composite):
+            # Let the Composite's '__ror__' method to be used
+            rvalue = NotImplemented
+        elif isinstance(other, Worker):
+            rvalue = CompositeWorker((self, other), (other, ))
+        elif isinstance(other, Consumer):
+            rvalue = CompositeConsumer(self, other)
+        else:
+            rvalue = NotImplemented
+        return rvalue
 
-
-    # def __ror__(self, other):
-    #     """Return the result of self|other, since | operator is
-    #     commutative."""
-    #     return self.__or__(other)
+    def __ror__(self, other):
+        """Return the result of self|other, since | operator is
+        commutative."""
+        return self.__or__(other)
 
     def _debugData(self):
         rvalue = super()._debugData()
@@ -875,7 +867,7 @@ class Worker:
     """
     pass
 
-class _PropagatingWorker(Worker, _PropagatingProducer, _PropagatingConsumer):
+class BaseWorker(Worker, _PropagatingProducer, _PropagatingConsumer):
 
     def __init__(self, request, offer,
                  tags=None, store=None, retrieve=None, haspending=None,
@@ -902,44 +894,36 @@ class _PropagatingWorker(Worker, _PropagatingProducer, _PropagatingConsumer):
     def __add__(self, other):
         if other is None:
             rvalue = self
-        elif isinstance(other, Composite):
-            # Let the Composite '__radd__' method be used
-            rvalue = NotImplemented
-        elif isinstance(other, Worker):
-            self.addObserver(other)
-            rvalue = CompositeWorker(consumers=[self], producers=[other])
         elif isinstance(other, Consumer):
-            self.addObserver(other)
-            rvalue = CompositeConsumer(self, internals=(other, ))
+            # Subscribe current producers to the other's consumers
+            it = other.consumers() if isinstance(other, Composite) else (other, )
+            for cons in it:
+                cons.subscribeTo(self)
+            internals = (self, )+tuple(other.internals()) \
+                if isinstance(other, Composite) else (self, other)
+            if isinstance(other, Worker):
+                producers = tuple(other.producers()) \
+                    if isinstance(other, Composite) else (other, )
+                rvalue = CompositeWorker((self, ), producers, internals=internals)
+            else:
+                rvalue = CompositeConsumer(self, internals=internals)
         else:
             rvalue = NotImplemented
         return rvalue
 
-    # def __or__(self, other):
-    #     if other is None:
-    #         rvalue = self
-    #     elif isinstance(other, Composite):
-    #         # Let the Composite '__ror__' method be used
-    #         rvalue = NotImplemented
-    #     else:
-    #         if tuple(self.observers()) or tuple(self.observed()):
-    #             raise NotImplementedError() # FIXME
-    #         if isinstance(other, Worker):
-    #             if tuple(other.observers()) or tuple(other.observed()):
-    #                 raise NotImplementedError() # FIXME
-    #             rvalue = CompositeWorker(consumers=(self, other),
-    #                                       producers=(self, other))
-    #         elif isinstance(other, Producer):
-    #             if tuple(other.observers()): raise NotImplementedError() # FIXME
-    #             rvalue = CompositeWorker(consumers=(self, ),
-    #                                       producers=(self, other))
-    #         elif isinstance(other, Consumer):
-    #             if tuple(other.observed()): raise NotImplementedError() # FIXME
-    #             rvalue = CompositeWorker(consumers=(self, other),
-    #                                       producers=(self, ))
-    #         else:
-    #             rvalue = NotImplemented
-    #     return rvalue
+    def __or__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Composite):
+            # Let the Composite '__ror__' method be used
+            rvalue = NotImplemented
+        elif isinstance(other, Producer) or isinstance(other, Consumer):
+            consumers = (self, other) if isinstance(other, Consumer) else (self, )
+            producers = (self, other) if isinstance(other, Producer) else (self, )
+            rvalue = CompositeWorker(consumers, producers)
+        else:
+            rvalue = NotImplemented
+        return rvalue
 
     def _debugData(self):
         rvalue = _PropagatingConsumer._debugData(self)
@@ -952,7 +936,7 @@ class _PropagatingWorker(Worker, _PropagatingProducer, _PropagatingConsumer):
         return rvalue
 
 
-class Identity(_PropagatingWorker):
+class Identity(BaseWorker):
 
     def __init__(self, store=None, retrieve=None, hz=None, parent=None):
         super().__init__(request=Request.NONE, offer=Offer(),
@@ -1000,92 +984,54 @@ class CompositeProducer(_PropagatingProducer, Composite):
         """Return an iterator over the first level producers."""
         return self._consumer().observed()
 
-    # def pushPost(self, worker):
-    #     assertIsInstance(worker, Worker)
-    #     # FIXME
-    #     for child in self._consumer().children():
-    #         child.removeObserver(self._consumer())
-    #         worker.subscribeTo(child)
-    #     self._consumer().subscribeTo(worker)
-
     def __add__(self, other):
         if other is None:
             rvalue = self
-        elif isinstance(other, CompositeWorker):
-            for prod, cons in itertools.product(self.producers(),
-                                                other.consumers()):
-                cons.subscribeTo(prod)
-            internals = tuple(self.internals())+tuple(other.internals())
-            rvalue = CompositeProducer(*tuple(other.producers()),
-                                       internals=internals)
-        elif isinstance(other, CompositeConsumer):
-            for prod, cons in itertools.product(self.producers(),
-                                                other.consumers()):
-                cons.subscribeTo(prod)
-            internals = tuple(self.internals())+tuple(other.internals())
-            rvalue = Composite(*internals)
-        elif isinstance(other, Worker):
-            for prod in self.producers():
-                other.subscribeTo(prod)
-            internals = tuple(self.internals())+(other, )
-            rvalue = CompositeProducer(other, internals=internals)
         elif isinstance(other, Consumer):
-            # Warning! Such Composite is closed.
-            for prod in self.producers():
-                other.subscribeTo(prod)
-            internals = tuple(self.internals())+(other, )
-            rvalue = Composite(*internals)
+            # Subscribe current producers to the other's consumers
+            it = itertools.product(self.producers(), other.consumers()) \
+                if isinstance(other, Composite) \
+                else zip(self.producers(), itertools.repeat(other))
+            for prod, cons in it:
+                cons.subscribeTo(prod)
+            internals = tuple(self.internals())+tuple(other.internals()) \
+                if isinstance(other, Composite) \
+                else tuple(self.internals())+(other, )
+            if isinstance(other, Worker):
+                producers = tuple(other.producers()) \
+                    if isinstance(other, Composite) else (other, )
+                rvalue = CompositeProducer(*producers, internals=internals)
+            else:
+                rvalue = Composite(*internals)
         else:
             rvalue = NotImplemented
         return rvalue
 
-    # def __or__(self, other):
-    #     if tuple(self.observers()): raise NotImplementedError() # FIXME
-    #     if other is None:
-    #         rvalue = self
-    #     elif isinstance(other, Composite):
-    #         if isinstance(other, Worker):
-    #             if tuple(other.observers()) or tuple(other.observed()):
-    #                 raise NotImplementedError() # FIXME
-    #             # Remove all its own producers and add them to the
-    #             # other worker
-    #             producers = tuple(self._consumer().observed())
-    #             self._consumer().clear()
-    #             for prod in producers:
-    #                 other._consumer().subscribeTo(prod, child=True)
-    #             rvalue = other
-    #         elif isinstance(other, Producer):
-    #             if tuple(other.observers()): raise NotImplementedError() # FIXME
-    #             # Remove all the other's producers and add them to himself.
-    #             producers = tuple(other._consumer().observed())
-    #             other._consumer().clear()
-    #             for prod in producers:
-    #                 self._consumer().subscribeTo(prod, child=True)
-    #             rvalue = self
-    #         else:
-    #             rvalue = NotImplemented
-    #     elif isinstance(other, Worker):
-    #         if tuple(other.observers()) or tuple(other.observed()):
-    #             raise NotImplementedError() # FIXME
-    #         # Remove all its own producers and create a new composite worker
-    #         producers = tuple(self._consumer().observed())
-    #         self._consumer().clear()
-    #         rvalue = CompositeWorker(consumers=(other, ),
-    #                                   producers=producers+(other, ))
-    #     elif isinstance(other, Producer):
-    #         if tuple(other.observers()): raise NotImplementedError() # FIXME
-    #         # Subscribe the producer to himself
-    #         self._consumer().subscribeTo(other, child=True)
-    #         rvalue = self
-    #     else:
-    #         rvalue = NotImplemented
-    #     return rvalue
+    def __or__(self, other):
+        if other is None:
+            rvalue = self
+        elif isinstance(other, Producer):
+            producers = tuple(self.producers())+tuple(other.producers()) \
+                if isinstance(other, Composite) \
+                else tuple(self.producers())+(other, )
+            internals = tuple(self.internals())+tuple(other.internals()) \
+                if isinstance(other, Composite) else self.internals()
+            if isinstance(other, Worker):
+                consumers = tuple(other.consumers()) \
+                    if isinstance(other, Composite) else (other, )
+                rvalue = CompositeWorker(consumers, producers, internals)
+            else:
+                rvalue = CompositeProducer(*producers, internals=internals)
+        else:
+            rvalue = NotImplemented
+        return rvalue
 
     def _debugSiblings(self):
         rvalue = super()._debugSiblings()
         rvalue.update(consumer=self._consumer())
         rvalue.move_to_end('consumer', last=False)
         return rvalue
+
 
 class CompositeConsumer(_ForwardingConsumer, Composite):
 
@@ -1102,76 +1048,27 @@ class CompositeConsumer(_ForwardingConsumer, Composite):
         """Return an iterator over the first level consumers."""
         return self._producer().observers()
 
-    # def pushPre(self, worker):
-    #     assertIsInstance(worker, Worker)
-    #     # FIXME
-    #     for child in self._producer().children():
-    #         child.unsubscribeFrom(self._producer())
-    #         worker.addObserver(child, child=True)
-    #     self._producer().addObserver(worker, child=True)
-
     def __add__(self, other):
         return self if other is None else NotImplemented
 
-    def __radd__(self, other):
+    def __or__(self, other):
         if other is None:
             rvalue = self
-        elif isinstance(other, Worker):
-            for cons in self.consumers():
-                cons.subscribeTo(other)
-            internals = tuple(self.internals())+(other, )
-            rvalue = CompositeConsumer(other, internals=internals)
-        elif isinstance(other, Producer):
-            # Warning! Such Composite is closed.
-            for cons in self.consumers():
-                cons.subscribeTo(other)
-            internals = tuple(self.internals())+(other, )
-            rvalue = Composite(*internals)
+        elif isinstance(other, Consumer):
+            consumers = tuple(self.consumers())+tuple(other.consumers()) \
+                if isinstance(other, Composite) \
+                else tuple(self.consumers())+(other, )
+            internals = tuple(self.internals())+tuple(other.internals()) \
+                if isinstance(other, Composite) else self.internals()
+            if isinstance(other, Worker):
+                producers = tuple(other.producers()) \
+                    if isinstance(other, Composite) else (other, )
+                rvalue = CompositeWorker(consumers, producers, internals)
+            else:
+                rvalue = CompositeConsumer(*consumers, internals=internals)
         else:
             rvalue = NotImplemented
         return rvalue
-
-    # def __or__(self, other):
-    #     if tuple(self.observed()): raise NotImplementedError() # FIXME
-    #     if other is None:
-    #         rvalue = self
-    #     elif isinstance(other, Composite):
-    #         if isinstance(other, Worker):
-    #             if tuple(other.observers()) or tuple(other.observed()):
-    #                 raise NotImplementedError() # FIXME
-    #             # Remove all its own producers and add them to the
-    #             # other worker
-    #             producers = tuple(self._consumer().observed())
-    #             self._consumer().clear()
-    #             for prod in producers:
-    #                 other._consumer().subscribeTo(prod, child=True)
-    #             rvalue = other
-    #         elif isinstance(other, Producer):
-    #             if tuple(other.observers()): raise NotImplementedError() # FIXME
-    #             # Remove all the other's producers and add them to himself.
-    #             producers = tuple(other._consumer().observed())
-    #             other._consumer().clear()
-    #             for prod in producers:
-    #                 self._consumer().subscribeTo(prod, child=True)
-    #             rvalue = self
-    #         else:
-    #             rvalue = NotImplemented
-    #     elif isinstance(other, Worker):
-    #         if tuple(other.observers()) or tuple(other.observed()):
-    #             raise NotImplementedError() # FIXME
-    #         # Remove all its own producers and create a new composite worker
-    #         producers = tuple(self._consumer().observed())
-    #         self._consumer().clear()
-    #         rvalue = CompositeWorker(consumers=(other, ),
-    #                                   producers=producers+(other, ))
-    #     elif isinstance(other, Producer):
-    #         if tuple(other.observers()): raise NotImplementedError() # FIXME
-    #         # Subscribe the producer to himself
-    #         self._consumer().subscribeTo(other, child=True)
-    #         rvalue = self
-    #     else:
-    #         rvalue = NotImplemented
-    #     return rvalue
 
     def _debugSiblings(self):
         rvalue = super()._debugSiblings()
@@ -1203,57 +1100,46 @@ class CompositeWorker(CompositeProducer, CompositeConsumer, Worker):
     def __add__(self, other):
         if other is None:
             rvalue = self
-        elif isinstance(other, CompositeWorker):
-            for prod, cons in itertools.product(self.producers(),
-                                                other.consumers()):
-                cons.subscribeTo(prod)
-            internals = tuple(self.internals())+tuple(other.internals())
-            rvalue = CompositeWorker(consumers=tuple(self.consumers()),
-                                     producers=tuple(other.producers()),
-                                     internals=internals)
-        elif isinstance(other, CompositeConsumer):
-            for prod, cons in itertools.product(self.producers(),
-                                                other.consumers()):
-                cons.subscribeTo(prod)
-            internals = tuple(self.internals())+tuple(other.internals())
-            rvalue = CompositeConsumer(*self.consumers(),
-                                        internals=internals)
-        elif isinstance(other, Worker):
-            for prod in self.producers():
-                other.subscribeTo(prod)
-            internals = tuple(self.internals())+(other, )
-            rvalue = CompositeWorker(consumers=tuple(self.consumers()),
-                                     producers=(other, ),
-                                     internals=internals)
         elif isinstance(other, Consumer):
-            for prod in self.producers():
-                other.subscribeTo(prod)
-            internals = tuple(self.internals())+(other, )
-            rvalue = CompositeConsumer(*tuple(self.consumers()),
-                                       internals=internals)
+            # Subscribe current producers to the other's consumers
+            it = itertools.product(self.producers(), other.consumers()) \
+                if isinstance(other, Composite) \
+                else zip(self.producers(), itertools.repeat(other))
+            for prod, cons in it:
+                cons.subscribeTo(prod)
+            internals = tuple(self.internals())+tuple(other.internals()) \
+                if isinstance(other, Composite) \
+                else tuple(self.internals())+(other, )
+            if isinstance(other, Worker):
+                producers = tuple(other.producers()) \
+                    if isinstance(other, Composite) else (other, )
+                rvalue = CompositeWorker(tuple(self.consumers()),
+                                         producers, internals)
+            else:
+                rvalue = CompositeConsumer(*self.consumers(),
+                                            internals=internals)
         else:
             rvalue = NotImplemented
         return rvalue
 
-    def __radd__(self, other):
+    def __or__(self, other):
         if other is None:
             rvalue = self
-        elif isinstance(other, Composite):
-            # Let the Composite '__add__' method be used
-            rvalue = NotImplemented
-        elif isinstance(other, Worker):
-            for cons in self.consumers():
-                cons.subscribeTo(other)
-            internals = tuple(self.internals())+(other, )
-            rvalue = CompositeWorker(consumers=(other, ),
-                                     producers=tuple(self.producers()),
-                                     internals=internals)
-        elif isinstance(other, Producer):
-            for cons in self.consumers():
-                cons.subscribeTo(other)
-            internals = tuple(self.internals())+(other, )
-            rvalue = CompositeProducer(*tuple(self.producers()),
-                                        internals=internals)
+        elif isinstance(other, Producer) or isinstance(other, Consumer):
+            consumers = tuple(self.consumers()) + tuple(other.consumers()) \
+                if isinstance(other, CompositeConsumer) \
+                else tuple(self.consumers()) + (other, ) \
+                if isinstance(other, Consumer) \
+                else tuple(self.consumers())
+            producers = tuple(self.producers()) + tuple(other.producers()) \
+                if isinstance(other, CompositeProducer) \
+                else tuple(self.producers()) + (other, ) \
+                if isinstance(other, Producer) \
+                else tuple(self.producers())
+            internals = tuple(self.internals())+tuple(other.internals()) \
+                if isinstance(other, Composite) \
+                else self.internals()
+            rvalue = CompositeWorker(consumers, producers, internals)
         else:
             rvalue = NotImplemented
         return rvalue
@@ -1271,7 +1157,7 @@ class CompositeWorker(CompositeProducer, CompositeConsumer, Worker):
 # -------------------------------------------------------------------
 # Functor
 
-class WiseWorker(_PropagatingWorker):
+class WiseWorker(BaseWorker):
     '''
     FIXME: The Functor determines its request and offer
     (i.e. wiserequest and wiseoffer variables) depending on the other
