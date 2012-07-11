@@ -70,11 +70,11 @@ grammar = pyparsing.operatorPrecedence(
 # -----------------------------------------------------------------------
 # URI expressions evaluation
 
-def create(expr, mode="", parent=None):
+def create(expr, parent=None):
     """Create a new node from *expr*."""
     rvalue = grammar.parseString(str(expr))[0]
     if isinstance(rvalue, str):
-        return createSingle(expr, mode, parent)
+        return createSingle(expr, parent=parent)
     else:
         rvalue.setParent(parent)
         return rvalue
@@ -109,16 +109,16 @@ def createSingle(uri, mode="", parent=None):
 
     elif uri.scheme=="log":
         return createSingle(str(uri).replace("log:", "log.json:", 1),
-                      mode, parent)
+                            parent=parent)
 
     elif uri.scheme.startswith("log."):
-        assertUriModeIn(uri, mode, "in", "out")
+        assertUriModeIn(uri, mode, "", "in")
         scheme = uri.scheme.replace("log.", "", 1)
         if uri.kind==URL.OPAQUE or uri.site or uri.fragment: raise ValueError(
             "Invalid URI: %s"%uri)
         elif not uri.path: raise ValueError(
             "URI's path cannot be empty: %s"%uri)
-        elif mode=="in":
+        else:
             query = parseQuery(uri, "loop", "speed", "interval", "noslip")
             assertUriQuery(uri, query)
             if scheme in ("json", "json.slip"):
@@ -140,7 +140,19 @@ def createSingle(uri, mode="", parent=None):
                 raise ValueError("Unexpected encoding: %s"%uri)
             # FIXME: start should be triggered at outputs ready
             QtCore.QTimer.singleShot(300, player.start)
-        elif mode=="out":
+
+    elif uri.scheme=="play":
+        return createSingle(str(uri).replace("play:", "play.json:", 1),
+                            parent=parent)
+
+    elif uri.scheme.startswith("play."):
+        assertUriModeIn(uri, mode, "", "out")
+        scheme = uri.scheme.replace("play.", "", 1)
+        if uri.kind==URL.OPAQUE or uri.site or uri.fragment: raise ValueError(
+            "Invalid URI: %s"%uri)
+        elif not uri.path: raise ValueError(
+            "URI's path cannot be empty: %s"%uri)
+        else:
             if scheme in ("json", "json.slip"):
                 query = parseQuery(uri, "request", "wrap")
                 assertUriQuery(uri, query)
@@ -309,6 +321,7 @@ def createSingle(uri, mode="", parent=None):
         query = parseQuery(uri, "request", "noslip")
         loweruri = lower(uri, "json", query.keys())
         noslip = assertIsInstance(query.pop("noslip", False), bool)
+        assertUriModeIn(uri, mode, "in", "out")
         if not noslip:
             if loweruri.scheme=="file":
                 loweruri.scheme = "slip.%s"%loweruri.scheme

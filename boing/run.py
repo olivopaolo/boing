@@ -82,7 +82,7 @@ if not args.output:
 inputs = []
 for expr in args.input:
     try:
-        i = boing.create(expr, "in")
+        i = boing.create(expr)
     except Exception as exc:
         logging.error(exc)
         if args.traceback: traceback.print_exc(args.traceback)
@@ -91,7 +91,7 @@ for expr in args.input:
 outputs = []
 for expr in args.output:
     try:
-        o = boing.create(expr, "out")
+        o = boing.create(expr)
     except Exception as exc:
         logging.error(exc)
         if args.traceback: traceback.print_exc(args.traceback)
