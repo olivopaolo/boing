@@ -300,7 +300,7 @@ uris = \
                     ("viz://[::]:7777/path", ValueError),
                     ("viz:#fragment", ValueError),
                     ("viz:?wrong=wrong", ValueError),
-                    ("viz:?antialiasing=wrong", TypeError),                    
+                    ("viz:?antialiasing=wrong", TypeError),
                     ),
                },
           },
@@ -309,24 +309,24 @@ uris = \
 uris["slip"] = \
     {"valid":
          {"in": list("slip.%s"%url for url in itertools.chain(
-                    filter(lambda u: u.startswith("file:"), 
+                    filter(lambda u: u.startswith("file:"),
                            uris["file"]["valid"]["in"]),
                     uris["udp"]["valid"]["in"],
                     uris["tcp"]["valid"]["in"])),
           "out": list("slip.%s"%url for url in itertools.chain(
-                    filter(lambda u: u.startswith("file:"), 
+                    filter(lambda u: u.startswith("file:"),
                            uris["file"]["valid"]["out"]),
                     uris["udp"]["valid"]["out"],
                     uris["tcp"]["valid"]["out"])),
           },
      "invalid":
          {"in": list(("slip.%s"%url, exp) for url, exp in itertools.chain(
-                    filter(lambda rec: rec[0].startswith("file:"), 
+                    filter(lambda rec: rec[0].startswith("file:"),
                            uris["file"]["invalid"]["in"]),
                     uris["udp"]["invalid"]["in"],
                     uris["tcp"]["invalid"]["in"])),
           "out": list(("slip.%s"%url, exp) for url, exp in itertools.chain(
-                    filter(lambda rec: rec[0].startswith("file:"), 
+                    filter(lambda rec: rec[0].startswith("file:"),
                            uris["file"]["invalid"]["out"]),
                     uris["udp"]["invalid"]["out"],
                     uris["tcp"]["invalid"]["out"])),
@@ -337,7 +337,7 @@ uris["json"] = \
     {"valid":
          {"in": list(itertools.chain(
                     ("json.%s"%url for url in \
-                         filter(lambda u: u.startswith("file:"), 
+                         filter(lambda u: u.startswith("file:"),
                                 uris["file"]["valid"]["in"])),
                     ("json.%s"%url for url in uris["udp"]["valid"]["in"]),
                     ("json.%s"%url for url in uris["tcp"]["valid"]["in"]),
@@ -355,7 +355,7 @@ uris["json"] = \
                     )),
           "out": list(itertools.chain(
                     ("json.%s"%url for url in \
-                         filter(lambda u: u.startswith("file:"), 
+                         filter(lambda u: u.startswith("file:"),
                                 uris["file"]["valid"]["out"])),
                     ("json.%s"%url for url in uris["udp"]["valid"]["out"]),
                     ("json.%s"%url for url in uris["tcp"]["valid"]["out"]),
@@ -405,7 +405,7 @@ uris["osc"] = \
     {"valid":
          {"in": list(itertools.chain(
                     ("osc.%s"%url for url in \
-                         filter(lambda u: u.startswith("file:"), 
+                         filter(lambda u: u.startswith("file:"),
                                 uris["file"]["valid"]["in"])),
                     ("osc.%s"%url for url in uris["udp"]["valid"]["in"]),
                     ("osc.%s"%url for url in uris["tcp"]["valid"]["in"]),
@@ -425,7 +425,7 @@ uris["osc"] = \
                     )),
           "out": list(itertools.chain(
                     ("osc.%s"%url for url in \
-                         filter(lambda u: u.startswith("file:"), 
+                         filter(lambda u: u.startswith("file:"),
                                 uris["file"]["valid"]["out"])),
                     ("osc.%s"%url for url in uris["udp"]["valid"]["out"]),
                     ("osc.%s"%url for url in uris["tcp"]["valid"]["out"]),
@@ -444,7 +444,7 @@ uris["osc"] = \
      "invalid":
          {"in": list(itertools.chain(
                     (("osc.%s"%u, e) for u,e in \
-                         filter(lambda rec: rec[0].startswith("file:"), 
+                         filter(lambda rec: rec[0].startswith("file:"),
                                 uris["file"]["invalid"]["in"])),
                     (("osc.%s"%u, e) for u,e in uris["udp"]["invalid"]["in"]),
                     (("osc.%s"%u, e) for u,e in uris["tcp"]["invalid"]["in"]),
@@ -462,7 +462,7 @@ uris["osc"] = \
                     )),
           "out": list(itertools.chain(
                     (("osc.%s"%u, e) for u,e in \
-                         filter(lambda rec: rec[0].startswith("file:"), 
+                         filter(lambda rec: rec[0].startswith("file:"),
                                 uris["file"]["invalid"]["out"])),
                     (("osc.%s"%u, e) for u,e in uris["udp"]["invalid"]["out"]),
                     (("osc.%s"%u, e) for u,e in uris["tcp"]["invalid"]["out"]),
@@ -483,7 +483,7 @@ uris["tuio"] = \
     {"valid":
          {"in": list(itertools.chain(
                     ("tuio.%s"%url for url in \
-                         filter(lambda u: u.startswith("file:"), 
+                         filter(lambda u: u.startswith("file:"),
                                 uris["file"]["valid"]["in"])),
                     ("tuio.%s"%url for url in uris["udp"]["valid"]["in"]),
                     ("tuio.%s"%url for url in uris["tcp"]["valid"]["in"]),
@@ -500,7 +500,7 @@ uris["tuio"] = \
                     )),
           "out": list(itertools.chain(
                     ("tuio.%s"%url for url in \
-                         filter(lambda u: u.startswith("file:"), 
+                         filter(lambda u: u.startswith("file:"),
                                 uris["file"]["valid"]["out"])),
                     ("tuio.%s"%url for url in uris["udp"]["valid"]["out"]),
                     ("tuio.%s"%url for url in uris["tcp"]["valid"]["out"]),
@@ -526,7 +526,7 @@ uris["tuio"] = \
      "invalid":
          {"in": list(itertools.chain(
                     (("tuio.%s"%u, e) for u,e in \
-                         filter(lambda rec: rec[0].startswith("file:"), 
+                         filter(lambda rec: rec[0].startswith("file:"),
                                 uris["file"]["invalid"]["in"])),
                     (("tuio.%s"%u, e) for u,e in uris["udp"]["invalid"]["in"]),
                     (("tuio.%s"%u, e) for u,e in uris["tcp"]["invalid"]["in"]),
@@ -548,7 +548,7 @@ uris["tuio"] = \
                     )),
           "out": list(itertools.chain(
                     (("tuio.%s"%u, e) for u,e in \
-                         filter(lambda rec: rec[0].startswith("file:"), 
+                         filter(lambda rec: rec[0].startswith("file:"),
                                 uris["file"]["invalid"]["out"])),
                     (
                         ("tuio:", ValueError),
@@ -588,7 +588,7 @@ uris["dump"] = \
     {"valid":
          {"out": list(itertools.chain(
                     ("dump.%s"%url for url in \
-                         filter(lambda u: u.startswith("file:"), 
+                         filter(lambda u: u.startswith("file:"),
                                 uris["file"]["valid"]["out"])),
                     ("dump.%s"%url for url in uris["udp"]["valid"]["out"]),
                     ("dump.%s"%url for url in uris["tcp"]["valid"]["out"]),
@@ -610,7 +610,7 @@ uris["dump"] = \
      "invalid":
          {"out": list(itertools.chain(
                     (("dump.%s"%u, e) for u,e in \
-                         filter(lambda rec: rec[0].startswith("file:"), 
+                         filter(lambda rec: rec[0].startswith("file:"),
                                 uris["file"]["invalid"]["out"])),
                     (("dump.%s"%u, e) for u,e in uris["udp"]["invalid"]["out"]),
                     (("dump.%s"%u, e) for u,e in uris["tcp"]["invalid"]["out"]),
@@ -631,7 +631,7 @@ uris["stat"] = \
     {"valid":
          {"out": list(itertools.chain(
                     ("stat.%s"%url for url in \
-                         filter(lambda u: u.startswith("file:"), 
+                         filter(lambda u: u.startswith("file:"),
                                 uris["file"]["valid"]["out"])),
                     ("stat.%s"%url for url in uris["udp"]["valid"]["out"]),
                     ("stat.%s"%url for url in uris["tcp"]["valid"]["out"]),
@@ -648,7 +648,7 @@ uris["stat"] = \
      "invalid":
          {"out": list(itertools.chain(
                     (("stat.%s"%u, e) for u,e in \
-                         filter(lambda rec: rec[0].startswith("file:"), 
+                         filter(lambda rec: rec[0].startswith("file:"),
                                 uris["file"]["invalid"]["out"])),
                     (("stat.%s"%u, e) for u,e in uris["udp"]["invalid"]["out"]),
                     (("stat.%s"%u, e) for u,e in uris["tcp"]["invalid"]["out"]),
@@ -683,7 +683,7 @@ class QtTest(unittest.TestCase):
         self.app = None
 
 class InTest(QtTest):
-    """Test class for urls that have only input behaviour."""        
+    """Test class for urls that have only input behaviour."""
     def test_not_None(self):
         for uri in uris[self.scheme]["valid"]["in"]:
             self.assertIsNotNone(boing.create(uri, "in"))
@@ -696,7 +696,7 @@ class InTest(QtTest):
             self.assertRaises(ValueError, boing.create, "out:%s"%uri)
 
 class OutTest(QtTest):
-    """Test class for urls that have only output behaviour."""        
+    """Test class for urls that have only output behaviour."""
     def test_not_None(self):
         for uri in uris[self.scheme]["valid"]["out"]:
             self.assertIsNotNone(boing.create(uri, "out"))
@@ -709,7 +709,7 @@ class OutTest(QtTest):
             self.assertRaises(ValueError, boing.create, "in:%s"%uri)
 
 class IOTest(QtTest):
-    """Test class for urls that have both input and output behaviour.""" 
+    """Test class for urls that have both input and output behaviour."""
     def test_not_None(self):
         for uri in uris[self.scheme]["valid"]["in"]:
             self.assertIsNotNone(boing.create(uri, "in"))
@@ -754,7 +754,7 @@ class TestUdp(IOTest):
 class TestTcp(IOTest):
     def __init__(self, *args, **kwargs):
         super().__init__("tcp", *args, **kwargs)
-        
+
 # -------------------------------------------------------------------
 # SLIP
 class TestSlip(IOTest):
@@ -813,10 +813,10 @@ class TestViz(OutTest):
 
 def suite():
     testcases = (
-        TestStdin, 
-        TestStdout, 
-        TestFile, 
-        TestUdp, 
+        TestStdin,
+        TestStdout,
+        TestFile,
+        TestUdp,
         TestTcp,
         TestSlip,
         TestOsc,

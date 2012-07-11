@@ -15,6 +15,7 @@ import sys
 import logging
 
 from PyQt4 import QtCore
+import pyparsing
 
 from boing.core import QRequest, Functor, Identity
 from boing.net import bytes, json, slip, tcp, udp
@@ -26,10 +27,59 @@ from boing.utils.fileutils \
     import File, CommunicationFile, FileReader, IODevice, CommunicationDevice
 from boing.utils.url import URL
 
-def create(uri, mode="", logger=None, parent=None):
-    """Create a new node from *uri*."""
+# -----------------------------------------------------------------------
+# URI expressions evaluation
+
+def evaluate(operand):
+    """Return the node correspondent to the URI *operand*."""
+    return evaluate(operand[1:-1]) \
+        if operand.startswith("'") and operand.endswith("'") \
+        or operand.startswith('"') and operand.endswith('"') \
+        else createSingle(operand)
+
+def serialize(expr):
+    """Return the composition node obtained from the serialization of
+    the URIs detected in *expr*."""
+    op1 = expr[0][0]
+    op2 = expr[0][2]
+    if isinstance(op1, str): op1 = evaluate(op1)
+    if isinstance(op2, str): op2 = evaluate(op2)
+    return op1+op2
+
+def parallelize(expr):
+    """Return the composition node obtained from the parallelization
+    of the URIs detected in *expr*."""
+    op1 = expr[0][0]
+    op2 = expr[0][2]
+    if isinstance(op1, str): op1 = evaluate(op1)
+    if isinstance(op2, str): op2 = evaluate(op2)
+    return op1|op2
+
+operand = \
+    pyparsing.sglQuotedString | \
+    pyparsing.dblQuotedString | \
+    pyparsing.Word(pyparsing.printables,
+                   excludeChars=("+", "|", "(", ")"))
+
+grammar = pyparsing.operatorPrecedence(
+    operand,
+    [("+", 2, pyparsing.opAssoc.RIGHT, serialize),
+     ("|", 2, pyparsing.opAssoc.RIGHT, parallelize),
+     ])
+
+# -----------------------------------------------------------------------
+# URI expressions evaluation
+
+def create(expr, mode="", logger=None, parent=None):
+    """Create a new node from *expr*."""
+    rvalue = grammar.parseString(str(expr))[0]
+    return createSingle(expr, mode, logger, parent) \
+        if isinstance(rvalue, str) else rvalue
+
+def createSingle(uri, mode="", logger=None, parent=None):
+    """Parse *uri* to load a sigle node."""
     logger = logger if logger is not None else logging.getLogger("loader")
-    if not isinstance(uri, URL): uri = URL(str(uri))
+    if not isinstance(uri, URL): uri = URL(str(uri).strip())
     if not uri.opaque and not uri.scheme and not uri.path:
         raise ValueError("Empty URI")
 
@@ -37,17 +87,25 @@ def create(uri, mode="", logger=None, parent=None):
     # IN: AND  OUT: REPLACED USING MODE
     if uri.scheme=="in":
         assertUriModeIn(uri, mode, "", "in")
-        return create(str(uri).replace("in:", "", 1), "in", logger, parent)
+        return createSingle(str(uri).replace("in:", "", 1), "in", logger, parent)
 
     elif uri.scheme=="out":
         assertUriModeIn(uri, mode, "", "out")
-        return create(str(uri).replace("out:", "", 1), "out", logger, parent)
+        return createSingle(str(uri).replace("out:", "", 1), "out", logger, parent)
+
+    # -------------------------------------------------------------------
+    # CONF
+    elif uri.scheme=="conf":
+        if uri.site or uri.fragment: raise ValueError("Invalid URI: %s"%uri)
+        filepath = uri.opaque if uri.kind==URL.OPAQUE else str(uri.path)
+        if not filepath: raise ValueError("filepath must be defined: %s"%uri)
+        node = create(File(filepath).readAll().decode())
 
     # -------------------------------------------------------------------
     # LOGGING
 
     elif uri.scheme=="log":
-        return create(str(uri).replace("log:", "log.json:", 1),
+        return createSingle(str(uri).replace("log:", "log.json:", 1),
                       mode, logger, parent)
 
     elif uri.scheme.startswith("log."):
@@ -93,7 +151,7 @@ def create(uri, mode="", logger=None, parent=None):
                                               wrap=True)
             else:
                 raise ValueError("Unknown log encoding: %s"%uri)
-            device = create("slip.file://%s"%uri.path, "out", logger)
+            device = createSingle("slip.file://%s"%uri.path, "out", logger)
             node = encoder + device
 
     elif uri.scheme=="rec":
@@ -110,7 +168,7 @@ def create(uri, mode="", logger=None, parent=None):
         node.gui.raise_()
 
     elif uri.scheme=="player":
-        return create(str(uri).replace("player:", "player.json:", 1),
+        return createSingle(str(uri).replace("player:", "player.json:", 1),
                       mode, logger, parent)
 
     elif uri.scheme.startswith("player."):
@@ -226,14 +284,14 @@ def create(uri, mode="", logger=None, parent=None):
         loweruri = lower(uri, "slip")
         if mode=="in":
             if "file" in loweruri.scheme: loweruri.query.data["uncompress"] = ""
-            device = create(loweruri, "in", logger)
+            device = createSingle(loweruri, "in", logger)
             decoder = encoding.SlipDecoder() # blender is fixed to  RESULTONLY
             textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
             node = device + decoder + textdecoder
         elif mode=="out":
             encoder = encoding.SlipEncoder(blender=Functor.RESULTONLY)
             textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
-            device = create(loweruri, "out", logger)
+            device = createSingle(loweruri, "out", logger)
             node = encoder + textdecoder + device
 
     # JSON
@@ -242,7 +300,7 @@ def create(uri, mode="", logger=None, parent=None):
         extended.scheme += ".slip.file" if uri.path else ".udp"
         logger.info(
             "No transport protocol specified in URI, assuming: %s"%extended.scheme)
-        return create(extended, mode, logger, parent)
+        return createSingle(extended, mode, logger, parent)
 
     elif uri.scheme.startswith("json."):
         query = parseQuery(uri, "request", "noslip")
@@ -260,13 +318,13 @@ def create(uri, mode="", logger=None, parent=None):
         if mode=="in":
             if "request" in query:
                 raise ValueError("Unexpected query keys: 'request'")
-            device = create(loweruri, "in", logger)
+            device = createSingle(loweruri, "in", logger)
             decoder = encoding.JsonDecoder(blender=Functor.MERGE)
             node = device + decoder
         elif mode=="out":
             encoder = encoding.JsonEncoder(blender=Functor.RESULTONLY, **query)
             textencoder = encoding.TextEncoder(blender=Functor.MERGE)
-            device = create(loweruri, "out", logger)
+            device = createSingle(loweruri, "out", logger)
             node = encoder + textencoder + device
 
     # OSC
@@ -275,7 +333,7 @@ def create(uri, mode="", logger=None, parent=None):
         extended.scheme += ".slip.file" if uri.path else ".udp"
         logger.info(
             "No transport protocol specified in URI, assuming: %s"%extended.scheme)
-        return create(extended, mode, logger, parent)
+        return createSingle(extended, mode, logger, parent)
 
     elif uri.scheme.startswith("osc."):
         assertUriModeIn(uri, mode, "in", "out")
@@ -292,7 +350,7 @@ def create(uri, mode="", logger=None, parent=None):
                 logger.info(
                     "OSC over TCP is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
-            device = create(loweruri, "in", logger)
+            device = createSingle(loweruri, "in", logger)
             decoder = encoding.OscDecoder(blender=Functor.MERGE, **query)
             oscdebug = encoding.OscDebug(blender=Functor.MERGE)
             node = device + decoder + oscdebug
@@ -301,7 +359,7 @@ def create(uri, mode="", logger=None, parent=None):
             encoder = encoding.OscEncoder(blender=Functor.RESULTONLY, **query)
             decoder = encoding.OscDecoder(blender=Functor.MERGE)
             oscdebug = encoding.OscDebug(blender=Functor.MERGE)
-            device = create(loweruri, "out", logger)
+            device = createSingle(loweruri, "out", logger)
             node = encoder + decoder + oscdebug + device
 
     # TUIO
@@ -313,7 +371,7 @@ def create(uri, mode="", logger=None, parent=None):
             if uri.site.port==0: extended.site.port = 3333
         logger.info(
             "No transport protocol specified in URI, assuming: %s"%extended.scheme)
-        return create(extended, mode, logger, parent)
+        return createSingle(extended, mode, logger, parent)
 
     elif uri.scheme.startswith("tuio."):
         assertUriModeIn(uri, mode, "in", "out")
@@ -321,14 +379,14 @@ def create(uri, mode="", logger=None, parent=None):
         if not loweruri.scheme.startswith("osc."):
             loweruri.scheme = "osc.%s"%loweruri.scheme
         if mode=="in":
-            device = create(loweruri, "in", logger)
+            device = createSingle(loweruri, "in", logger)
             encoder = encoding.TuioDecoder(blender=Functor.MERGE)
             node = device + encoder
         elif mode=="out":
             if loweruri.site.host and loweruri.site.port==0:
                 loweruri.site.port = 3333
             encoder = encoding.TuioEncoder(blender=Functor.RESULTONLY)
-            device = create(loweruri, "out")
+            device = createSingle(loweruri, "out")
             node = encoder + device
 
         '''# MT-DEV
@@ -354,7 +412,7 @@ def create(uri, mode="", logger=None, parent=None):
         extended.scheme += ".udp" if extended.site \
             else ".file" if extended.path \
             else ".stdout"
-        return create(extended, mode, logger, parent)
+        return createSingle(extended, mode, logger, parent)
 
     elif uri.scheme.startswith("dump."):
         from boing.nodes import Dump
@@ -364,7 +422,7 @@ def create(uri, mode="", logger=None, parent=None):
                            "separator", "mode")
         dump = Dump(**query) # blender is fixed to  RESULTONLY
         encoder = encoding.TextEncoder(blender=Functor.MERGE)
-        device = create(lower(uri, "dump", query.keys()), "out", logger)
+        device = createSingle(lower(uri, "dump", query.keys()), "out", logger)
         node = dump + encoder + device
 
     elif uri.scheme.startswith("stat."):
@@ -373,7 +431,7 @@ def create(uri, mode="", logger=None, parent=None):
         query = parseQuery(uri, "request", "filter", "fps")
         stat = StatProducer(**query) # blender is fixed to  RESULTONLY
         encoder = encoding.TextEncoder(blender=Functor.MERGE)
-        device = create(lower(uri, "stat", query.keys()), "out", logger)
+        device = createSingle(lower(uri, "stat", query.keys()), "out", logger)
         node = stat + encoder + device
 
     elif uri.scheme=="viz":
@@ -492,7 +550,7 @@ def create(uri, mode="", logger=None, parent=None):
             assertUriQuery(uri, query)
             grapher = DotGrapherProducer(**query)
             #encoder = encoding.TextEncoder(blender=Functor.MERGE)
-            #device = create(lower(uri, "grapher", query), mode="out")
+            #device = createSingle(lower(uri, "grapher", query), mode="out")
             node = grapher #+ encoder + device
             node.grapher = grapher
         else:
@@ -501,7 +559,7 @@ def create(uri, mode="", logger=None, parent=None):
             assertUriQuery(uri, query)
             grapher = SimpleGrapherProducer(**query)
             encoder = encoding.TextEncoder(blender=Functor.MERGE)
-            device = create(lower(uri, "grapher", query), mode="out")
+            device = createSingle(lower(uri, "grapher", query), mode="out")
             node = grapher + encoder + device
             node.grapher = grapher
     else:

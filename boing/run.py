@@ -32,17 +32,17 @@ parser.add_argument("-i", dest="input", nargs="+", default=[],
                     help="define the inputs")
 parser.add_argument("-o", dest="output", nargs="+", default=[],
                     help="define the outputs")
-parser.add_argument("-C", dest="console", nargs="?", default=None, 
-                    const="", metavar="HOST:PORT", 
+parser.add_argument("-C", dest="console", nargs="?", default=None,
+                    const="", metavar="HOST:PORT",
                     help="Activate console")
-parser.add_argument("-G", dest="graph", nargs="?", default=None, 
-                    const="stdout:", metavar="URI", 
+parser.add_argument("-G", dest="graph", nargs="?", default=None,
+                    const="stdout:", metavar="URI",
                     help="Activate graph view (e.g. -G stdout:)")
 parser.add_argument("-L", dest="logging_level",
-                    default="INFO", metavar="LEVEL", 
+                    default="INFO", metavar="LEVEL",
                     help="Set logging level")
-parser.add_argument("-T", dest="traceback", nargs="?", type=int, 
-                    default=0, const=99, metavar="INTEGER", 
+parser.add_argument("-T", dest="traceback", nargs="?", type=int,
+                    default=0, const=99, metavar="INTEGER",
                     help="Set exceptions traceback depth")
 parser.add_argument("-f", dest="force", action='store_true',
                     help="Force execution (avoiding warnings)")
@@ -50,7 +50,7 @@ parser.add_argument("--version", action='store_true',
                     help="Output version and copyright information")
 args = parser.parse_args()
 
-if args.version: 
+if args.version:
     print(
         """Boing (version %s)
 
@@ -71,7 +71,7 @@ signal.signal(signal.SIGINT, lambda *args: app.quit())
 # Check minimal resources
 if not args.input and args.console!="":
     default = "stdin:"
-    logging.info("Using default input: %s"%default)    
+    logging.info("Using default input: %s"%default)
     args.input.append(default)
 if not args.output:
     default = "stdout:"
@@ -82,8 +82,7 @@ if not args.output:
 inputs = []
 for expr in args.input:
     try:
-        uris = expr.split("+")
-        i = sum((boing.create(uri, "in") for uri in uris), None)
+        i = boing.create(expr, "in")
     except Exception as exc:
         logging.error(exc)
         if args.traceback: traceback.print_exc(args.traceback)
@@ -92,8 +91,7 @@ for expr in args.input:
 outputs = []
 for expr in args.output:
     try:
-        uris = expr.split("+")
-        o = sum((boing.create(uri, "out") for uri in uris), None)
+        o = boing.create(expr, "out")
     except Exception as exc:
         logging.error(exc)
         if args.traceback: traceback.print_exc(args.traceback)
@@ -113,14 +111,14 @@ if args.graph:
 
 if args.console is not None:
     # Setup console
-    local = {"__name__": "__console__", 
+    local = {"__name__": "__console__",
              "__doc__": None,
              "boing": boing,
              "inputs": inputs, "outputs": outputs,
              }
     if not args.console:
         console = boing.activateConsole(args.console, local)
-    else:    
+    else:
         host, separator, port = args.console.partition(":")
         if not port:
             raise ValueError("Socket port is mandatory: %s"%args.console)

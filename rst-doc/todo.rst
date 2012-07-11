@@ -4,8 +4,8 @@ Todo list
 
 Today or tomorrow:
 
-- Add | (parallel) operator to nodes.
 - Remove from boing.create the mode argument.
+- add to file: and log: the relative path availability.
 - Add to boing script the command mode.
 - Prepare the directory with the gesture templates that the recognizer can use.
 - Fix the recognition nodes;

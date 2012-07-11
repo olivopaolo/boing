@@ -7,6 +7,7 @@ Boing requires:
 * `Python 3.2`_
 * `PyQt 4`_
 * numpy_
+* pyparsing_
 
 Specific notes are available for the following platforms:
 
@@ -23,4 +24,5 @@ Specific notes are available for the following platforms:
 
 .. _`Python 3.2`: http://python.org/download
 .. _`PyQt 4`: http://www.riverbankcomputing.co.uk/software/pyqt/download
-.. _numpy: http://numpy.scipy.org/
+.. _numpy: http://numpy.scipy.org
+.. _pyparsing: http://pyparsing.wikispaces.com

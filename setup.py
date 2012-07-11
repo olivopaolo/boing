@@ -22,5 +22,8 @@ On demand producer-consumer architecture for connecting different
 sources (e.g. devices, sockets, files, etc.) to different outputs, while
 applying flexible data processing.""",
     license = "GPLv2",
-    install_requires = ['numpy>=1.6.1'],
+    install_requires = [
+        'numpy>=1.6.1',
+        'pyparsing>=1.5.6'
+        ],
 )
