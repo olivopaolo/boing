@@ -27,7 +27,7 @@ Generic utilities examples
 
 Redirect the standard input to a target UDP socket::
 
-  boing -i stdin: -o udp://[::1]:7777
+  boing -i stdin: -o out:udp://[::1]:7777
 
 Dump to console all the available products received from the inputs::
 
@@ -44,15 +44,15 @@ Dump only the products that match a query filter::
 Print statistics (i.e. lag, frequence, sum, tags, etc.) of the
 products from two sources::
 
-  boing -i udp://:0 tcp://:0  -o stat:
+  boing -i in:udp://:0 in:tcp://:0  -o stat:
 
 Record to a file the data coming from an UDP socket::
 
-  boing -i udp://:0 -o log:///tmp/log
+  boing -i in:udp://:0 -o log:///tmp/log
 
 Replay a log file a forward it to a socket::
 
-  boing -i log:///tmp/log -o stdout:
+  boing -i play:///tmp/log -o stdout:
 
 Record events using a buffed recorder (with GUI), while dumping them
 to the standard output::
@@ -61,7 +61,7 @@ to the standard output::
 
 Use the player (with GUI) to replay logged files to an UDP socket::
 
-  boing -i player: -o udp://[::1]:7777
+  boing -i player: -o out:udp://[::1]:7777
 
 
 OSC examples
@@ -73,23 +73,23 @@ Examples:
 
 Print to console decoded OSC received on a UDP socket::
 
-  boing -i osc://:7777
+  boing -i in:osc://:7777
 
 Record to a file an OSC stream received on a TCP socket::
 
-  boing -i osc.tcp://:7777 -o log:///tmp/log
+  boing -i in:osc.tcp://:7777 -o log:///tmp/log
 
 Record using a buffed recorder (with GUI) an OSC stream::
 
-  boing -i osc://:0 -o rec:
+  boing -i in:osc://:0 -o rec:
 
 Replay an OSC log to an UDP socket::
 
-  boing -i log:///tmp/log -o osc://[::1]:7777
+  boing -i play:///tmp/log -o out:osc://[::1]:7777
 
 Replay an OSC log (at double speed and loop enabled) to a TCP socket::
 
-  boing -i "log:///tmp/log?speed=2&loop" -o osc.tcp://[::1]:7777
+  boing -i "play:///tmp/log?speed=2&loop" -o out:osc.tcp://[::1]:7777
 
 
 TUIO examples
@@ -100,28 +100,28 @@ General documentation on TUIO can be found at http://www.tuio.org/.
 Show multi-touch events of a TUIO stream received on a UDP socket
 (default port 3333)::
 
-  boing -i tuio: -o viz:
+  boing -i in:tuio: -o viz:
 
 Record to a file a TUIO stream received on a different UDP socket::
 
-  boing -i tuio://:3334 -o log:///tmp/log
+  boing -i in:tuio://:3334 -o log:///tmp/log
 
 Record a TUIO stream using a buffed recorder (with GUI), while showing it::
 
-  boing -i tuio: -o rec: viz:
+  boing -i in:tuio: -o rec: viz:
 
 Replay a TUIO log to an TCP socket::
 
-  boing -i log:///tmp/log -o tuio.tcp://[::1]:7777
+  boing -i play:///tmp/log -o out:tuio.tcp://[::1]:7777
 
 Replay a TUIO log (at double speed and loop enabled) to an UDP socket
 and show it locally (antialised at 30 fps)::
 
-  boing -i "log:///tmp/log?speed=2&loop" -o tuio://[::1]:7777 "viz:?antialiasing&fps=30"
+  boing -i "play:///tmp/log?speed=2&loop" -o out:tuio://[::1]:7777 "viz:?antialiasing&fps=30"
 
 Merge two TUIO streams into a single TUIO stream, then show and record it::
 
-  boing -i tuio://:3334 tuio://:3335 -o viz: log:///tmp/log
+  boing -i in:tuio://:3334 in:tuio://:3335 -o viz: log:///tmp/log
 
 Use the player (with GUI) to replay logged files an show the stored
 multi-touch events::
@@ -138,15 +138,15 @@ Multi-touch event processing
 
 Filter multi-touch events to keep only the positional information::
 
-  boing -i tuio:+filter:?attr=rel_pos -o viz:
+  boing -i in:tuio:+filter:?attr=rel_pos -o viz:
 
 Calibrate a multi-touch source by rotating it left::
 
-  boing -i tuio:+calib:?screen=left -o viz:
+  boing -i in:tuio:+calib:?screen=left -o viz:
 
 Calibrate a multi-touch source by applying a 4x4 transformation matrix::
 
-  boing -i tuio:+calib:?matrix=0,-1,0,1,1,0,0,0,0,0,1,0,0,0,0,1 -o viz:
+  boing -i in:tuio:+calib:?matrix=0,-1,0,1,1,0,0,0,0,0,1,0,0,0,0,1 -o viz:
 
 
 Filtering examples
@@ -154,24 +154,24 @@ Filtering examples
 
 Filter contacts' position of a multi-touch source using the default filter::
 
-  boing -i tuio:+filtering: -o viz:
+  boing -i in:tuio:+filtering: -o viz:
 
 Filter contacts' position using an exponential filter::
 
-  boing -i tuio:+filtering:/exponential/single?alpha=0.9 -o viz:
+  boing -i in:tuio:+filtering:/exponential/single?alpha=0.9 -o viz:
 
 Filter only the contact speed::
 
-  boing -i tuio:+filtering:?attr=rel_speed -o viz:
+  boing -i in:tuio:+filtering:?attr=rel_speed -o viz:
 
 Display contact's raw data and filtered data on separate windows::
 
-  boing -i tuio: -o filtering:+viz: viz:
+  boing -i in:tuio: -o filtering:+viz: viz:
 
 Add noise to the contacts' position of a multi-touch source::
 
-  boing -i tuio:+filtering:/noise/numpy.random.normal(0.0,0.01) -o viz:
+  boing -i in:tuio:+filtering:/noise/numpy.random.normal(0.0,0.01) -o viz:
 
 Add noise and then filter the contacts' position::
 
-  boing -i tuio:+filtering:/noise/numpy.random.normal(0.0,0.01)+filtering: -o viz:
+  boing -i in:tuio:+filtering:/noise/numpy.random.normal(0.0,0.01)+filtering: -o viz:

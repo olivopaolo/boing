@@ -4,11 +4,8 @@ Todo list
 
 Today or tomorrow:
 
-- Remove from boing.create the mode argument.
 - add to file: and log: the relative path availability.
 - Add to boing script the command mode.
-- Prepare the directory with the gesture templates that the recognizer can use.
-- Fix the recognition nodes;
 
 This week:
 
@@ -16,9 +13,10 @@ This week:
 - update module boing.core.economy docs (After Consumer);
 - well document classes in boing.core.economy.
 
-
 Next week:
 
+- Prepare the directory with the gesture templates that the recognizer can use.
+- Fix the recognition nodes;
 - Support 1$ algorithm;
 - in json encoding, for all the things that cannot be normally
   encoded, encode the __dict__ and pass the constructor parameters.

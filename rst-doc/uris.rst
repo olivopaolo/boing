@@ -48,11 +48,11 @@ I = Input, O = Output, F = Function
 	   <td><url>&lt;in|out&gt;:[&lt;ENCODINGS&gt;.]&lt;IODEVICE&gt;</url></td>
 	   <td>&nbsp;</td>
 	   <td>Data bridge using custom input device and
-	     decodings<a href="#3"><sup>3</sup></a><a href="#4"><sup>4</sup></a></td></tr>
+	     decodings<a href="#4"><sup>4</sup></a></td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>I</ossupport></td>
-	   <td><url><!--&lt;in|out&gt;:-->log[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
+	   <td><url>play[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
 	   <td><url>loop, speed, interval</url></td>
 	   <td>Replay data from log file (default <url>json</url>)</td></tr>
 	 <tr>
@@ -60,7 +60,7 @@ I = Input, O = Output, F = Function
 	   <td><ossupport>O</ossupport></td>
 	   <td><url><!--&lt;in|out&gt;:-->log[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
 	   <td>&nbsp;</td>
-	   <td>Record data to log file (default <url>json</url>)</td></tr>
+	   <td>Record data to log file (default encoding <url>json</url>)</td></tr>
 
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
@@ -69,6 +69,13 @@ I = Input, O = Output, F = Function
 	   <td><url>request, timelimit, sizelimit, oversizecut, fps, timewarping
 	       </url></td>
 	   <td>Recorder with GUI</td></tr>
+
+	 <tr>
+	   <td><ossupport>OLW</ossupport></td>
+	   <td><ossupport>I</ossupport></td>
+	   <td><url>player[.&lt;ENCODING&gt;]:</url></td>
+	   <td><url>interval, open</url></td>
+	   <td>Open GUI player to replay data from log files (default encoding <url>json</url>)</td></tr>
 
 	 <!-- Data Processing -->
 	 <tr><th colspan="5"><small>Data Processing</small></th></tr>
@@ -296,10 +303,6 @@ I = Input, O = Output, F = Function
 	 default translated to <url>out:json.udp://[::1]:7898</url>, so it
 	 owns the query keys of the json encoder (request, filter) and of
 	 the udp socket node (writeend). 
-
-       <p><a name="3"><sup>3</sup></a><i>in:</i> and <i>out:</i> prefixes can
-	   be omitted when using <code>boing</code> command line
-	   script, since it is obvious from the argument option.</p>
 
        <p><a name="4"><sup>4</sup></a>Some encodings have default
 	 input/output devices (e.g. <url>in:tuio:</url> is by default translated into
