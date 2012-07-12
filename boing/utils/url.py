@@ -254,10 +254,12 @@ class URL(object):
                 traceback.print_exc()
                 opaque = True
             if opaque \
-               or self.kind==URL.GENERIC and self.path and not self.path.absolute:
+                or self.kind==URL.GENERIC and self.path \
+                and not self.path.absolute and not self.path.data[0]==".":
                 self.kind = URL.OPAQUE
                 self.opaque = aString
-                self.path = URL_path('')
+                # self.path = URL_path('')
+                # self.query = URL_query('')
 
     def __str__(self):
         result = ''
@@ -265,7 +267,7 @@ class URL(object):
         if self.opaque: result += self.opaque
         else:
             site = str(self.site)
-            if site or self.kind&URL.ABSOLUTE:
+            if site or self.kind&URL.ABSOLUTE and self.path.absolute:
                 result += '//' + site
             result += str(self.path)
             query = str(self.query)
@@ -295,17 +297,17 @@ class URL(object):
             print()
         if self.kind&URL.OPAQUE:
             print('OPAQUE     :', self.opaque)
-        else:
-            print('SITE       :', self.site)
-            print('  user     :', self.site.user)
-            print('  password :', self.site.password)
-            print('  host     :', self.site.host)
-            print('  port     :', self.site.port)
-            print('PATH       :', self.path)
-            print('  data     :', self.path.data)
-            print('QUERY      :', self.query)
-            print('  data     :', self.query.data)
-            print('FRAGMENT   :', self.fragment)
+            print()
+        print('SITE       :', self.site)
+        print('  user     :', self.site.user)
+        print('  password :', self.site.password)
+        print('  host     :', self.site.host)
+        print('  port     :', self.site.port)
+        print('PATH       :', self.path)
+        print('  data     :', self.path.data)
+        print('QUERY      :', self.query)
+        print('  data     :', self.query.data)
+        print('FRAGMENT   :', self.fragment)
 
 # ---------------------------------------------------------------------
 
@@ -371,7 +373,8 @@ if __name__=="__main__":
         "out.tuio.service:name",
         "out.tuio.tcp://host:9898",
         "out:/tmp/toto.osc",
-        "out:stdout",
+        "out:stdout?asd=12",
+        "in:./file.txt?q1=v1",
         "in.tuio.tcp://:9898", # empty host or localhost or 127.0.0.1 or ::1
         ]
     
