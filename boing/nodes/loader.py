@@ -89,15 +89,17 @@ def createSingle(uri, mode="", parent=None):
     # -------------------------------------------------------------------
     # CONF
     elif uri.scheme=="conf":
+        import re
         assertUriModeIn(uri, mode, "")
         if uri.site or uri.fragment: raise ValueError("Invalid URI: %s"%uri)
         filepath = uri.opaque if uri.kind==URL.OPAQUE else str(uri.path)
         if not filepath: raise ValueError("filepath must be defined: %s"%uri)
-        node = create(File(filepath).readAll().decode())
+        node = create(re.sub(re.compile("#.*?\n" ), "\n",
+                             File(filepath).readAll().decode()))
 
     # -------------------------------------------------------------------
     # BRIDGES
-    if uri.scheme in ("in", "out"):
+    elif uri.scheme in ("in", "out"):
         return createSingle(
             str(uri).replace(uri.scheme, "udp" if uri.site else "file", 1),
             uri.scheme)
