@@ -9,6 +9,12 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+
+"""The :mod:`boing.utils` module contains generic utility
+classes and functions.
+
+"""
+
 from code import InteractiveConsole
 import collections
 import copy
@@ -126,6 +132,7 @@ def deepremove(obj, other, diff=False):
 # -------------------------------------------------------------------
 
 def deepDump(obj, fd=sys.stdout, maxdepth=None, indent=2, end="\n", sort=True):
+    """Write to *fd* a textual representation of *obj*."""
     return _deepDump(obj, fd, 1, maxdepth, indent, end, sort)
 
 def _deepDump(obj, fd, level, maxdepth, indent, end, sort):

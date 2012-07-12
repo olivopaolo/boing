@@ -16,7 +16,7 @@ instantiating a simple Boing network::
   app = PyQt4.QtGui.QApplication(sys.argv)
 
   # Create nodes
-  n1 = boing.create("in:tuio:")
+  n1 = boing.create("in.tuio:")
   n2 = boing.create("viz:")
 
   graph = n1 + n2

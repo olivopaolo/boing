@@ -3,4 +3,4 @@ boing.utils
 ===========
 
 .. automodule:: boing.utils
-   :members: assertIsInstance, quickdict, Console, deepadd, deepupdate, deepremove, deepDump
+   :members: assertIsInstance, quickdict, deepDump, deepadd, deepupdate, deepremove, Console

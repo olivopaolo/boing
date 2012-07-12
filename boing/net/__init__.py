@@ -10,8 +10,8 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 """The *boing.net* module provides classes and methods to ease the
-usage of sockets and different networking encoding like json, osc,
-slip, etc.
+usage of sockets and networking encodings, like for example JSON, OSC,
+SLIP, etc.
 
 """
 
