@@ -19,46 +19,23 @@ I = Input, O = Output, F = Function
 	   <th><small>URI query keys<a href="#2"><sup>2</sup></a></small></th>
 	   <th><small>Description</small></th>
 	 </tr>
-	 <!-- Data redirection -->
-	 <tr><th colspan="5"><small>Data Redirection</small></th></tr>
-	 <!-- <tr> -->
-	 <!-- 	<td><ossupport>OLW</ossupport></td> -->
-	 <!-- 	<td><ossupport>I</ossupport></td> -->
-	 <!-- 	<td><url>in:remote://&lt;HOST&gt;:&lt;PORT&gt;</url></td> -->
-	 <!-- 	<td>&nbsp;</td> -->
-	 <!-- 	<td>&nbsp;</td> -->
-	 <!-- </tr> -->
-	 <!-- <tr> -->
-	 <!-- 	<td><ossupport>OLW</ossupport></td> -->
-	 <!-- 	<td><ossupport>O</ossupport></td> -->
-	 <!-- 	<td><url>out:remote:[//&lt;HOST&gt;:&lt;PORT&gt;]</url></td> -->
-	 <!-- 	<td>&nbsp;</td> -->
-	 <!-- 	<td>&nbsp;</td> -->
-	 <!-- </tr> -->
-	 <!-- <tr> -->
-	 <!-- 	<td><ossupport>OLW</ossupport></td> -->
-	 <!-- 	<td><ossupport>IO</ossupport></td> -->
-	 <!-- 	<td><url>&lt;in|out&gt;:bridge:[//&lt;HOST&gt;:&lt;PORT&gt;]</url></td> -->
-	 <!-- 	<td>&nbsp;</td> -->
-	 <!-- 	<td>Listen/Forward data on the default bridge -->
-	 <!-- 	  (i.e. <url>json.udp://:7898</url>)<a href="#3"><sup>3</sup></a></td></tr> -->
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>IO</ossupport></td>
-	   <td><url>&lt;in|out&gt;:[&lt;ENCODINGS&gt;.]&lt;IODEVICE&gt;</url></td>
+	   <td><url>&lt;in|out&gt;.[&lt;ENCODINGS&gt;.]&lt;IODEVICE&gt;</url></td>
 	   <td>&nbsp;</td>
 	   <td>Data bridge using custom input device and
 	     decodings<a href="#4"><sup>4</sup></a></td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>I</ossupport></td>
-	   <td><url>play[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
+	   <td><url>play[.&lt;ENCODING&gt;]:&lt;FILEPATH&gt;</url></td>
 	   <td><url>loop, speed, interval</url></td>
 	   <td>Replay data from log file (default <url>json</url>)</td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>O</ossupport></td>
-	   <td><url><!--&lt;in|out&gt;:-->log[.&lt;ENCODING&gt;]://&lt;FILEPATH&gt;</url></td>
+	   <td><url>log[.&lt;ENCODING&gt;]:&lt;FILEPATH&gt;</url></td>
 	   <td>&nbsp;</td>
 	   <td>Record data to log file (default encoding <url>json</url>)</td></tr>
 
@@ -164,13 +141,13 @@ I = Input, O = Output, F = Function
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>I</ossupport></td>
-	   <td><url>[file://]&lt;ABSOLUTE-FILEPATH&gt;</url></td>
+	   <td><url>&lt;ABSOLUTE-FILEPATH&gt;</url></td>
 	   <td><url>uncompress, postend</url></td>
 	   <td>Absolute filepath (Read Only)</td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>O</ossupport></td>
-	   <td><url>[file://]&lt;ABSOLUTE-FILEPATH&gt;</url></td>
+	   <td><url>&lt;ABSOLUTE-FILEPATH&gt;</url></td>
 	   <td>&nbsp;</td>
 	   <td>Absolute filepath (Write Only)</td></tr>
 	 <tr>

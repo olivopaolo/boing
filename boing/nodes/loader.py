@@ -87,33 +87,69 @@ def createSingle(uri, mode="", parent=None):
         raise ValueError("Empty URI")
 
     # -------------------------------------------------------------------
-    # IN: AND  OUT: REPLACED USING MODE
-    if uri.scheme=="in":
-        assertUriModeIn(uri, mode, "", "in")
-        return createSingle(str(uri).replace("in:", "", 1), "in", parent)
-
-    elif uri.scheme=="out":
-        assertUriModeIn(uri, mode, "", "out")
-        return createSingle(str(uri).replace("out:", "", 1), "out", parent)
-
-    # -------------------------------------------------------------------
     # CONF
     elif uri.scheme=="conf":
+        assertUriModeIn(uri, mode, "")
         if uri.site or uri.fragment: raise ValueError("Invalid URI: %s"%uri)
         filepath = uri.opaque if uri.kind==URL.OPAQUE else str(uri.path)
         if not filepath: raise ValueError("filepath must be defined: %s"%uri)
         node = create(File(filepath).readAll().decode())
 
     # -------------------------------------------------------------------
-    # LOGGING
+    # BRIDGES
+    if uri.scheme in ("in", "out"):
+        return createSingle(
+            str(uri).replace(uri.scheme, "udp" if uri.site else "file", 1),
+            uri.scheme)
 
+    elif uri.scheme.startswith("in."):
+        assertUriModeIn(uri, mode, "")
+        node = createSingle(lower(uri, "in"), "in")
+
+    elif uri.scheme.startswith("out."):
+        assertUriModeIn(uri, mode, "")
+        node = createSingle(lower(uri, "out"), "out")
+
+    # -------------------------------------------------------------------
+    # LOGGING
     elif uri.scheme=="log":
-        return createSingle(str(uri).replace("log:", "log.json:", 1),
+        return createSingle(str(uri).replace("log:", "log.json.slip:", 1),
                             parent=parent)
 
     elif uri.scheme.startswith("log."):
-        assertUriModeIn(uri, mode, "", "in")
+        assertUriModeIn(uri, mode, "")
         scheme = uri.scheme.replace("log.", "", 1)
+        if uri.kind==URL.OPAQUE or uri.site or uri.fragment: raise ValueError(
+            "Invalid URI: %s"%uri)
+        elif not uri.path: raise ValueError(
+            "URI's path cannot be empty: %s"%uri)
+        else:
+            if scheme in ("json", "json.slip"):
+                query = parseQuery(uri, "request", "wrap")
+                assertUriQuery(uri, query)
+                query.setdefault("wrap", True)
+                encoder = encoding.JsonEncoder(blender=Functor.RESULTONLY,
+                                               **query)
+                encoder += encoding.TextEncoder()
+            elif scheme in ("osc", "osc.slip",
+                            "tuio", "tuio.osc", "tuio.osc.slip"):
+                assertUriQuery(uri, None)
+                encoder = encoding.TuioEncoder(blender=Functor.RESULTONLY) \
+                    if "tuio" in uri.scheme else None
+                encoder += encoding.OscEncoder(blender=Functor.RESULTONLY,
+                                               wrap=True)
+            else:
+                raise ValueError("Unknown log encoding: %s"%uri)
+            device = createSingle("slip:%s"%uri.path, "out")
+            node = encoder + device
+
+    elif uri.scheme=="play":
+        return createSingle(str(uri).replace("play:", "play.json.slip:", 1),
+                            parent=parent)
+
+    elif uri.scheme.startswith("play."):
+        assertUriModeIn(uri, mode, "")
+        scheme = uri.scheme.replace("play.", "", 1)
         if uri.kind==URL.OPAQUE or uri.site or uri.fragment: raise ValueError(
             "Invalid URI: %s"%uri)
         elif not uri.path: raise ValueError(
@@ -129,7 +165,7 @@ def createSingle(uri, mode="", parent=None):
                                     FilePlayer.ProductSender(), **query)
                 node = player + encoding.TextEncoder()
             elif scheme in ("osc", "osc.slip",
-                            "tuio", "tuio.osc", "tuio.osc.slip"):
+                            "tuio", "tuio.slip", "tuio.osc", "tuio.osc.slip"):
                 player = encoding.OscLogPlayer(uri.path, **query)
                 encoder = encoding.OscEncoder(blender=Functor.MERGE)
                 oscdebug = encoding.OscDebug(blender=Functor.MERGE)
@@ -140,34 +176,6 @@ def createSingle(uri, mode="", parent=None):
                 raise ValueError("Unexpected encoding: %s"%uri)
             # FIXME: start should be triggered at outputs ready
             QtCore.QTimer.singleShot(300, player.start)
-
-    elif uri.scheme=="play":
-        return createSingle(str(uri).replace("play:", "play.json:", 1),
-                            parent=parent)
-
-    elif uri.scheme.startswith("play."):
-        assertUriModeIn(uri, mode, "", "out")
-        scheme = uri.scheme.replace("play.", "", 1)
-        if uri.kind==URL.OPAQUE or uri.site or uri.fragment: raise ValueError(
-            "Invalid URI: %s"%uri)
-        elif not uri.path: raise ValueError(
-            "URI's path cannot be empty: %s"%uri)
-        else:
-            if scheme in ("json", "json.slip"):
-                query = parseQuery(uri, "request", "wrap")
-                assertUriQuery(uri, query)
-                query.setdefault("wrap", True)
-                encoder = encoding.JsonEncoder(blender=Functor.RESULTONLY,
-                                               **query)
-                encoder += encoding.TextEncoder()
-            elif uri.scheme in ("osc", "osc.slip"):
-                assertUriQuery(uri, None)
-                encoder = encoding.OscEncoder(blender=Functor.RESULTONLY,
-                                              wrap=True)
-            else:
-                raise ValueError("Unknown log encoding: %s"%uri)
-            device = createSingle("slip.file://%s"%uri.path, "out")
-            node = encoder + device
 
     elif uri.scheme=="rec":
         from boing.nodes.logger import Recorder
@@ -216,7 +224,7 @@ def createSingle(uri, mode="", parent=None):
     # -------------------------------------------------------------------
     # IO DEVICES
     elif uri.scheme=="stdin":
-        assertUriModeIn(uri, mode, "", "in")
+        assertUriModeIn(uri, mode, "in")
         assertUriQuery(uri, None)
         if uri.opaque or uri.path or uri.site or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
@@ -226,7 +234,7 @@ def createSingle(uri, mode="", parent=None):
             node = reader + encoder
 
     elif uri.scheme=="stdout":
-        assertUriModeIn(uri, mode, "", "out")
+        assertUriModeIn(uri, mode, "out")
         assertUriQuery(uri, None)
         if uri.opaque or uri.path or uri.site or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
@@ -294,11 +302,19 @@ def createSingle(uri, mode="", parent=None):
     # -------------------------------------------------------------------
     # ENCODINGS
     # SLIP
+    elif uri.scheme=="slip":
+        extended = copy.copy(uri)
+        extended.scheme += ".udp" if uri.site else ".file"
+        logger.info(
+            "No transport protocol specified in URI, assuming: %s"%extended.scheme)
+        return createSingle(extended, mode, parent)
+
     elif uri.scheme.startswith("slip."):
         assertUriModeIn(uri, mode, "in", "out")
         loweruri = lower(uri, "slip")
         if mode=="in":
-            if "file" in loweruri.scheme: loweruri.query.data["uncompress"] = ""
+            if not uri.site and uri.site:
+                loweruri.query.data.setdefault("uncompress", "")
             device = createSingle(loweruri, "in")
             decoder = encoding.SlipDecoder() # blender is fixed to  RESULTONLY
             textdecoder = encoding.TextDecoder(blender=Functor.MERGE)

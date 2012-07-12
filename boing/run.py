@@ -70,11 +70,11 @@ signal.signal(signal.SIGINT, lambda *args: app.quit())
 
 # Check minimal resources
 if not args.input and args.console!="":
-    default = "stdin:"
+    default = "in.stdin:"
     logging.info("Using default input: %s"%default)
     args.input.append(default)
 if not args.output:
-    default = "stdout:"
+    default = "out.stdout:"
     logging.info("Using default output: %s"%default)
     args.output.append(default)
 

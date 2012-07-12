@@ -4,7 +4,6 @@ Todo list
 
 Today or tomorrow:
 
-- add to file: and log: the relative path availability.
 - Add to boing script the command mode.
 
 This week:
@@ -23,6 +22,8 @@ Next week:
 
 Someday:
 
+- when boing.create raises an exception, it shows the lower URI and
+  not the original one. This may be misleading for users.
 - Develop the transformation node, which transforms the data hierarchy
   (JSON-schema validator);
 - Develop Qt applications in&out bridges;
