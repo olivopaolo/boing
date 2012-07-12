@@ -129,7 +129,7 @@ class StatProducer(Functor, Functor.ConfigurableRequest):
         f = lambda kw: kw[0]() is not None
         self.__stat = dict(filter(f, self.__stat.items()))
 
-    def _consume(self, quickdicts, producer):
+    def _consume(self, products, producer):
         self._update = True
         # Get producer record
         record = None
