@@ -195,14 +195,15 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
 # -------------------------------------------------------------------
 
 class Console(InteractiveConsole, QtCore.QObject):
-    """Interactive Python console running along the Qt eventloop."""
+    """Interactive Python console running along the Qt eventloop.
+
+    """
 
     class _FileCacher:
-        """Cache the stdout text so we can analyze it before writing it"""
+        """Cache the output text so we can analyze it before writing it."""
         def __init__(self): self.reset()
         def reset(self): self.out = []
-        def write(self,line): 
-            self.out.append(line)
+        def write(self,line): self.out.append(line)
         def flush(self):
             output = ''.join(self.out)
             self.reset()
@@ -215,7 +216,7 @@ class Console(InteractiveConsole, QtCore.QObject):
                  locals=None, parent=None):
         InteractiveConsole.__init__(self, locals=locals)
         QtCore.QObject.__init__(self, parent)
-        # Backup of the current stdout
+        # Backup of the current stdout and stderr
         self._backup = sys.stdout
         self._cache = Console._FileCacher()
         self.__in = inputdevice
@@ -236,21 +237,21 @@ class Console(InteractiveConsole, QtCore.QObject):
             text = data if self.__in.isTextModeEnabled() else data.decode()
             self.push(text)
 
-    def _pushStdout(self):
-        """Replace standard output, so that the current console's
+    def _pushStd(self):
+        """Replace stdout and stderr, so that the current console's
         output can be redirected."""
-        self._backup = sys.stdout
-        sys.stdout = self._cache
+        self._backup = (sys.stdout, sys.stderr)
+        sys.stdout = sys.stderr = self._cache
 
-    def _pullStdout(self):
-        """Restore previous stdout."""
-        sys.stdout = self._backup
+    def _pullStd(self):
+        """Restore previous stdout and stderr."""
+        sys.stdout, sys.stderr = self._backup
 
     def push(self, line):
         """Pass *line* to the Python interpreter."""
-        self._pushStdout()
+        self._pushStd()
         more = super().push(line)
-        self._pullStdout()
+        self._pullStd()
         self._write(Console.ps2 if more else self._cache.flush()+Console.ps1)
         return more
 
