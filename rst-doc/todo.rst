@@ -4,7 +4,8 @@ Todo list
 
 Today or tomorrow:
 
-- Add to boing script the command mode.
+- add debug to Composite class.
+- console's exceptions should be sent to output rather then stdout.
 
 This week:
 
@@ -22,6 +23,7 @@ Next week:
 
 Someday:
 
+- add the boing netcat command.
 - when boing.create raises an exception, it shows the lower URI and
   not the original one. This may be misleading for users.
 - Develop the transformation node, which transforms the data hierarchy

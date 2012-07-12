@@ -5,9 +5,8 @@ User guide
 The *boing* tool enables to redirect data streams from multiple inputs
 sources to multiple target outputs::
 
-  usage: boing [-h] [-i INPUT [INPUT ...]] [-o OUTPUT [OUTPUT ...]]
-  	       [-C [HOST:PORT]] [-G [URI]] [-L LEVEL] [-T [INTEGER]] [-f]
-	       [--version]
+  usage: boing io [-h] [-i INPUT [INPUT ...]] [-o OUTPUT [OUTPUT ...]]
+  	          [-G [URI]] [-C [HOST:PORT]] [-L LEVEL] [-T [INTEGER]] [-f]
 
     -i INPUT [INPUT ...]  define the inputs
     -o OUTPUT [OUTPUT ...]
@@ -27,41 +26,41 @@ Generic utilities examples
 
 Redirect the standard input to a target UDP socket::
 
-  boing -i stdin: -o out.udp://[::1]:7777
+  boing io -i stdin: -o out.udp://[::1]:7777
 
 Dump to console all the available products received from the inputs::
 
-  boing -i stdin: -o dump:
+  boing io -i stdin: -o dump:
 
 Dump requested products to a TCP socket::
 
-  boing -i stdin: -o dump.tcp://[::1]:7777
+  boing io -i stdin: -o dump.tcp://[::1]:7777
 
 Dump only the products that match a query filter::
 
-  boing -i stdin: -o dump:?request=str
+  boing io -i stdin: -o dump:?request=str
 
 Print statistics (i.e. lag, frequence, sum, tags, etc.) of the
 products from two sources::
 
-  boing -i in.udp://:0 in.tcp://:0  -o stat:
+  boing io -i in.udp://:0 in.tcp://:0  -o stat:
 
 Record to a file the data coming from an UDP socket::
 
-  boing -i in.udp://:0 -o log:///tmp/log
+  boing io -i in.udp://:0 -o log:///tmp/log
 
 Replay a log file a forward it to a socket::
 
-  boing -i play:///tmp/log -o stdout:
+  boing io -i play:///tmp/log -o stdout:
 
 Record events using a buffed recorder (with GUI), while dumping them
 to the standard output::
 
-  boing -o rec: stdout:
+  boing io -o rec: stdout:
 
 Use the player (with GUI) to replay logged files to an UDP socket::
 
-  boing -i player: -o out.udp://[::1]:7777
+  boing io -i player: -o out.udp://[::1]:7777
 
 
 OSC examples
@@ -73,23 +72,23 @@ Examples:
 
 Print to console decoded OSC received on a UDP socket::
 
-  boing -i in.osc://:7777
+  boing io -i in.osc://:7777
 
 Record to a file an OSC stream received on a TCP socket::
 
-  boing -i in.osc.tcp://:7777 -o log:///tmp/log
+  boing io -i in.osc.tcp://:7777 -o log:///tmp/log
 
 Record using a buffed recorder (with GUI) an OSC stream::
 
-  boing -i in.osc://:0 -o rec:
+  boing io -i in.osc://:0 -o rec:
 
 Replay an OSC log to an UDP socket::
 
-  boing -i play:///tmp/log -o out.osc://[::1]:7777
+  boing io -i play:///tmp/log -o out.osc://[::1]:7777
 
 Replay an OSC log (at double speed and loop enabled) to a TCP socket::
 
-  boing -i "play:///tmp/log?speed=2&loop" -o out.osc.tcp://[::1]:7777
+  boing io -i "play:///tmp/log?speed=2&loop" -o out.osc.tcp://[::1]:7777
 
 
 TUIO examples
@@ -100,33 +99,33 @@ General documentation on TUIO can be found at http://www.tuio.org/.
 Show multi-touch events of a TUIO stream received on a UDP socket
 (default port 3333)::
 
-  boing -i in.tuio: -o viz:
+  boing io -i in.tuio: -o viz:
 
 Record to a file a TUIO stream received on a different UDP socket::
 
-  boing -i in.tuio://:3334 -o log:///tmp/log
+  boing io -i in.tuio://:3334 -o log:///tmp/log
 
 Record a TUIO stream using a buffed recorder (with GUI), while showing it::
 
-  boing -i in.tuio: -o rec: viz:
+  boing io -i in.tuio: -o rec: viz:
 
 Replay a TUIO log to an TCP socket::
 
-  boing -i play:///tmp/log -o out.tuio.tcp://[::1]:7777
+  boing io -i play:///tmp/log -o out.tuio.tcp://[::1]:7777
 
 Replay a TUIO log (at double speed and loop enabled) to an UDP socket
 and show it locally (antialised at 30 fps)::
 
-  boing -i "play:///tmp/log?speed=2&loop" -o out.tuio://[::1]:7777 "viz:?antialiasing&fps=30"
+  boing io -i "play:///tmp/log?speed=2&loop" -o out.tuio://[::1]:7777 "viz:?antialiasing&fps=30"
 
 Merge two TUIO streams into a single TUIO stream, then show and record it::
 
-  boing -i in.tuio://:3334 in.tuio://:3335 -o viz: log:///tmp/log
+  boing io -i in.tuio://:3334 in.tuio://:3335 -o viz: log:///tmp/log
 
 Use the player (with GUI) to replay logged files an show the stored
 multi-touch events::
 
-  boing -i player: -o viz:
+  boing io -i player: -o viz:
 
 SLIP encoding is added by default for OSC packages written or read on
 TCP sockets or files. Use the URI attribute 'noslip' to avoid default
@@ -138,15 +137,15 @@ Multi-touch event processing
 
 Filter multi-touch events to keep only the positional information::
 
-  boing -i in.tuio:+filter:?attr=rel_pos -o viz:
+  boing io -i in.tuio:+filter:?attr=rel_pos -o viz:
 
 Calibrate a multi-touch source by rotating it left::
 
-  boing -i in.tuio:+calib:?screen=left -o viz:
+  boing io -i in.tuio:+calib:?screen=left -o viz:
 
 Calibrate a multi-touch source by applying a 4x4 transformation matrix::
 
-  boing -i in.tuio:+calib:?matrix=0,-1,0,1,1,0,0,0,0,0,1,0,0,0,0,1 -o viz:
+  boing io -i in.tuio:+calib:?matrix=0,-1,0,1,1,0,0,0,0,0,1,0,0,0,0,1 -o viz:
 
 
 Filtering examples
@@ -154,24 +153,24 @@ Filtering examples
 
 Filter contacts' position of a multi-touch source using the default filter::
 
-  boing -i in.tuio:+filtering: -o viz:
+  boing io -i in.tuio:+filtering: -o viz:
 
 Filter contacts' position using an exponential filter::
 
-  boing -i in.tuio:+filtering:/exponential/single?alpha=0.9 -o viz:
+  boing io -i in.tuio:+filtering:/exponential/single?alpha=0.9 -o viz:
 
 Filter only the contact speed::
 
-  boing -i in.tuio:+filtering:?attr=rel_speed -o viz:
+  boing io -i in.tuio:+filtering:?attr=rel_speed -o viz:
 
 Display contact's raw data and filtered data on separate windows::
 
-  boing -i in.tuio: -o filtering:+viz: viz:
+  boing io -i in.tuio: -o filtering:+viz: viz:
 
 Add noise to the contacts' position of a multi-touch source::
 
-  boing -i in.tuio:+filtering:/noise/numpy.random.normal(0.0,0.01) -o viz:
+  boing io -i in.tuio:+filtering:/noise/numpy.random.normal(0.0,0.01) -o viz:
 
 Add noise and then filter the contacts' position::
 
-  boing -i in.tuio:+filtering:/noise/numpy.random.normal(0.0,0.01)+filtering: -o viz:
+  boing io -i in.tuio:+filtering:/noise/numpy.random.normal(0.0,0.01)+filtering: -o viz:
