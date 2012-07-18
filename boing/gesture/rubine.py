@@ -59,7 +59,7 @@ def computeFeatures(stroke):
     Dx0 = stroke[1].x-stroke[0].x
     Dy0 = stroke[1].y-stroke[0].y
     tdelta = stroke[1].t-stroke[0].t
-    Dt0 = tdelta.total_seconds()*1000
+    Dt0 = tdelta.seconds * 1000 + tdelta.microseconds * 0.001
     f8 = math.sqrt(Dx0**2 + Dy0**2)
     f9 = f10 = f11 = 0
     f12 = (Dx0**2+Dy0**2)/(Dt0**2)
@@ -70,7 +70,7 @@ def computeFeatures(stroke):
         Dyp_1 = stroke[p].y - stroke[p-1].y
         Tp = math.atan2(Dxp*Dyp_1 - Dxp_1*Dyp, Dxp*Dxp_1 + Dyp*Dyp_1)
         tdelta = stroke[p+1].t-stroke[p].t
-        Dtp = tdelta.total_seconds()*1000
+        Dtp = tdelta.seconds * 1000 + tdelta.microseconds * 0.001
         f8 += math.sqrt(Dxp**2+Dyp**2)
         f9 += Tp
         f10 += math.fabs(Tp)
@@ -84,7 +84,7 @@ def computeFeatures(stroke):
     features[11] = f12
     # f13
     tdelta = stroke[-1].t-stroke[0].t
-    features[12] = tdelta.total_seconds()*1000
+    features[12] = tdelta.seconds * 1000 + tdelta.microseconds * 0.001
     return features
 
 # ---------------------------------------------------------------------
@@ -181,11 +181,10 @@ class RubineRecognizer:
             self._weights[c] = wc
 
     def recognize(self, stroke):
-        """Return a tuple (name, None, None), where 'name' is the
-        class that best fits *stroke* or None if the recognizer has no
+        """Return a dictionary {"cls": name}, where 'name' is the
+        class that best fits *stroke*; return None if the recognizer has no
         classes or *stroke* is not a valid instance."""
-        if not self._weights or not self.isValid(stroke):
-            rvalue = None, None, None
+        if not self._weights or not self.isValid(stroke): rvalue = None
         else:
             features = computeFeatures(stroke)
             maximum = float("-inf")
@@ -197,8 +196,7 @@ class RubineRecognizer:
                 if summ>maximum:
                     maximum = summ
                     best = c
-            bestclass = self._classes[best] if best is not None else None
-            rvalue = bestclass, None, None
+            rvalue = dict(cls=self._classes[best])
         return rvalue
 
 # ---------------------------------------------------------------------

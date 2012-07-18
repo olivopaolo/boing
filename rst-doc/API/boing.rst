@@ -1,6 +1,6 @@
-
-boing
-=====
+===========================
+ boing - API documentation
+===========================
 
 .. automodule:: boing
 
@@ -9,6 +9,7 @@ boing
 .. autoclass:: boing.Node
 
 .. autofunction:: activateConsole
+
 
 Submodules:
 

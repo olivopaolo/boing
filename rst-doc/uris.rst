@@ -1,6 +1,6 @@
 
-URIs table
-==========
+Node URI reference
+==================
 
 Platform
 

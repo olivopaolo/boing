@@ -18,9 +18,12 @@ setup(
     author = "Paolo Olivo",
     author_email = "paolo.olivo@inria.fr",
     description = """
-On demand producer-consumer architecture for connecting different
-sources (e.g. devices, sockets, files, etc.) to different outputs, while
-applying flexible data processing.""",
+Boing is a toolkit designed to support the development of multi-touch
+and gesture enabled applications.
+
+It enables to create pipelines for connecting different input sources to
+multiple target destinations (e.g. applications, logs, etc.)  and
+eventually process the data before being dispatched.""",
     license = "GPLv2",
     install_requires = [
         'numpy>=1.6.1',

@@ -29,7 +29,7 @@ class TestRubine(unittest.TestCase):
         self.assertIsNotNone(recognizer.classes())
         for name, stroke in rubine.testInstances():
             result = recognizer.recognize(rubine.normalize(stroke))
-            self.assertEqual(result[0], name)
+            self.assertEqual(result["cls"], name)
 
     def test_buildRecognizer(self):
         recognizer = rubine.RubineRecognizer()
@@ -37,7 +37,7 @@ class TestRubine(unittest.TestCase):
         self.assertIsNotNone(recognizer.classes())
         for name, stroke in rubine.testInstances():
             result = recognizer.recognize(rubine.normalize(stroke))
-            self.assertEqual(result[0], name)
+            self.assertEqual(result["cls"], name)
 
 # -------------------------------------------------------------------
 

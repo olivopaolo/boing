@@ -320,7 +320,8 @@ class QPath(object):
     @staticmethod
     def _iterprop(obj):
         if isinstance(obj, collections.Mapping):
-            rvalue = obj.items()
+            # FIXME: should be an iterato not tuple
+            rvalue = tuple(obj.items())
         elif isinstance(obj, collections.Sequence):
             rvalue = enumerate(obj)
         #elif hasattr(obj, "__dict__"):
