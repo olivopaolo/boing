@@ -24,7 +24,7 @@ to:
 developed by `Paolo Olivo`_ and `Nicolas Roussel`_.
 
 .. raw:: html
-   <!-- Add jQuery library -->
+
    <script type="text/javascript"
            src="_static/fancyBox/lib/jquery-1.7.2.min.js"></script>
 
