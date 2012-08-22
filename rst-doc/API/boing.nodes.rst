@@ -1,6 +1,6 @@
-
-boing.nodes
-===========
+=============
+ boing.nodes
+=============
 
 .. automodule:: boing.nodes
 

@@ -7,7 +7,7 @@ Users can deploy |boing| pipelines in two different ways:
 - using the script :command:`boing`, which is an executable
   automatically installed during the package installation;
 
-- coding a simple Python script that directly invokes the |boing|'s API.
+- coding a short Python script that directly invokes the |boing|'s API.
 
 .. TODO: Speak about the configuration language.
 
@@ -70,7 +70,7 @@ Python developers support
 -------------------------
 
 Developers can easily deploy pipelines by invoking the :doc:`Boing's
-API <API/index>` in their Python code. The factory method
+API <API/boing>` in their Python code. The factory method
 :meth:`boing.create` can be used to instantiate the pipeline's
 nodes. This method requires as argument an URI that is used to specify
 the functionality of the node to be created. The nodes' :doc:`URI
@@ -104,5 +104,5 @@ Developers can also create new nodes with custom functionality by
 simply inheriting the node base classes provided by the module
 :mod:`boing.core`.
 
-..
-   FIXME: Describe an example of functional node.
+.. todo::
+   Describe an example of functional node.

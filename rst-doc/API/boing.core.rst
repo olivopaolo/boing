@@ -1,6 +1,6 @@
-
-boing.core
-==========
+============
+ boing.core
+============
 
 .. automodule:: boing.core
 

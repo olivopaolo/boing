@@ -6,18 +6,31 @@
 to multiple target destinations (e.g. applications, logs, etc.)  and
 eventually process the data before being dispatched.
 
-As an example, consider the pipeline in Figure 1: two tactile devices
-(left side) are connected to a single user application (top-right). At
-the same time contact events from both the devices are forwarded as a
-JSON stream to a second remote application (e.g. a contact
-visualiser), while an event recorder is used to log into a file the
-data stream provided by the second device only.
+As an example, consider the pipeline in :ref:`figure 3.1 <pipeline>`:
+two tactile devices (left side) are connected to a single user
+application (top-right). At the same time, the contact events from
+both the devices are forwarded as a JSON stream to a second remote
+application (e.g. a contact visualiser), while an event recorder is
+used to log into a file the data stream provided by the second device
+only.
 
-.. figure:: pipeline.svg
-   :alt: A pipeline created using |boing|.
-   :align: center
+.. _pipeline:
 
-   Figure 1: Example of pipeline created using |boing|.
+.. only:: html
+
+   .. figure:: images/pipeline.svg
+      :alt: A pipeline created using |boing|.
+      :align: center
+
+      Figure 3.1: Example of pipeline created using |boing|.
+
+.. only:: latex
+
+   .. figure:: images/pipeline.pdf
+      :alt: A pipeline created using |boing|.
+      :align: center
+
+      Example of pipeline created using |boing|.
 
 Even if the tactile devices provides different data structures
 (i.e. TUIO and mtdev), |boing| enables to merge them in a single data
@@ -40,3 +53,5 @@ The documentation is structured into the following sections:
    pipeline
    functionalities
    user
+
+.. _JSONPath: http://goessner.net/articles/JsonPath/

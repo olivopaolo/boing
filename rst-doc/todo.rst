@@ -71,4 +71,7 @@ Someday:
 - When Qt4.8 will be available, add multicast support to UdpSocket.
 - Consider adding the libfilter.filtering.signal module to boing.filtering .
 
+Docs todo
+=========
 
+.. todolist::

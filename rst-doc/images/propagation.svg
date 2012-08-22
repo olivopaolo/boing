@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="44cm" height="8cm" viewBox="18 18 863 153" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <rect style="fill: #ffffff" x="20" y="55.4444" width="220" height="80"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #ffffff" x="20" y="55.4444" width="220" height="80"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="660" y="69.4444" width="220" height="52"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #ffffff" x="660" y="69.4444" width="220" height="52"/>
+  </g>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="130" y1="69.2778" x2="130" y2="69.2778"/>
+  <g>
+    <rect style="fill: #ffffff" x="340" y="20" width="220" height="150"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #ffffff" x="340" y="20" width="220" height="150"/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="240" y1="95.4444" x2="262.246" y2="95.4444"/>
+    <polygon style="fill: #000000" points="269.746,95.4444 259.746,100.444 262.246,95.4444 259.746,90.4444 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="269.746,95.4444 259.746,100.444 262.246,95.4444 259.746,90.4444 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="308.091" y1="95.2836" x2="330.264" y2="95.0865"/>
+    <polygon style="fill: #000000" points="337.764,95.0199 327.809,100.109 330.264,95.0865 327.72,90.109 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="337.764,95.0199 327.809,100.109 330.264,95.0865 327.72,90.109 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="560" y1="95" x2="582.265" y2="95.1979"/>
+    <polygon style="fill: #000000" points="589.765,95.2646 579.721,100.175 582.265,95.1979 579.81,90.1759 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="589.765,95.2646 579.721,100.175 582.265,95.1979 579.81,90.1759 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="628.018" y1="95.4444" x2="650.264" y2="95.4444"/>
+    <polygon style="fill: #000000" points="657.764,95.4444 647.764,100.444 650.264,95.4444 647.764,90.4444 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="657.764,95.4444 647.764,100.444 650.264,95.4444 647.764,90.4444 "/>
+  </g>
+  <g>
+    <polygon style="fill: #ffffff" points="279.497,76.4444 314.333,76.4444 300.503,114.444 265.667,114.444 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="279.497,76.4444 314.333,76.4444 300.503,114.444 265.667,114.444 "/>
+    <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="290" y="98.8889">
+      <tspan x="290" y="98.8889">A</tspan>
+    </text>
+  </g>
+  <g>
+    <polygon style="fill: #ffffff" points="599.497,76.4444 634.333,76.4444 620.503,114.444 585.667,114.444 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="599.497,76.4444 634.333,76.4444 620.503,114.444 585.667,114.444 "/>
+    <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="610" y="98.8889">
+      <tspan x="610" y="98.8889">C</tspan>
+    </text>
+  </g>
+  <g>
+    <g>
+      <rect style="fill: #ffffff" x="20" y="55.2778" width="220" height="28"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="55.2778" width="220" height="28"/>
+      <text font-size="13.5467" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="130" y="73.4111">
+        <tspan x="130" y="73.4111">P</tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="20" y="83.2778" width="220" height="52.3333"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="83.2778" width="220" height="52.3333"/>
+      <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="130" y="98.7778">
+        <tspan x="130" y="98.7778">offer = A,B</tspan>
+        <tspan x="130" y="112.889">aggregateDemand = A</tspan>
+        <tspan x="130" y="127">demandedOffer = A</tspan>
+      </text>
+    </g>
+  </g>
+  <g>
+    <g>
+      <rect style="fill: #ffffff" x="660" y="69.3889" width="220" height="28"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="660" y="69.3889" width="220" height="28"/>
+      <text font-size="13.5467" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="770" y="87.5222">
+        <tspan x="770" y="87.5222">C</tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="660" y="97.3889" width="220" height="24.1111"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="660" y="97.3889" width="220" height="24.1111"/>
+      <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="770" y="112.889">
+        <tspan x="770" y="112.889">request = B,C</tspan>
+      </text>
+    </g>
+  </g>
+  <g>
+    <g>
+      <rect style="fill: #ffffff" x="340" y="20" width="220" height="28"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340" y="20" width="220" height="28"/>
+      <text font-size="13.5467" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="450" y="38.1333">
+        <tspan x="450" y="38.1333">W</tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="340" y="48" width="220" height="122.889"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340" y="48" width="220" height="122.889"/>
+      <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="450" y="63.5">
+        <tspan x="450" y="63.5">request = A</tspan>
+        <tspan x="450" y="77.6111">offer = C</tspan>
+        <tspan x="450" y="91.7222">aggregateDemand = B,C</tspan>
+        <tspan x="450" y="105.833">demandedOffer = C</tspan>
+        <tspan x="450" y="119.944">_selfRequest = A </tspan>
+        <tspan x="450" y="134.056">_selfOffer = C</tspan>
+        <tspan x="450" y="148.167">isPropagatingRequest = False</tspan>
+        <tspan x="450" y="162.278">isPropagatingOffer = False</tspan>
+      </text>
+    </g>
+  </g>
+</svg>
