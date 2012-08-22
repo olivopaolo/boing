@@ -226,7 +226,7 @@ def createSingle(uri, mode="", parent=None):
     # -------------------------------------------------------------------
     # IO DEVICES
     elif uri.scheme=="stdin":
-        assertUriModeIn(uri, mode, "in")
+        assertUriModeIn(uri, mode, "in", "")
         assertUriQuery(uri, None)
         if uri.opaque or uri.path or uri.site or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
@@ -236,7 +236,7 @@ def createSingle(uri, mode="", parent=None):
             node = reader + encoder
 
     elif uri.scheme=="stdout":
-        assertUriModeIn(uri, mode, "out")
+        assertUriModeIn(uri, mode, "out", "")
         assertUriQuery(uri, None)
         if uri.opaque or uri.path or uri.site or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)

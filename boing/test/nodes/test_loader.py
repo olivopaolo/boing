@@ -43,9 +43,9 @@ uris = {
     "stdin": {
         "valid": (
             "in.stdin:",
+            "stdin:",
             ),
         "invalid": (
-            ("stdin:", ValueError),
             ("in.stdin:opaque", ValueError),
             ("in.stdin:./relative", ValueError),
             ("in.stdin:///absolute", ValueError),
@@ -60,9 +60,9 @@ uris = {
     "stdout": {
         "valid": (
             "out.stdout:",
+            "stdout:",
             ),
         "invalid": (
-            ("stdout:", ValueError),
             ("out.stdout:opaque", ValueError),
             ("out.stdout:./relative", ValueError),
             ("out.stdout:///absolute", ValueError),
