@@ -1,106 +1,106 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
-<svg width="42cm" height="12cm" viewBox="18 18 823 231" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="44cm" height="9cm" viewBox="18 18 863 171" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <g>
-    <rect style="fill: #ffffff" x="20" y="180" width="220" height="68"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #ffffff" x="20" y="180" width="220" height="68"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="240" y1="103.833" x2="330.264" y2="103.984"/>
+    <polygon style="fill: #000000" points="337.764,103.996 327.756,108.98 330.264,103.984 327.772,98.9796 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="337.764,103.996 327.756,108.98 330.264,103.984 327.772,98.9796 "/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="320" y="20" width="220" height="100"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #ffffff" x="320" y="20" width="220" height="100"/>
-  </g>
-  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="130" y1="194" x2="130" y2="194"/>
-  <g>
-    <rect style="fill: #ffffff" x="20" y="208" width="220" height="40"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="208" width="220" height="40"/>
-    <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="130" y="224.389">
-      <tspan x="130" y="224.389"></tspan>
-      <tspan x="130" y="238.5">aggregateDemand = A,B</tspan>
-    </text>
-  </g>
-  <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="240" y1="214" x2="315.272" y2="78.5109"/>
-    <polygon style="fill: #000000" points="318.914,71.9547 318.428,83.1245 315.272,78.5109 309.687,78.268 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="318.914,71.9547 318.428,83.1245 315.272,78.5109 309.687,78.268 "/>
-  </g>
-  <g>
-    <rect style="fill: #ffffff" x="320" y="48" width="220" height="72"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="320" y="48" width="220" height="72"/>
-    <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="430" y="66.2778">
-      <tspan x="430" y="66.2778">request = A</tspan>
-      <tspan x="430" y="80.3889"></tspan>
-      <tspan x="430" y="94.5"></tspan>
-      <tspan x="430" y="108.611"></tspan>
-    </text>
-  </g>
-  <g>
-    <rect style="fill: #ffffff" x="619.196" y="187" width="220.804" height="54"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #ffffff" x="619.196" y="187" width="220.804" height="54"/>
-  </g>
-  <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="240" y1="214" x2="609.46" y2="214"/>
-    <polygon style="fill: #000000" points="616.96,214 606.96,219 609.46,214 606.96,209 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="616.96,214 606.96,219 609.46,214 606.96,209 "/>
-  </g>
-  <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="540" y1="70" x2="614.504" y2="205.469"/>
-    <polygon style="fill: #000000" points="618.118,212.041 608.918,205.688 614.504,205.469 617.681,200.869 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="618.118,212.041 608.918,205.688 614.504,205.469 617.681,200.869 "/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="560" y1="104" x2="650.264" y2="103.95"/>
+    <polygon style="fill: #000000" points="657.764,103.946 647.767,108.951 650.264,103.95 647.761,98.9512 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="657.764,103.946 647.767,108.951 650.264,103.95 647.761,98.9512 "/>
   </g>
   <g>
     <g>
-      <rect style="fill: #ffffff" x="320" y="20" width="220" height="28"/>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="320" y="20" width="220" height="28"/>
-      <text font-size="13.5467" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="430" y="38.1333">
-        <tspan x="430" y="38.1333">W</tspan>
+      <rect style="fill: #ffffff" x="340" y="20" width="220" height="168"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #ffffff" x="340" y="20" width="220" height="168"/>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="340" y="20" width="220" height="28"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340" y="20" width="220" height="28"/>
+      <text font-size="13.5467" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="450" y="38.1333">
+        <tspan x="450" y="38.1333">W</tspan>
       </text>
     </g>
     <g>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="320" y="48" width="220" height="72"/>
-      <text font-size="11.2889" style="fill: #0000ff;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="430" y="66.2778">
-        <tspan x="430" y="66.2778"></tspan>
-        <tspan x="430" y="80.3889">offer = None</tspan>
-        <tspan x="430" y="94.5">aggregateDemand = B</tspan>
-        <tspan x="430" y="108.611">active = False</tspan>
-      </text>
-    </g>
-  </g>
-  <g>
-    <polygon style="fill: #ffffff" points="419.947,195 453.883,195 440.053,233 406.117,233 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="419.947,195 453.883,195 440.053,233 406.117,233 "/>
-    <text font-size="11.2889" style="fill: #0000ff;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="430" y="217.444">
-      <tspan x="430" y="217.444">B</tspan>
-    </text>
-  </g>
-  <g>
-    <g>
-      <rect style="fill: #ffffff" x="20" y="180" width="220" height="28"/>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="180" width="220" height="28"/>
-      <text font-size="13.5467" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="130" y="198.133">
-        <tspan x="130" y="198.133">P</tspan>
+      <rect style="fill: #ffffff" x="340" y="48" width="220" height="140"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340" y="48" width="220" height="140"/>
+      <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="450" y="65">
+        <tspan x="450" y="65">request = A,B</tspan>
+        <tspan x="450" y="79.1111"></tspan>
+        <tspan x="450" y="93.2222"></tspan>
+        <tspan x="450" y="107.333"></tspan>
+        <tspan x="450" y="121.444">_selfRequest = A </tspan>
+        <tspan x="450" y="135.556"></tspan>
+        <tspan x="450" y="149.667">isPropagatingRequest = True</tspan>
+        <tspan x="450" y="163.778">isPropagatingOffer = True</tspan>
+        <tspan x="450" y="177.889"></tspan>
       </text>
     </g>
     <g>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="208" width="220" height="40"/>
-      <text font-size="11.2889" style="fill: #0000ff;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="130" y="224.389">
-        <tspan x="130" y="224.389">offer = B</tspan>
-        <tspan x="130" y="238.5"></tspan>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340" y="48" width="220" height="140"/>
+      <text font-size="11.2889" style="fill: #0000ff;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="450" y="65">
+        <tspan x="450" y="65"></tspan>
+        <tspan x="450" y="79.1111">offer = D</tspan>
+        <tspan x="450" y="93.2222">aggregateDemand = A,B</tspan>
+        <tspan x="450" y="107.333">demandedOffer = None</tspan>
+        <tspan x="450" y="121.444"></tspan>
+        <tspan x="450" y="135.556">_selfOffer = None</tspan>
+        <tspan x="450" y="149.667"></tspan>
+        <tspan x="450" y="163.778"></tspan>
+        <tspan x="450" y="177.889">active = False</tspan>
       </text>
     </g>
   </g>
   <g>
     <g>
-      <rect style="fill: #ffffff" x="619.222" y="187" width="220.778" height="28"/>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="619.222" y="187" width="220.778" height="28"/>
-      <text font-size="13.5467" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="729.611" y="205.133">
-        <tspan x="729.611" y="205.133">C</tspan>
+      <rect style="fill: #ffffff" x="20" y="63.8333" width="220" height="80"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #ffffff" x="20" y="63.8333" width="220" height="80"/>
+    </g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="130" y1="77.8333" x2="130" y2="77.8333"/>
+    <g>
+      <rect style="fill: #ffffff" x="20" y="63.8333" width="220" height="28"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="63.8333" width="220" height="28"/>
+      <text font-size="13.5467" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="130" y="81.9667">
+        <tspan x="130" y="81.9667">P</tspan>
       </text>
     </g>
     <g>
-      <rect style="fill: #ffffff" x="619.222" y="215" width="220.778" height="26"/>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="619.222" y="215" width="220.778" height="26"/>
-      <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="729.611" y="231.444">
-        <tspan x="729.611" y="231.444">request = B</tspan>
+      <rect style="fill: #ffffff" x="20" y="91.8333" width="220" height="52.3333"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="91.8333" width="220" height="52.3333"/>
+      <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="130" y="107.333">
+        <tspan x="130" y="107.333"></tspan>
+        <tspan x="130" y="121.444">aggregateDemand = A,B</tspan>
+        <tspan x="130" y="135.556"></tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="20" y="91.8333" width="220" height="52.3333"/>
+      <text font-size="11.2889" style="fill: #0000ff;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="130" y="107.333">
+        <tspan x="130" y="107.333">offer = D</tspan>
+        <tspan x="130" y="121.444"></tspan>
+        <tspan x="130" y="135.556">demandedOffer = None</tspan>
+      </text>
+    </g>
+  </g>
+  <g>
+    <g>
+      <rect style="fill: #ffffff" x="660" y="77.9444" width="220" height="52"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #ffffff" x="660" y="77.9444" width="220" height="52"/>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="660" y="77.9444" width="220" height="28"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="660" y="77.9444" width="220" height="28"/>
+      <text font-size="13.5467" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="770" y="96.0778">
+        <tspan x="770" y="96.0778">C</tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="660" y="105.944" width="220" height="24.1111"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="660" y="105.944" width="220" height="24.1111"/>
+      <text font-size="11.2889" style="fill: #000000;text-anchor:middle;font-family:monospace;font-style:normal;font-weight:normal" x="770" y="121.444">
+        <tspan x="770" y="121.444">request = A,B</tspan>
       </text>
     </g>
   </g>

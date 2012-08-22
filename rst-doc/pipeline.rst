@@ -75,7 +75,10 @@ consumers.
 
       UML sequence diagram defining the producer-consumer model
 
-.. seealso:: classes :mod:`boing.core.Producer` and :mod:`boing.core.Consumer`
+.. seealso::
+
+   classes :class:`boing.core.Producer` and
+   :class:`boing.core.Consumer`
 
 Supply and demand
 =================
@@ -218,10 +221,6 @@ and dispatch them.
 The wise worker and the auto-configuration feature
 ==================================================
 
-.. todo::
-
-   - Introduce the demandedOffer and consider request and offer propagation.
-
 As formerly described, *worker* nodes are both consumers and
 producers, and they can be considered as the pipeline's processing
 units. Workers normally calculate simple or atomic operations because
@@ -230,9 +229,9 @@ processing pipelines. |Boing| pipelines can be modified dynamically in
 order to evolve and fit a flexible environment. This may entail that
 not all the processing units are really necessary in order to compute
 the expected result. In order to avoid a waste of time, the pipeline
-exploits a self-optimizing technique based on the nodes' supply-demand
-knowledge. This technique, exploited by the *Wise Workers*, can be
-summarized into the following two rules:
+exploits a auto-configuration technique based on the nodes'
+supply-demand knowledge. This technique, exploited by the *Wise
+Workers*, can be summarized into the following two rules:
 
 1. the worker's request is nullified if no one requires the worker's
    own products;
@@ -244,7 +243,8 @@ the producer *P* provides the products *A*, which are required by the
 consumer *C*; this one also requires the products *B*, but *P* cannot
 provide them. For this reason the worker *W*, which can produce *B*
 from *A*, has been employed. Since *B* is required by *C*, *W* is
-currently active.
+currently active. In this example the worker *W* is set to forward all
+the products it receives even it is not directly interested to them.
 
 .. _wiseworker:
 
@@ -271,10 +271,10 @@ currently active.
 Now suppose that the consumer *C* changes its own request to *A*
 only. In this case, nobody is interested to *B* anymore, thus,
 following the first rule of the *Wise Worker*, the worker stops
-requiring *A* and since it does not require anything else, it passes
-into an inactive state. Now products *A* are not transferred from *P*
-to *W* any more. :ref:`Figure 3.8 <wiseworker2>` shows the state of
-the pipeline in this case.
+requiring *A* for itself and it passes into an inactive state, but,
+since it is propagating *C*'s requests, it still requires *A*
+products. :ref:`Figure 3.8 <wiseworker2>` shows the state of the
+pipeline in this case.
 
 .. _wiseworker2:
 
@@ -284,10 +284,10 @@ the pipeline in this case.
       :width: 90 %
       :align: center
 
-      Figure 3.8: If the only consumer *C* does not require products *B*
-      anymore, the worker *W* automatically stops producing them and
-      it also nullify its request so that products *A* are not sent to
-      him any more.
+      Figure 3.8: If *C* does not require products *B* anymore, the
+      worker *W* automatically stops producing them and requiring *A*
+      products for itself, but since it is propagating *C*'s requests,
+      it still requires *A* products so it can forward them to *C*.
 
 .. only:: latex
 
@@ -295,18 +295,18 @@ the pipeline in this case.
       :width: 90 %
       :align: center
 
-      If the only consumer *C* does not require products *B*
-      anymore, the worker *W* automatically stops producing them and
-      it also nullify its request so that products *A* are not sent to
-      him any more.
+      If *C* does not require products *B* anymore, the worker *W*
+      automatically stops producing them and requiring *A* products
+      for itself, but since it is propagating *C*'s requests, it still
+      requires *A* products so it can forward them to *C*.
 
-Considering the former pipeline (see :ref:`figure 3.7 <wiseworker>`),
-a different situation may arrive: if the producer *P* changes its
-offer to *B*, noone will provide the products *A* to the worker *W*,
-thus, following the second rule of the *Wise Worker*, since the
-worker's request is not satisfied anymore, it nullifies its own
-offer. The resulted pipeline is shown in :ref:`figure 3.9
-<wiseworker3>`.
+Considering the pipeline in :ref:`figure 3.7 <wiseworker>`, a
+different situation may arrive: if the producer *P* changes its offer
+to *D*, no one will provide the products *A*, thus, following the
+second rule of the *Wise Worker*, since the worker's request is not
+satisfied anymore, it nullifies its own offer. The resulted pipeline
+is shown in :ref:`figure 3.9 <wiseworker3>`. In this case requests do
+not change, so that no more products are exchanged between the nodes.
 
 .. _wiseworker3:
 
@@ -327,17 +327,60 @@ offer. The resulted pipeline is shown in :ref:`figure 3.9
       :width: 90 %
       :align: center
 
-      Considering the pipeline of :ref:`figure 3.7 <wiseworker>`, if the producer
-      *P* starts producing *B* only, the worker's request is not
-      satisfied anymore, so it automatically nullifies its default offer.
+      Considering the pipeline of :ref:`figure 3.7 <wiseworker>`, if
+      the producer *P* starts producing *D* only, the worker's request
+      is not satisfied anymore, so it automatically nullifies its own
+      offer.
 
-.. todo::
+In some cases workers do not previously know the products they
+provide since it only depends on the products they will receive. As
+an example, a worker may forward only a subset of the products it
+receives or it may make simple changes to the products it requires and
+then forward them. In those cases, it is not possible to set the offer
+in advance of the pipeline execution, thus the first rule of the *Wise
+Worker* cannot be applied. In order to handle those cases, the *Wise
+Workers* can use the *Tunneling* exception, that makes the first rule
+considering the entire propagated offer instead of the worker's own
+offer.
 
-   - Add link to WiseWorker class as seealso.
-   - Describe the tunneling feature.
+As an example consider the pipeline in :ref:`figure 3.10 <tunneling>`:
+the worker *W* simply forwards the products it receives so it has not
+its own offer. Despite this, thanks to the tunneling exception, *W* is
+still active, since its global offer matches the request of *C*.
 
-Nodes compositions
-==================
+.. _tunneling:
+
+.. only:: html
+
+   .. figure:: images/tunneling.svg
+      :width: 90 %
+      :align: center
+
+      Figure 3.10: When using the tunneling option, the propagated
+      offer is considered to determine if the worker is active instead
+      of its own offer only.
+
+.. only:: latex
+
+   .. figure:: images/tunneling.pdf
+      :width: 90 %
+      :align: center
+
+      When using the tunneling option, the propagated
+      offer is considered to determine if the worker is active instead
+      of its own offer only.
+
+Concrete workers using the tunneling feature are the
+:class:`Filter <boing.nodes.Filter>` and
+:class:`Calibration <boing.nodes.multitouch.Calibration>` classes.
+
+.. seealso::
+
+   classes :class:`boing.core.economy.WiseWorker` and
+   :class:`boing.core.Functor`
+
+Node composition
+================
 
 .. todo::
    - Describe the composite nodes and node syntax (+ and | operators).
