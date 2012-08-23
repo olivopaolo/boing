@@ -121,7 +121,7 @@ Getting started
    documentation
    uris
    API/boing
-   tutorial
+   tutorials/index
    changelog
    todo
 
