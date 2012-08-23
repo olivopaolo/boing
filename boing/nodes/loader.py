@@ -89,11 +89,11 @@ def createSingle(uri, mode="", parent=None):
     # -------------------------------------------------------------------
     # CONF
     elif uri.scheme=="conf":
-        import re
         assertUriModeIn(uri, mode, "")
         if uri.site or uri.fragment: raise ValueError("Invalid URI: %s"%uri)
         filepath = uri.opaque if uri.kind==URL.OPAQUE else str(uri.path)
         if not filepath: raise ValueError("filepath must be defined: %s"%uri)
+        import re
         node = create(re.sub(re.compile("#.*?\n" ), "\n",
                              File(filepath).readAll().decode()))
 
@@ -305,6 +305,7 @@ def createSingle(uri, mode="", parent=None):
     # ENCODINGS
     # SLIP
     elif uri.scheme=="slip":
+        assertUriModeIn(uri, mode, "in", "out")
         extended = copy.copy(uri)
         extended.scheme += ".udp" if uri.site else ".file"
         logger.info(
@@ -329,6 +330,7 @@ def createSingle(uri, mode="", parent=None):
 
     # JSON
     elif uri.scheme=="json":
+        assertUriModeIn(uri, mode, "in", "out")
         extended = copy.copy(uri)
         extended.scheme += ".slip.file" if uri.path else ".udp"
         logger.info(
@@ -336,10 +338,10 @@ def createSingle(uri, mode="", parent=None):
         return createSingle(extended, mode, parent)
 
     elif uri.scheme.startswith("json."):
+        assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "request", "noslip")
         loweruri = lower(uri, "json", query.keys())
         noslip = assertIsInstance(query.pop("noslip", False), bool)
-        assertUriModeIn(uri, mode, "in", "out")
         if not noslip:
             if loweruri.scheme=="file":
                 loweruri.scheme = "slip.%s"%loweruri.scheme
@@ -363,6 +365,7 @@ def createSingle(uri, mode="", parent=None):
 
     # OSC
     elif uri.scheme=="osc":
+        assertUriModeIn(uri, mode, "in", "out")
         extended = copy.copy(uri)
         extended.scheme += ".slip.file" if uri.path else ".udp"
         logger.info(
@@ -398,6 +401,7 @@ def createSingle(uri, mode="", parent=None):
 
     # TUIO
     elif uri.scheme=="tuio":
+        assertUriModeIn(uri, mode, "in", "out")
         extended = copy.copy(uri)
         if uri.path: extended.scheme += ".osc.slip.file"
         else:
