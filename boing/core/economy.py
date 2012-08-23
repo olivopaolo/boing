@@ -968,6 +968,15 @@ class Composite(QtCore.QObject):
         a strong reference is stored."""
         return iter(self.__internals)
 
+    def debug(self, fd=sys.stdout, maxdepth=1, grapher=None):
+        if grapher is None: grapher = SimpleGrapher()
+        grapher.draw(self, file=fd, maxdepth=maxdepth, memo=set())
+
+    def _debugData(self): return collections.OrderedDict()
+
+    def _debugSiblings(self):
+        return collections.OrderedDict(internals=self.internals())
+
 
 class CompositeProducer(_PropagatingProducer, Composite):
 
