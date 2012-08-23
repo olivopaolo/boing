@@ -24,7 +24,6 @@ Someday:
 - find a way so that the boing.node.loader can create nodes from
   external source files, so that users can add custom nodes;
 - when Sphinx will use jquery1.7, change in index.rst the jquery request;
-- add the boing netcat command;
 - when boing.create raises an exception, it shows the lower URI and
   not the original one. This may be misleading for users.
 - Develop the transformation node, which transforms the data hierarchy

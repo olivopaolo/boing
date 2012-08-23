@@ -14,46 +14,23 @@ Users can deploy |boing| pipelines in two different ways:
 Command line script
 -------------------
 
+The script :command:`boing` accepts as command line argument the
+configuration of the pipeline to be created.
 
-The :command:`boing` script accepts as command line argument the
-configuration of the pipeline to be created. The configuration can be
-specified in two different ways:
+.. todo:: Describe the pipeline configuration.
 
-- defining the inputs and the outputs of the pipeline (command
-  :command:`boing io`);
-- providing a single configuration formula (command :command:`boing
-  cfg`).
+::
 
-Inputs and outputs must be defined using :doc:`URIs <uris>` .
-
-*io*::
-
-   usage: boing io [-h] [-i INPUT [INPUT ...]] [-o OUTPUT [OUTPUT ...]]
-		   [-G [URI]] [-C [HOST:PORT]] [-L LEVEL] [-T [INTEGER]] [-f]
-
-   optional arguments:
-     -h, --help            show this help message and exit
-     -i INPUT [INPUT ...]  define the inputs
-     -o OUTPUT [OUTPUT ...]
-			   define the outputs
-     -G [URI]              activate pipeline plot (e.g. -G out.stdout:)
-     -C [HOST:PORT]        activate python console
-     -L LEVEL              set logging level
-     -T [INTEGER]          set exceptions traceback depth
-     -f                    force execution (avoiding warnings)
-
-
-*cfg*::
-
-   usage: boing cfg [-h] [-G [URI]] [-C [HOST:PORT]] [-L LEVEL] [-T [INTEGER]]
-		    [-f]
-		    <expr>
+   usage: boing [-h] [--version] [-G [URI]] [-C [HOST:PORT]] [-L LEVEL]
+                [-T [INTEGER]] [-f]
+		<expr>
 
    positional arguments:
      <expr>          define the pipeline configuration
 
    optional arguments:
      -h, --help      show this help message and exit
+     --version       show program's version number and exit
      -G [URI]        activate pipeline plot (e.g. -G out.stdout:)
      -C [HOST:PORT]  activate python console
      -L LEVEL        set logging level
