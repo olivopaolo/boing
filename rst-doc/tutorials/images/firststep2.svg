@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="7cm" height="4cm" viewBox="9 9 122 62" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <rect style="fill: #ffffff" x="10" y="30" width="40" height="20.4667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="10" y="30" width="40" height="20.4667"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="30" y="42.3">
+      <tspan x="30" y="42.3">in.tuio:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="90" y="9.76666" width="40" height="20.4667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="90" y="9.76666" width="40" height="20.4667"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="110" y="22.0667">
+      <tspan x="110" y="22.0667">viz:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="90" y="50" width="40" height="20.4667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="90" y="50" width="40" height="20.4667"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="110" y="62.3">
+      <tspan x="110" y="62.3">dump:</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="50.505,40.2333 70,40.2333 70,20 85.377,20 "/>
+    <polygon style="fill: #000000" points="88.377,20 84.377,22 85.377,20 84.377,18 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="88.377,20 84.377,22 85.377,20 84.377,18 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="50.505,40.2333 70,40.2333 70,60.2333 85.377,60.2333 "/>
+    <polygon style="fill: #000000" points="88.377,60.2333 84.377,62.2333 85.377,60.2333 84.377,58.2333 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="88.377,60.2333 84.377,62.2333 85.377,60.2333 84.377,58.2333 "/>
+  </g>
+</svg>
