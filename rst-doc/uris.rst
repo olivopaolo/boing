@@ -211,7 +211,7 @@ I = Input, O = Output, F = Function
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>IO</ossupport></td>
 	   <td><url>tuio[.osc]</url></td>
-	   <td>&nbsp;</td>
+	   <td><url>rawsource</url></td>
 	   <td>Multi-touch events from/to <a href="http://www.tuio.org/">TUIO</a></td></tr>
 	 <!-- <tr> -->
 	 <!-- 	<td><ossupport>L</ossupport></td> -->

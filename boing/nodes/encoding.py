@@ -211,7 +211,8 @@ class TuioDecoder(Functor):
     It will not work if inside an OSC bundle there is data from more
     than one source or for more than one TUIO profile."""
 
-    def __init__(self, blender=Functor.MERGECOPY, parent=None):
+    def __init__(self, blender=Functor.MERGECOPY, rawsource=False,
+                 parent=None):
         super().__init__(QRequest("osc"), Offer(TuioDecoder.getTemplate()),
                          blender, parent=parent)
         """Alive TUIO items."""
@@ -223,6 +224,7 @@ class TuioDecoder(Functor):
         # self.__idpairs[source][session_id] = event_id
         self.__idpairs = {}
         self.__idcount = 0
+        self._rawsource = assertIsInstance(rawsource, bool)
 
     def _process(self, sequence, producer):
         for operands in sequence:
@@ -249,6 +251,8 @@ class TuioDecoder(Functor):
                                                source, fseq,
                                                *msg.arguments[1:])
                     desc[tobj.s] = tobj
+        if source is None and not self._rawsource:
+            source = "Tuio#%d"%id(self)
         # TODO: old bundles rejection based on fseq
         # Update the contacts with the bundle information
         for s_id, tobj in desc.items():
@@ -324,7 +328,7 @@ class TuioDecoder(Functor):
             keep = False
             for p, a in src_profiles.items():
                 if p==profile: continue
-                elif s_id in a: 
+                elif s_id in a:
                     keep = True
                     break
             if not keep:
@@ -360,15 +364,17 @@ class TuioDecoder(Functor):
 
 class TuioEncoder(Functor):
     """Convert contact events into OSC/TUIO packets."""
-    def __init__(self, request=QRequest("diff.*.contacts|source|timetag"), 
-                 blender=Functor.RESULTONLY, hz=None, parent=None):
+    def __init__(self, request=QRequest("diff.*.contacts|source|timetag"),
+                 blender=Functor.RESULTONLY, rawsource=False,
+                 hz=None, parent=None):
         super().__init__(request, Offer(quickdict(osc=osc.Packet)), blender,
                          hz=hz, parent=parent)
         # self._tuiostate[observable-ref][source][profile] = [fseq, {s_id: TuioDescriptor}]
         self._tuiostate = {}
         self.observableRemoved.connect(self.__removeRecord)
+        self._rawsource = assertIsInstance(rawsource, bool)
 
-    
+
     def _checkRefs(self):
         super()._checkRefs()
         self._tuiostate = dict(((k,v) for k,v in self._tuiostate.items() \
@@ -382,7 +388,7 @@ class TuioEncoder(Functor):
     def __sourcetuiostate(self, observable, src):
         """Return the record associated to observable."""
         for ref, sources in self._tuiostate.items():
-            if ref() is observable: 
+            if ref() is observable:
                 rvalue = sources.setdefault(src, quickdict())
                 break
         else:
@@ -393,21 +399,22 @@ class TuioEncoder(Functor):
     def _consume(self, products, producer):
         for product in products:
             if "diff" in product: self._encodeEvent(product, producer)
-                    
 
     def _encodeEvent(self, event, producer):
-        # Set of s_id that have been updated.  
+        # Set of s_id that have been updated.
         # setters[<profile>] = {s_id1, s_id2, ..., s_idn}
         setters = {}
         # Set of profiles for which a s_id have been removed
-        removed = set() 
+        removed = set()
         diff = event["diff"]
-        src = event.get("source", str(producer))
-        sourcetuiostate = self.__sourcetuiostate(producer, src)
+        source = event.get("source")
+        if source is None and not self._rawsource:
+            source = "Tuio#%d"%id(self)
+        sourcetuiostate = self.__sourcetuiostate(producer, source)
         toupdate = None
         if "added" in diff: toupdate = diff.added.contacts
         if "updated" in diff:
-            if toupdate is None: 
+            if toupdate is None:
                 toupdate = diff.updated.contacts
             else:
                 deepupdate(toupdate, diff.updated.contacts)
@@ -419,31 +426,31 @@ class TuioEncoder(Functor):
                     if gid in profilestate[1]: profiles.add(profile)
                 if not profiles:
                     if "rel_pos" in gdiff:
-                        if "objclass" in gdiff: 
-                            if len(gdiff.rel_pos)==2: 
+                        if "objclass" in gdiff:
+                            if len(gdiff.rel_pos)==2:
                                 profiles.add("2Dobj")
-                            elif len(gdiff.rel_pos)==3: 
+                            elif len(gdiff.rel_pos)==3:
                                 profiles.add("3Dobj")
-                        elif len(gdiff.rel_pos)==2: 
+                        elif len(gdiff.rel_pos)==2:
                             profiles.add("2Dcur")
-                        elif len(gdiff.rel_pos)==3: 
+                        elif len(gdiff.rel_pos)==3:
                             profiles.add("3Dcur")
-                    if "boundingbox" in gdiff: 
+                    if "boundingbox" in gdiff:
                         if "rel_pos" in gdiff.boundingbox:
-                            if len(gdiff.boundingbox.rel_pos)==2: 
+                            if len(gdiff.boundingbox.rel_pos)==2:
                                 profiles.add("2Dblb")
-                            elif len(gdiff.boundingbox.rel_pos)==3: 
+                            elif len(gdiff.boundingbox.rel_pos)==3:
                                 profiles.add("3Dblb")
                         elif "rel_pos" in gdiff:
-                            if len(gdiff.rel_pos)==2: 
+                            if len(gdiff.rel_pos)==2:
                                 profiles.add("2Dblb")
-                            elif len(gdiff.rel_pos)==3: 
+                            elif len(gdiff.rel_pos)==3:
                                 profiles.add("3Dblb")
                 elif len(profiles)==1 and "boundingbox" in gdiff:
                     if "rel_pos" in gdiff.boundingbox:
-                        if len(gdiff.boundingbox.rel_pos)==2: 
+                        if len(gdiff.boundingbox.rel_pos)==2:
                             profiles.add("2Dblb")
-                        elif len(gdiff.boundingbox.rel_pos)==3: 
+                        elif len(gdiff.boundingbox.rel_pos)==3:
                             profiles.add("3Dblb")
                     else:
                         for other in profiles: break
@@ -454,7 +461,7 @@ class TuioEncoder(Functor):
                     update = False
                     profilestate = sourcetuiostate.setdefault(
                         profile, [0, {}])
-                    if gid in profilestate[1]: 
+                    if gid in profilestate[1]:
                         prev = profilestate[1][gid]
                     else:
                         len_ = len(tuio.TuioDescriptor.profiles[profile])
@@ -479,13 +486,13 @@ class TuioEncoder(Functor):
                             prev.X, prev.Y, prev.Z = gdiff.rel_speed[:3]
                             update = True
                     elif profile=="2Dobj":
-                        if "rel_pos" in gdiff: 
+                        if "rel_pos" in gdiff:
                             prev.x, prev.y = gdiff.rel_pos[:2]
                             update = True
                         if "rel_speed" in gdiff:
                             prev.X, prev.Y = gdiff.rel_speed[:2]
                             update = True
-                        if "si_angle" in gdiff: 
+                        if "si_angle" in gdiff:
                             prev.a = gdiff.si_angle[0]
                             update = True
                         if "objclass" in gdiff:
@@ -498,7 +505,7 @@ class TuioEncoder(Functor):
                         if "rel_speed" in gdiff:
                             prev.X, prev.Y, prev.Z = gdiff.rel_speed[:3]
                             update = True
-                        if "si_angle" in gdiff: 
+                        if "si_angle" in gdiff:
                             prev.a = gdiff.si_angle[0]
                             update = True
                         if "objclass" in gdiff:
@@ -511,7 +518,7 @@ class TuioEncoder(Functor):
                         if "rel_speed" in gdiff:
                             prev.X, prev.Y, prev.Z = gdiff.rel_speed[:3]
                             update = True
-                        if "si_angle" in gdiff: 
+                        if "si_angle" in gdiff:
                             prev.a, prev.b, prev.c = gdiff.si_angle[:3]
                             update = True
                         if "objclass" in gdiff:
@@ -520,7 +527,7 @@ class TuioEncoder(Functor):
                     elif profile=="2Dblb":
                         if "boundingbox" in gdiff:
                             bb = gdiff.boundingbox
-                            if "rel_pos" in bb: 
+                            if "rel_pos" in bb:
                                 prev.x, prev.y = bb.rel_pos[:2]
                                 update = True
                             if "rel_speed" in bb:
@@ -535,7 +542,7 @@ class TuioEncoder(Functor):
                     elif profile=="25Dblb":
                         if "boundingbox" in gdiff:
                             bb = gdiff.boundingbox
-                            if "rel_pos" in bb: 
+                            if "rel_pos" in bb:
                                 prev.x, prev.y, prev.z = bb.rel_pos[:3]
                                 update = True
                             if "rel_speed" in bb:
@@ -550,7 +557,7 @@ class TuioEncoder(Functor):
                     elif profile=="3Dblb":
                         if "boundingbox" in gdiff:
                             bb = gdiff.boundingbox
-                            if "rel_pos" in bb: 
+                            if "rel_pos" in bb:
                                 prev.x, prev.y, prev.z = bb.rel_pos[:3]
                                 update = True
                             if "rel_speed" in bb:
@@ -571,13 +578,13 @@ class TuioEncoder(Functor):
                         removed.add(profile)
                         if profile in setters:
                             setters[profile].discard(gid)
-        # Create an OSC bundle 
+        # Create an OSC bundle
         packets = []
         for profile in (set(setters.keys()) | removed):
             profilestate = sourcetuiostate[profile]
-            sourcemsg = osc.Message("/tuio/%s"%profile, "ss", "source", src)
+            sourcemsg = osc.Message("/tuio/%s"%profile, "ss", "source", source)
             alive = list(int(gid) for gid in profilestate[1].keys())
-            alivemsg = osc.Message("/tuio/%s"%profile, 
+            alivemsg = osc.Message("/tuio/%s"%profile,
                                    "s"+"i"*len(alive), "alive", *alive)
             msgs = [sourcemsg, alivemsg]
             profilesetters = setters.get(profile)
@@ -591,7 +598,7 @@ class TuioEncoder(Functor):
                     setmsgs.append(osc.Message("/tuio/%s"%profile,
                                                None, "set", *args))
                 msgs.extend(setmsgs)
-            msgs.append(osc.Message("/tuio/%s"%profile, "si", "fseq", 
+            msgs.append(osc.Message("/tuio/%s"%profile, "si", "fseq",
                                     profilestate[0]))
             profilestate[0] += 1
             forward = quickdict()

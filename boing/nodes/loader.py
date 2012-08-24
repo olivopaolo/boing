@@ -309,7 +309,7 @@ def createSingle(uri, mode="", parent=None):
         extended = copy.copy(uri)
         extended.scheme += ".udp" if uri.site else ".file"
         logger.info(
-            "No transport protocol specified in URI, assuming: %s"%extended.scheme)
+            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
         return createSingle(extended, mode, parent)
 
     elif uri.scheme.startswith("slip."):
@@ -334,7 +334,7 @@ def createSingle(uri, mode="", parent=None):
         extended = copy.copy(uri)
         extended.scheme += ".slip.file" if uri.path else ".udp"
         logger.info(
-            "No transport protocol specified in URI, assuming: %s"%extended.scheme)
+            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
         return createSingle(extended, mode, parent)
 
     elif uri.scheme.startswith("json."):
@@ -369,7 +369,7 @@ def createSingle(uri, mode="", parent=None):
         extended = copy.copy(uri)
         extended.scheme += ".slip.file" if uri.path else ".udp"
         logger.info(
-            "No transport protocol specified in URI, assuming: %s"%extended.scheme)
+            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
         return createSingle(extended, mode, parent)
 
     elif uri.scheme.startswith("osc."):
@@ -406,24 +406,27 @@ def createSingle(uri, mode="", parent=None):
         if uri.path: extended.scheme += ".osc.slip.file"
         else:
             extended.scheme += ".osc.udp"
-            if uri.site.port==0: extended.site.port = 3333
+            if uri.site.port==0:
+                extended.site.port = 3333
+                logger.info("No port number specified in the URI, assuming: %s"%extended.site.port)
         logger.info(
-            "No transport protocol specified in URI, assuming: %s"%extended.scheme)
+            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
         return createSingle(extended, mode, parent)
 
     elif uri.scheme.startswith("tuio."):
         assertUriModeIn(uri, mode, "in", "out")
-        loweruri = lower(uri, "tuio")
+        query = parseQuery(uri, "rawsource")
+        loweruri = lower(uri, "tuio", query.keys())
         if not loweruri.scheme.startswith("osc."):
             loweruri.scheme = "osc.%s"%loweruri.scheme
         if mode=="in":
             device = createSingle(loweruri, "in")
-            encoder = encoding.TuioDecoder(blender=Functor.MERGE)
+            encoder = encoding.TuioDecoder(blender=Functor.MERGE, **query)
             node = device + encoder
         elif mode=="out":
             if loweruri.site.host and loweruri.site.port==0:
                 loweruri.site.port = 3333
-            encoder = encoding.TuioEncoder(blender=Functor.RESULTONLY)
+            encoder = encoding.TuioEncoder(blender=Functor.RESULTONLY, **query)
             device = createSingle(loweruri, "out")
             node = encoder + device
 
