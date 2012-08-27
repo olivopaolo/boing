@@ -1,0 +1,14 @@
+{#
+    boing/layout.html
+    ~~~~~~~~~~~~~~~~~~~
+
+    Boing layout template for the default theme.
+
+    :copyright: Copyright 2012 INRIA, see AUTHORS.
+    :license: GPLv2, see LICENSE for details.
+#}
+{% extends "basic.html" %}
+
+{% if theme_collapsiblesidebar|tobool %}
+{% set script_files = script_files + ['_static/sidebar.js'] %}
+{% endif %}

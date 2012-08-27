@@ -47,7 +47,7 @@ In the previous example, the pipeline was composed by two nodes:
 
 The two nodes are joined using the :code:`+` operator, which stands
 for connection *in series*. The structure of the pipeline is
-represented in :ref:`figure 6.1 <figure1>`.
+represented in :ref:`figure 3.1 <figure1>`.
 
 .. _figure1:
 .. only:: html
@@ -55,7 +55,7 @@ represented in :ref:`figure 6.1 <figure1>`.
    .. figure:: images/firststeps1.svg
       :align: center
 
-      Figure 6.1: Pipeline obtained from the configuration
+      Figure 3.1: Pipeline obtained from the configuration
       :code:`in.tuio: + viz:`.
 
 .. only:: latex
@@ -106,7 +106,7 @@ now, let's leave the data structure and we consider the functioning of
 the pipeline: it's not difficult to understand that the :code:`|`
 operator (*Pipe*) is used to connect in parallel the nodes :code:`viz:` and
 :code:`dump:`, so that the products are sent to both of
-them. :ref:`Figure 6.2 <figure2>` shows the structure of the current
+them. :ref:`Figure 3.2 <figure2>` shows the structure of the current
 pipeline.
 
 .. _figure2:
@@ -115,7 +115,7 @@ pipeline.
    .. figure:: images/firststeps2.svg
       :align: center
 
-      Figure 6.2: Pipeline obtained from the configuration
+      Figure 3.2: Pipeline obtained from the configuration
       :code:`in.tuio: + (viz: | dump:)`.
 
 .. only:: latex
@@ -134,7 +134,7 @@ A key feature of |boing| is the ability to provide the captured input
 events to external applications. This enables in most of the cases to
 take advantage of the toolkit's features without the need to adapt or
 to modify the applications, while sometimes a simple configuration may
-be required. As shown in :ref:`figure 6.3 <figure3>`, the Boing
+be required. As shown in :ref:`figure 3.3 <figure3>`, the Boing
 toolkit works as a semi-transparent layer placed between the input
 sources and the final applications.
 
@@ -144,7 +144,7 @@ sources and the final applications.
    .. figure:: images/firststeps3.svg
       :align: center
 
-      Figure 6.3: Boing works as a semi-transparent layer placed in
+      Figure 3.3: Boing works as a semi-transparent layer placed in
       between the devices and the applications for processing and
       transmitting the input events.
 
@@ -176,7 +176,7 @@ pipeline by running the command::
 Note that for the first input it has not been necessary to define the
 port number, since the default port for the TUIO protocol is
 the 3333. For the second one instead the port number has been defined
-to 3334. :ref:`Figure 6.4 <figure4>` shows the structure of the new
+to 3334. :ref:`Figure 3.4 <figure4>` shows the structure of the new
 pipeline.
 
 .. _figure4:
@@ -185,7 +185,7 @@ pipeline.
    .. figure:: images/firststeps4.svg
       :align: center
 
-      Figure 6.4: Pipeline obtained from the configuration
+      Figure 3.4: Pipeline obtained from the configuration
 
       :code:`(in.tuio: | in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)`.
 

@@ -7,28 +7,28 @@
    Also add a link to the :doc:`uris`.
 
 
-Data redirection
-================
+Data redirection (TODO)
+=======================
 
-Files and sockets
------------------
+Files and sockets (TODO)
+------------------------
 
-Encodings
----------
+Encodings (TODO)
+----------------
 
-Data dumping and statistics
-===========================
+Data dumping and statistics (TODO)
+==================================
 
 
 
-Logging and Replaying
-=====================
+Logging and Replaying (TODO)
+============================
 
 .. todo::
    Describe data logging and replaying (both OSC and JSON formats).
 
-The Recorder
-------------
+The Recorder (TODO)
+-------------------
 
 .. todo::
    Describe the recorder tool.
@@ -40,8 +40,8 @@ The Recorder
    Figure 1: Gesture recorder.
 
 
-The Player
-----------
+The Player (TODO)
+-----------------
 
 .. todo::
    Describe the Player tool.
@@ -53,17 +53,17 @@ The Player
    Figure 2: Gesture playlist player.
 
 
-Data processing
-===============
+Data processing (TODO)
+======================
 
-Calibration
------------
+Calibration (TODO)
+------------------
 
 .. todo::
    Describe the calibration node.
 
-Filtering
----------
+Filtering (TODO)
+----------------
 
 .. todo::
    Describe the filtering module.

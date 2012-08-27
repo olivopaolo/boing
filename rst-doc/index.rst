@@ -1,4 +1,3 @@
-
 ==========================================
  |Boing| - A flexible multi-touch toolkit
 ==========================================
@@ -20,8 +19,13 @@ to:
 - record and replay the data flow;
 - process gesture data (calibration, smoothing filtering, debugging, etc.);
 
-|boing| is licensed under the `GNU GPLv2`_ license and it is being
+|boing| is licensed under the `GNU GPL2`_ license and it is being
 developed by `Paolo Olivo`_ and `Nicolas Roussel`_.
+
+:doc:`Get started! <install>`
+
+Gallery
+=======
 
 .. raw:: html
 
@@ -66,7 +70,7 @@ developed by `Paolo Olivo`_ and `Nicolas Roussel`_.
 
    <div id="pipeline-title" style="display: none;">
      Example of pipeline created using Boing.<br>
-     <a href="documentation.html">Read more</a>
+     <a href="introduction.html">Read more</a>
      <p id="fancyBoxLink"> Created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
      </p>
@@ -74,7 +78,7 @@ developed by `Paolo Olivo`_ and `Nicolas Roussel`_.
 
    <div id="recorder-title" style="display: none;">
      Gesture recorder.<br>
-     <a href="functionalities.html#the-recorder">Read more</a>
+     <a href="functionalities.html#the-recorder-todo">Read more</a>
      <p id="fancyBoxLink"> Created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
      </p>
@@ -82,7 +86,7 @@ developed by `Paolo Olivo`_ and `Nicolas Roussel`_.
 
    <div id="player-title" style="display: none;">
      Gesture playlist player.<br>
-     <a href="functionalities.html#the-player">Read more</a>
+     <a href="functionalities.html#the-player-todo">Read more</a>
      <p id="fancyBoxLink"> Created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
      </p>
@@ -105,27 +109,16 @@ developed by `Paolo Olivo`_ and `Nicolas Roussel`_.
          <img class="thumb" src="_images/player.png" width="13%">
       </a>
    </p>
-   <p style="text-align: center; font-size: small;">
-   <i>Gallery</i>
-   </p>
-
-Getting started
-===============
-
-.. toctree::
-   :numbered:
-   :maxdepth: 1
-
-   download
-   install
-   documentation
-   uris
-   API/boing
-   tutorials/index
-   changelog
-   todo
+   <!--<p style="text-align: center; font-size: small;">
+      <i>Gallery</i>
+   </p>-->
 
 .. _`Paolo Olivo`: http://www.olivopaolo.it
 .. _`Nicolas Roussel`: http://interaction.lille.inria.fr/~roussel
 .. _JSONPath: http://goessner.net/articles/JsonPath/
-.. _`GNU GPLv2`: http://www.gnu.org/licenses/gpl-2.0.txt
+.. _`GNU GPL2`: http://www.gnu.org/licenses/gpl-2.0.txt
+
+.. toctree::
+   :hidden:
+
+   documentation

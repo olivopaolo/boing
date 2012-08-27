@@ -2,24 +2,30 @@
  Todo list
 ===========
 
+Package todo
+============
+
 Today or tomorrow:
 
+- add the pickle encoding.
+- move rst-doc to doc/source
 
 This week:
 
-- create good docs;
-- update module boing.core.economy docs (After Consumer);
-- well document classes in boing.core.economy.
+- write more tutorials.
 
 Next week:
 
-- Prepare the directory with the gesture templates that the recognizer can use.
-- Fix the recognition nodes;
-- Support 1$ algorithm;
-- in json encoding, for all the things that cannot be normally
-  encoded, encode the __dict__ and pass the constructor parameters.
+- update module boing.core.economy docs (After Consumer);
 
 Someday:
+
+- Gesture stuff:
+
+  * Prepare the directory with the gesture templates that the
+    recognizer can use.
+  * Fix the recognition nodes;
+  * Support 1$ algorithm;
 
 - find a way so that the boing.node.loader can create nodes from
   external source files, so that users can add custom nodes;
@@ -29,7 +35,6 @@ Someday:
 - Develop the transformation node, which transforms the data hierarchy
   (JSON-schema validator);
 - Develop Qt applications in&out bridges;
-- make the UML sequence diagram for the Producer-Consumer model;
 - Enable remote node.
 - Encoder and Decoders in module boing.nodes.encoding should inherit
   boing.nodes.Encoder and boing.node.Decoder.

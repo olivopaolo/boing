@@ -1,6 +1,6 @@
-=================
- boing.filtering
-=================
+========================
+ boing.filtering (TODO)
+========================
 
 .. automodule:: boing.filtering
 

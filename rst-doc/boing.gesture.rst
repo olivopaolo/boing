@@ -1,6 +1,6 @@
-
-boing.gesture
-=============
+===============
+ boing.gesture
+===============
 
 Recognition algorithms and common utilities have been placed in
 separated submodules:

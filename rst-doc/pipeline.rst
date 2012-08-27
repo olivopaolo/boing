@@ -14,7 +14,7 @@ The type of a node directly influences how the node can be connected
 to the other nodes: producers only accept outgoing connections, while
 consumers accept incoming connections only. Workers are composed by
 both the producer and consumer interfaces, so they can have both
-incoming and outgoing connections. :ref:`Figure 3.2 <connections>`
+incoming and outgoing connections. :ref:`Figure 4.1 <connections>`
 shows an example of both valid and invalid connections.
 
 .. _connections:
@@ -25,7 +25,7 @@ shows an example of both valid and invalid connections.
       :width: 60 %
       :align: center
 
-      Figure 3.2: Valid and invalid connections between producers (P),
+      Figure 4.1: Valid and invalid connections between producers (P),
       consumers (C) and workers (W).
 
 .. only:: latex
@@ -53,7 +53,7 @@ require its own pending products. Then, at the consumer's request, the
 producer sends all the correspondent pending products to the consumer
 and it cleans the correspondent buffer. The entire pipeline is run in
 a single thread, thus an eventloop is used to handle the asynchronous
-nodes. :ref:`Figure 3.3 <postProductSequence>` shows the UML sequence
+nodes. :ref:`Figure 4.2 <postProductSequence>` shows the UML sequence
 diagram that defines the data exchange between producers and
 consumers.
 
@@ -65,7 +65,7 @@ consumers.
       :width: 80 %
       :align: center
 
-      Figure 3.3: UML sequence diagram defining the producer-consumer model
+      Figure 4.2: UML sequence diagram defining the producer-consumer model
 
 .. only:: latex
 
@@ -104,7 +104,7 @@ demand, it is possible to calculate the *demanded offer*, which
 represents the subset of the offer that is currently being demanded.
 
 As an example, consider two producers *P1* and *P2* and two consumers
-*C1* and *C2* connected as shown in :ref:`figure 3.4
+*C1* and *C2* connected as shown in :ref:`figure 4.3
 <supplydemand>`. It is possible to observe that the aggregate demand
 of *P1* is equal to the union of the requests of both *C1* and
 *C2*. Moreover, even if *P1* produces both *A* and *B*, only the
@@ -121,7 +121,7 @@ the products *C*.
       :width: 65 %
       :align: center
 
-      Figure 3.4: Example of supply and demand behavior.
+      Figure 4.3: Example of supply and demand behavior.
 
 .. only:: latex
 
@@ -147,7 +147,7 @@ strategy, a worker node must be able to propagate the requests of the
 consumers it is connected to in addition to its own request and to
 propagate the offer of the producers it is connected to in addition to
 its own offer. In order to understand such necessity, consider the
-pipeline shown in :ref:`figure 3.5 <propagation>`: in this case the
+pipeline shown in :ref:`figure 4.4 <propagation>`: in this case the
 worker *W* is not propagating its neighbors' requests and offers (the
 variables *isPropagantingRequest* and *isPropagatingOffer* are false),
 so that its own request and offer, which are defined by the variables
@@ -166,7 +166,7 @@ produced.
       :width: 90 %
       :align: center
 
-      Figure 3.5: The worker *W* is not propagating its connected
+      Figure 4.4: The worker *W* is not propagating its connected
       consumers' requests, thus the producer *P* does not provides the
       products *B*.
 
@@ -180,7 +180,7 @@ produced.
       consumers' requests, thus the producer *P* does not provides the
       products *B*.
 
-The :ref:`figure 3.6 <propagation2>` shows the same pipeline as before
+The :ref:`figure 4.5 <propagation2>` shows the same pipeline as before
 with the difference that the worker *W* is now propagating its
 neighbors' requests and offers. It is possible to notice that the
 request of *W* is equal to the union of the request of *C* and its own
@@ -197,7 +197,7 @@ and dispatch them.
       :width: 90 %
       :align: center
 
-      Figure 3.6: Example of supply and demand behavior.
+      Figure 4.5: Example of supply and demand behavior.
 
 .. only:: latex
 
@@ -238,7 +238,7 @@ Workers*, can be summarized into the following two rules:
 
 2. the worker's offer is nullified if its own request is not satisfied.
 
-As an example consider the pipeline in :ref:`figure 3.7 <wiseworker>`:
+As an example consider the pipeline in :ref:`figure 4.6 <wiseworker>`:
 the producer *P* provides the products *A*, which are required by the
 consumer *C*; this one also requires the products *B*, but *P* cannot
 provide them. For this reason the worker *W*, which can produce *B*
@@ -254,7 +254,7 @@ the products it receives even it is not directly interested to them.
       :width: 90 %
       :align: center
 
-      Figure 3.7: The producer *P* provides the products *A*, while the
+      Figure 4.6: The producer *P* provides the products *A*, while the
       worker *W* produces the products *B* using the products
       *A*. Both *A* and *B* are actually required by the consumer *C*.
 
@@ -273,7 +273,7 @@ only. In this case, nobody is interested to *B* anymore, thus,
 following the first rule of the *Wise Worker*, the worker stops
 requiring *A* for itself and it passes into an inactive state, but,
 since it is propagating *C*'s requests, it still requires *A*
-products. :ref:`Figure 3.8 <wiseworker2>` shows the state of the
+products. :ref:`Figure 4.7 <wiseworker2>` shows the state of the
 pipeline in this case.
 
 .. _wiseworker2:
@@ -284,7 +284,7 @@ pipeline in this case.
       :width: 90 %
       :align: center
 
-      Figure 3.8: If *C* does not require products *B* anymore, the
+      Figure 4.7: If *C* does not require products *B* anymore, the
       worker *W* automatically stops producing them and requiring *A*
       products for itself, but since it is propagating *C*'s requests,
       it still requires *A* products so it can forward them to *C*.
@@ -300,12 +300,12 @@ pipeline in this case.
       for itself, but since it is propagating *C*'s requests, it still
       requires *A* products so it can forward them to *C*.
 
-Considering the pipeline in :ref:`figure 3.7 <wiseworker>`, a
+Considering the pipeline in :ref:`figure 4.6 <wiseworker>`, a
 different situation may arrive: if the producer *P* changes its offer
 to *D*, no one will provide the products *A*, thus, following the
 second rule of the *Wise Worker*, since the worker's request is not
 satisfied anymore, it nullifies its own offer. The resulted pipeline
-is shown in :ref:`figure 3.9 <wiseworker3>`. In this case requests do
+is shown in :ref:`figure 4.8 <wiseworker3>`. In this case requests do
 not change, so that no more products are exchanged between the nodes.
 
 .. _wiseworker3:
@@ -316,7 +316,7 @@ not change, so that no more products are exchanged between the nodes.
       :width: 90 %
       :align: center
 
-      Figure 3.9: Considering the pipeline of :ref:`figure 3.7
+      Figure 4.8: Considering the pipeline of :ref:`figure 4.6
       <wiseworker>`, if the producer *P* starts producing *B* only,
       the worker's request is not satisfied anymore, so it
       automatically nullifies its default offer.
@@ -327,7 +327,7 @@ not change, so that no more products are exchanged between the nodes.
       :width: 90 %
       :align: center
 
-      Considering the pipeline of :ref:`figure 3.7 <wiseworker>`, if
+      Considering the pipeline of :ref:`figure 4.6 <wiseworker>`, if
       the producer *P* starts producing *D* only, the worker's request
       is not satisfied anymore, so it automatically nullifies its own
       offer.
@@ -343,7 +343,7 @@ Workers* can use the *Tunneling* exception, that makes the first rule
 considering the entire propagated offer instead of the worker's own
 offer.
 
-As an example consider the pipeline in :ref:`figure 3.10 <tunneling>`:
+As an example consider the pipeline in :ref:`figure 4.9 <tunneling>`:
 the worker *W* simply forwards the products it receives so it has not
 its own offer. Despite this, thanks to the tunneling exception, *W* is
 still active, since its global offer matches the request of *C*.
@@ -356,7 +356,7 @@ still active, since its global offer matches the request of *C*.
       :width: 90 %
       :align: center
 
-      Figure 3.10: When using the tunneling option, the propagated
+      Figure 4.9: When using the tunneling option, the propagated
       offer is considered to determine if the worker is active instead
       of its own offer only.
 
@@ -384,16 +384,4 @@ Node composition
 
 .. todo::
    - Describe the composite nodes and node syntax (+ and | operators).
-
-Pipeline plotting
-=================
-
-.. todo::
-   Describe how to print out the pipeline configuration.
-
-Pipeline console
-================
-
-.. todo::
-   Describe how to manage a pipeline at runtime.
 

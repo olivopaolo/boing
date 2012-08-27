@@ -1,0 +1,9 @@
+{#
+    boing/localtoc.html
+    ~~~~~~~~~~~~~~~~~~~
+#}
+{%- if display_toc %}
+  <!--<h3><a href="{{ pathto(master_doc) }}">{{ _('Table Of Contents') }}</a></h3> -->
+  <h3>Contents</h3>
+  {{ toc }}
+{%- endif %}

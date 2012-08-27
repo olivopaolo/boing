@@ -2,6 +2,18 @@
  Installing |boing|
 ====================
 
+Download
+========
+
+The code can be found in a Mercurial repository, at
+http://interaction.lille.inria.fr/hg-mint/code/boing/ (access
+restricted). To get it, type in a terminal::
+
+  hg clone http://interaction.lille.inria.fr/hg-mint/code/boing/
+
+Installation
+============
+
 |boing| requires the `Python 3.2`_ interpreter (or newer) and the
 `PyQt 4`_ package (a set of Python bindings for `Nokia's Qt`_
 application framework). Moreover, it also requires the following
@@ -16,9 +28,9 @@ platforms:
 .. toctree::
    :maxdepth: 1
 
-   Ubuntu <setup/ubuntu-precise>
-   OS X 10.7 <setup/osx-lion>
-   Windows 7 <setup/windows>
+* :doc:`Ubuntu <ubuntu-precise>`
+* :doc:`OS X 10.7 <osx-lion>`
+* :doc:`Windows 7 <windows>`
 
 Tests
 =====

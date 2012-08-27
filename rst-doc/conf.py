@@ -39,7 +39,7 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = 'documentation'
 
 # General information about the project.
 project = 'Boing'
@@ -93,7 +93,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'boing'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -101,14 +101,14 @@ html_theme = 'default'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = []
+html_theme_path = ['theme']
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 # html_title = "%s %s"%(project, release)
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-html_short_title = "Home"
+html_short_title = "Documentation"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -195,7 +195,7 @@ latex_documents = [
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
-latex_use_parts = True
+latex_use_parts = False
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False

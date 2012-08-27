@@ -1,14 +1,12 @@
-===========
- Tutorials
-===========
+=================
+ Getting started
+=================
 
 This section contains various tutorials to easily learn to use the
-toolkit |boing|.
-
-Topics:
+toolkit |boing|:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    firststeps
    redirection
@@ -18,5 +16,4 @@ Topics:
    multitouch
    configuration
    scriptadvanced
-
-.. todo:: Add use cases tutorials.
+   developer
