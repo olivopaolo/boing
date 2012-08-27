@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="14cm" height="6cm" viewBox="19 321 265 116" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="280,344 220,344 220,416 280,416 "/>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="20,344 80,344 80,416 20,416 "/>
+  <g>
+    <rect style="fill: #e5e5e5" x="90" y="344" width="120" height="72"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #e5e5e5" x="90" y="344" width="120" height="72"/>
+  </g>
+  <text font-size="6.77333" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="24" y="380">
+    <tspan x="24" y="380">Produce</tspan>
+  </text>
+  <text font-size="6.77333" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="20" y="332">
+    <tspan x="20" y="332">DEVICES</tspan>
+  </text>
+  <text font-size="6.77333" style="fill: #000000;text-anchor:end;font-family:sans-serif;font-style:normal;font-weight:normal" x="284" y="328">
+    <tspan x="284" y="328">FRAMEWORKS OR</tspan>
+    <tspan x="284" y="336.467">APPLICATIONS</tspan>
+  </text>
+  <text font-size="6.77333" style="fill: #000000;text-anchor:end;font-family:sans-serif;font-style:normal;font-weight:normal" x="276" y="380">
+    <tspan x="276" y="380">Interpret</tspan>
+  </text>
+  <g>
+    <rect style="fill: #ffffff" x="128" y="368" width="44" height="24"/>
+    <path style="fill: #ffffff" d="M 128,368 A 4,4 0 0 0 124,372 L 128,372 z"/>
+    <path style="fill: #ffffff" d="M 176,372 A 4,4 0 0 0 172,368 L 172,372 z"/>
+    <rect style="fill: #ffffff" x="124" y="372" width="52" height="16"/>
+    <path style="fill: #ffffff" d="M 124,388 A 4,4 0 0 0 128,392 L 128,388 z"/>
+    <path style="fill: #ffffff" d="M 172,392 A 4,4 0 0 0 176,388 L 172,388 z"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="128" y1="368" x2="172" y2="368"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="128" y1="392" x2="172" y2="392"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" d="M 128,368 A 4,4 0 0 0 124,372"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" d="M 176,372 A 4,4 0 0 0 172,368"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="124" y1="372" x2="124" y2="388"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="176" y1="372" x2="176" y2="388"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" d="M 124,388 A 4,4 0 0 0 128,392"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" d="M 172,392 A 4,4 0 0 0 176,388"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="150" y="382.067">
+      <tspan x="150" y="382.067">Input event</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #0000ff" points="176,374 190.5,374 190.5,352 150,352 150,363.882 "/>
+    <polygon style="fill: #0000ff" points="150,366.882 148,362.882 150,363.882 152,362.882 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #0000ff" points="150,366.882 148,362.882 150,363.882 152,362.882 "/>
+  </g>
+  <text font-size="5.64444" style="fill: #0000ff;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="160" y="360">
+    <tspan x="160" y="360">process</tspan>
+  </text>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #0000ff" x1="176" y1="380" x2="235.882" y2="380"/>
+    <polygon style="fill: #0000ff" points="238.882,380 234.882,382 235.882,380 234.882,378 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #0000ff" points="238.882,380 234.882,382 235.882,380 234.882,378 "/>
+  </g>
+  <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #0000ff" x1="60" y1="380" x2="124" y2="380"/>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #0000ff" points="197.333,380 197.333,428 102.667,428 102.667,384.118 "/>
+    <polygon style="fill: #0000ff" points="102.667,381.118 104.667,385.118 102.667,384.118 100.667,385.118 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #0000ff" points="102.667,381.118 104.667,385.118 102.667,384.118 100.667,385.118 "/>
+  </g>
+  <text font-size="5.64444" style="fill: #0000ff;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="150" y="436">
+    <tspan x="150" y="436">transmit or record/replay</tspan>
+  </text>
+  <text font-size="10.16" style="fill: #0000ff;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="152" y="332">
+    <tspan x="152" y="332">BOING</tspan>
+  </text>
+</svg>

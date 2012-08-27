@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="10cm" height="4cm" viewBox="9 9 197 62" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <rect style="fill: #ffffff" x="10" y="50" width="60" height="20.4667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="10" y="50" width="60" height="20.4667"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="40" y="62.3">
+      <tspan x="40" y="62.3">in.tuio://:3334</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="130" y="10" width="40" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="130" y="10" width="40" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="150" y="22.0667">
+      <tspan x="150" y="22.0667">viz:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="130" y="50" width="75.85" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="130" y="50" width="75.85" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="167.925" y="62.0667">
+      <tspan x="167.925" y="62.0667">out.tuio://[::1]:3335</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="30" y="10" width="40" height="20.4667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="30" y="10" width="40" height="20.4667"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="50" y="22.3">
+      <tspan x="50" y="22.3">in.tuio:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="100" y="30" width="2" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #ffffff" x="100" y="30" width="2" height="20"/>
+  </g>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="70,20.2333 90,20.2333 90,40 100,40 "/>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="70,60.2333 90,60.2333 90,40 100,40 "/>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="100,40 110,40 110,20 125.882,20 "/>
+    <polygon style="fill: #000000" points="128.882,20 124.882,22 125.882,20 124.882,18 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="128.882,20 124.882,22 125.882,20 124.882,18 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="100,40 110,40 110,60 110,60 110,60 125.882,60 "/>
+    <polygon style="fill: #000000" points="128.882,60 124.882,62 125.882,60 124.882,58 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="128.882,60 124.882,62 125.882,60 124.882,58 "/>
+  </g>
+</svg>

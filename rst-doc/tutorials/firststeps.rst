@@ -6,7 +6,7 @@ This tutorial helps you starting to use the |boing| toolkit by
 providing simple examples of the toolkit's fuctionalities.
 
 Let's consider to have a multi-touch input device, like a tablet or a
-touch-screen. What cool things can I do with |boing|? Boing enables to
+touch-screen. What cool things can I do with |boing|? |boing| enables to
 create a pipeline for connecting your device to different targets,
 like applications, frameworks, debuggers and eventually processing the
 gesture events before having being dispatched, like for example
@@ -15,6 +15,10 @@ calibrate the contacts' position or apply a smoothing filter.
 To make things easier, let's consider that your device can send the
 information of the contact events as a TUIO stream on the local
 port 3333. [#]_
+
+
+Showing multi-touch events
+==========================
 
 First of all, it is important to know that all the |boing|'s tools are
 invoked by using the script :command:`boing`. Open a terminal and
@@ -48,24 +52,28 @@ represented in :ref:`figure 6.1 <figure1>`.
 .. _figure1:
 .. only:: html
 
-   .. figure:: images/firststep1.svg
+   .. figure:: images/firststeps1.svg
       :align: center
 
-      Figure 6.1: Pipeline equivalent to the configuration
+      Figure 6.1: Pipeline obtained from the configuration
       :code:`in.tuio: + viz:`.
 
 .. only:: latex
 
-   .. figure:: images/firststep1.pdf
+   .. figure:: images/firststeps1.pdf
       :align: center
 
-      Pipeline equivalent to the configuration
+      Pipeline obtained from the configuration
       :code:`in.tuio: + viz:`.
 
-Congratulations! You have created your first |boing| pipeline! Now
-let's try new functionalities by adding new nodes. Stop the previous
-pipeline by closing the visualizer widget or pressing Ctrl-C on the
-terminal, and type in the terminal::
+Congratulations! You have created your first |boing| pipeline!
+
+Exploring the data
+==================
+
+Now, let's try new functionalities by adding new nodes. Stop the
+previous pipeline by closing the visualizer widget or pressing Ctrl-C
+on the terminal, and type in the terminal::
 
   boing "in.tuio: + (viz: | dump:)"
 
@@ -104,63 +112,114 @@ pipeline.
 .. _figure2:
 .. only:: html
 
-   .. figure:: images/firststep2.svg
+   .. figure:: images/firststeps2.svg
       :align: center
 
-      Figure 6.2: Pipeline equivalent to the configuration
+      Figure 6.2: Pipeline obtained from the configuration
       :code:`in.tuio: + (viz: | dump:)`.
 
 .. only:: latex
 
-   .. figure:: images/firststep2.pdf
+   .. figure:: images/firststeps2.pdf
       :align: center
 
-      Pipeline equivalent to the configuration :code:`in.tuio: +
+      Pipeline obtained from the configuration :code:`in.tuio: +
       (viz: | dump:)`.
 
-The :code:`|` operator also enables to put in parallel different
-inputs, like for example a second multi-touch device. Supposing the
-second device sends its TUIO messages to the port 3334, the command to
-run is::
+Combining input sources with external applications
+==================================================
 
-   boing "(in.tuio: | in.tuio://:3334) + (viz: | dump:)"
 
-Note that for the first input it has not been necessary to define the
-port number, since the default port for the TUIO protocol is
-the 3333. For the second one instead the port number has been defined
-to 3334. :ref:`Figure 6.3 <figure3>` shows the structure of the new
-pipeline.
+A key feature of |boing| is the ability to provide the captured input
+events to external applications. This enables in most of the cases to
+take advantage of the toolkit's features without the need to adapt or
+to modify the applications, while sometimes a simple configuration may
+be required. As shown in :ref:`figure 6.3 <figure3>`, the Boing
+toolkit works as a semi-transparent layer placed between the input
+sources and the final applications.
 
 .. _figure3:
 .. only:: html
 
-   .. figure:: images/firststep3.svg
+   .. figure:: images/firststeps3.svg
       :align: center
 
-      Figure 6.3: Pipeline equivalent to the configuration
-      :code:`(in.tuio: | in.tuio://:3334) + (viz: | dump:)`.
+      Figure 6.3: Boing works as a semi-transparent layer placed in
+      between the devices and the applications for processing and
+      transmitting the input events.
 
 .. only:: latex
 
-   .. figure:: images/firststep3.pdf
+   .. figure:: images/firststeps3.pdf
       :align: center
 
-      Pipeline equivalent to the configuration :code:`(in.tuio: |
-      in.tuio://:3334) + (viz: | dump:)`.
+      Boing works as a semi-transparent layer placed in between the
+      devices and the applications for processing and transmitting the
+      input events.
 
-As you can see, a very important feature of Boing is that you can
+Thanks to the many supported encodings, |boing| can easily fit different
+combinations of devices and applications. In this basic example, let's
+consider to have an application listening for a TUIO stream on the
+local port 3335 [#]_. If you don't have a TUIO application, simply open a
+new terminal and launch a new |boing| instance using the command::
+
+   boing "in.tuio://:3335 + viz:"
+
+In the previous example you connected one input device to two output
+nodes. The :code:`|` operator also enables to put in parallel
+different inputs, like for example a second multi-touch device enabled
+to send its TUIO messages to the local port 3334. Let's try a new
+pipeline by running the command::
+
+   boing "(in.tuio: | in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)"
+
+Note that for the first input it has not been necessary to define the
+port number, since the default port for the TUIO protocol is
+the 3333. For the second one instead the port number has been defined
+to 3334. :ref:`Figure 6.4 <figure4>` shows the structure of the new
+pipeline.
+
+.. _figure4:
+.. only:: html
+
+   .. figure:: images/firststeps4.svg
+      :align: center
+
+      Figure 6.4: Pipeline obtained from the configuration
+
+      :code:`(in.tuio: | in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)`.
+
+.. only:: latex
+
+   .. figure:: images/firststeps4.pdf
+      :align: center
+
+      Pipeline obtained from the configuration :code:`(in.tuio: |
+      in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)`.
+
+As you can see, a very important feature of |boing| is that you can
 simultaneously connect many devices to different applications. Such
 feature eases the usage of debugging tools and enables multi-device
 and multi-user applications.
 
-.. todo:: Instead of the :code:`dump:` node use an output bridge, as
-          :code:`out.tuio://[::1]:3335`.
+Input data processing
+=====================
+
+.. todo:: Describe the filtering, calibration functionalities.
+
+
+Event recording and replaying
+=============================
+
+.. todo:: Describe the filtering, calibration functionalities.
 
 .. rubric:: Footnotes
 
 .. [#] If you are unfamiliar with the TUIO protocol, consider having a look to the available `TUIO trackers`_, or jumping to the :doc:`multitouch`, in order to discover the different ways |boing| exploits to connect to the input devices.
 
 .. [#] For a deeper presentation of pipeline configurations, see the :doc:`../functionalities` section.
+
+.. [#] For more output sources, see the :doc:`../functionalities` section.
 
 .. _`TUIO trackers`: http://www.tuio.org/?software
 .. _JSONPath: http://goessner.net/articles/JsonPath/
