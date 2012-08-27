@@ -11,4 +11,4 @@ boing.egg-info
 xtra*
 
 syntax: regexp
-^doc/
+^doc/build
