@@ -115,7 +115,7 @@ def createSingle(uri, mode="", parent=None):
     # -------------------------------------------------------------------
     # LOGGING
     elif uri.scheme=="log":
-        return createSingle(str(uri).replace("log:", "log.json.slip:", 1),
+        return createSingle(str(uri).replace("log:", "log.pickle.slip:", 1),
                             parent=parent)
 
     elif uri.scheme.startswith("log."):
@@ -126,7 +126,13 @@ def createSingle(uri, mode="", parent=None):
         elif not uri.path: raise ValueError(
             "URI's path cannot be empty: %s"%uri)
         else:
-            if scheme in ("json", "json.slip"):
+            if scheme in ("pickle", "pickle.slip"):
+                query = parseQuery(uri, "request", "wrap", "protocol")
+                assertUriQuery(uri, query)
+                query.setdefault("wrap", True)
+                encoder = encoding.PickleEncoder(blender=Functor.RESULTONLY,
+                                                 **query)
+            elif scheme in ("json", "json.slip"):
                 query = parseQuery(uri, "request", "wrap")
                 assertUriQuery(uri, query)
                 query.setdefault("wrap", True)
@@ -146,7 +152,7 @@ def createSingle(uri, mode="", parent=None):
             node = encoder + device
 
     elif uri.scheme=="play":
-        return createSingle(str(uri).replace("play:", "play.json.slip:", 1),
+        return createSingle(str(uri).replace("play:", "play.pickle.slip:", 1),
                             parent=parent)
 
     elif uri.scheme.startswith("play."):
@@ -159,7 +165,13 @@ def createSingle(uri, mode="", parent=None):
         else:
             query = parseQuery(uri, "loop", "speed", "interval", "noslip")
             assertUriQuery(uri, query)
-            if scheme in ("json", "json.slip"):
+            if scheme in ("pickle", "pickle.slip"):
+                from boing.nodes.logger import FilePlayer
+                decoder = slip.Decoder()+pickle.Decoder()
+                player = FilePlayer(uri.path, decoder,
+                                    FilePlayer.ProductSender(), **query)
+                node = player + encoding.TextEncoder()
+            elif scheme in ("json", "json.slip"):
                 from boing.nodes.logger import FilePlayer
                 decoder = \
                     slip.Decoder()+bytes.Decoder()+json.Decoder()
@@ -182,46 +194,61 @@ def createSingle(uri, mode="", parent=None):
     elif uri.scheme=="rec":
         from boing.nodes.logger import Recorder
         assertUriModeIn(uri, mode, "", "out")
-        query = parseQuery(uri,
-                           "timelimit", "sizelimit",
-                           "oversizecut", "fps", "timewarping",
-                           "request")
-        assertUriQuery(uri, query)
-        node = Recorder(**query)
-        node.start()
-        node.gui.show()
-        node.gui.raise_()
+        if uri.kind==URL.OPAQUE or uri.site or uri.path or uri.fragment:
+            raise ValueError("Invalid URI: %s"%uri)
+        else:
+            query = parseQuery(uri,
+                               "timelimit", "sizelimit",
+                               "oversizecut", "fps", "timewarping",
+                               "request")
+            assertUriQuery(uri, query)
+            node = Recorder(**query)
+            node.start()
+            node.gui.show()
+            node.gui.raise_()
 
     elif uri.scheme=="player":
-        return createSingle(str(uri).replace("player:", "player.json:", 1),
-                      mode, parent)
+        return createSingle(str(uri).replace("player:", "player.pickle:", 1),
+                            mode, parent)
 
     elif uri.scheme.startswith("player."):
         from boing.nodes.player import Player
         assertUriModeIn(uri, mode, "", "in")
-        query = parseQuery(uri, "interval", "open")
-        assertUriQuery(uri, query)
-        scheme = uri.scheme.replace("player.", "", 1)
-        if scheme in ("json", "json.slip"):
-            from boing.nodes.logger import FilePlayer
-            decoder = \
-                slip.Decoder()+bytes.Decoder()+json.Decoder()
-            player = Player(decoder, Player.ProductSender(), **query)
-            player.gui().show()
-            node = player + encoding.TextEncoder()
-        elif scheme in ("osc", "osc.slip",
-                        "tuio", "tuio.osc", "tuio.osc.slip"):
-            player = Player(encoding.OscLogPlayer._Decoder(),
-                            encoding.OscLogPlayer._Sender(),
-                            (".osc.bz2", ".osc"), **query)
-            player.gui().show()
-            encoder = encoding.OscEncoder(blender=Functor.MERGE)
-            oscdebug = encoding.OscDebug(blender=Functor.MERGE)
-            node = player + encoder + oscdebug
-            if "tuio" in scheme:
-                node += encoding.TuioDecoder(blender=Functor.MERGE)
+        if uri.opaque or uri.path or uri.site or uri.fragment:
+            raise ValueError("Invalid URI: %s"%uri)
         else:
-            raise ValueError("Unknown log encoding: %s"%uri)
+            query = parseQuery(uri, "interval", "open")
+            assertUriQuery(uri, query)
+            scheme = uri.scheme.replace("player.", "", 1)
+            if scheme in ("pickle", "pickle.slip"):
+                from boing.nodes.logger import FilePlayer
+                decoder = \
+                    slip.Decoder()+pickle.Decoder()
+                node = Player(decoder, Player.ProductSender(), **query)
+                node.gui().show()
+                node.gui().raise_()
+            elif scheme in ("json", "json.slip"):
+                from boing.nodes.logger import FilePlayer
+                decoder = \
+                    slip.Decoder()+bytes.Decoder()+json.Decoder()
+                node = Player(decoder, Player.ProductSender(), **query)
+                node.gui().show()
+                node.gui().raise_()
+            elif scheme in ("osc", "osc.slip",
+                            "tuio", "tuio.slip",
+                            "tuio.osc", "tuio.osc.slip"):
+                player = Player(encoding.OscLogPlayer._Decoder(),
+                                encoding.OscLogPlayer._Sender(),
+                                (".osc.bz2", ".osc"), **query)
+                player.gui().show()
+                player.gui().raise_()
+                encoder = encoding.OscEncoder(blender=Functor.MERGE)
+                oscdebug = encoding.OscDebug(blender=Functor.MERGE)
+                node = player + encoder + oscdebug
+                if "tuio" in scheme:
+                    node += encoding.TuioDecoder(blender=Functor.MERGE)
+            else:
+                raise ValueError("Unknown log encoding: %s"%uri)
 
     # -------------------------------------------------------------------
     # IO DEVICES
@@ -357,10 +384,12 @@ def createSingle(uri, mode="", parent=None):
             if "protocol" in query: raise ValueError(
                 "Unexpected query keys: 'protocol'")
             device = createSingle(loweruri, "in")
-            decoder = encoding.PickleDecoder(blender=Functor.MERGE, **query)
+            decoder = encoding.PickleDecoder(blender=Functor.RESULTONLY,
+                                             **query)
             node = device + decoder
         elif mode=="out":
-            encoder = encoding.PickleEncoder(blender=Functor.RESULTONLY, **query)
+            encoder = encoding.PickleEncoder(blender=Functor.RESULTONLY,
+                                             **query)
             textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
             device = createSingle(loweruri, "out")
             node = encoder + textdecoder + device
@@ -392,7 +421,7 @@ def createSingle(uri, mode="", parent=None):
             if "request" in query: raise ValueError(
                 "Unexpected query keys: 'request'")
             device = createSingle(loweruri, "in")
-            decoder = encoding.JsonDecoder(blender=Functor.MERGE)
+            decoder = encoding.JsonDecoder(blender=Functor.RESULTONLY)
             node = device + decoder
         elif mode=="out":
             encoder = encoding.JsonEncoder(blender=Functor.RESULTONLY, **query)

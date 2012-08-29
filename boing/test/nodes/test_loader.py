@@ -186,12 +186,15 @@ uris = {
             "log:%s%s"%(prefix, target),
             "log.json:%s%s"%(prefix, target),
             "log.json.slip:%s%s"%(prefix, target),
+            "log.pickle:%s%s"%(prefix, target),
+            "log.pickle.slip:%s%s"%(prefix, target),
             "log.osc:%s%s"%(prefix, target),
             "log.osc.slip:%s%s"%(prefix, target),
             "log.tuio:%s%s"%(prefix, target),
             "log.tuio.osc:%s%s"%(prefix, target),
             "log.tuio.osc.slip:%s%s"%(prefix, target),
             "log://%s%s"%(prefix, target),
+            "log:%s%s?protocol=3"%(prefix, target),
             "log:%s%s?request=query"%(prefix, target),
             ),
         "invalid": (
@@ -213,6 +216,8 @@ uris = {
             "play:./%s"%os.path.relpath(readable), # relative path
             "play:%s%s"%(prefix, readable), # absolute path
             "play:%s%s"%(prefix, readable),
+            "play.pickle:%s%s"%(prefix, readable),
+            "play.pickle.slip:%s%s"%(prefix, readable),
             "play.json:%s%s"%(prefix, readable),
             "play.json.slip:%s%s"%(prefix, readable),
             "play.osc:%s%s"%(prefix, readable),
@@ -244,6 +249,70 @@ uris = {
             ("play://%s%s?interval=wrong"%(prefix, readable), ValueError),
             ("play.stdin:", ValueError),
             ("play.stdin://%s%s"%(prefix, readable), ValueError),
+            )},
+
+    "player": {
+        "valid": (
+            "player:",
+            "player.pickle:",
+            "player.pickle.slip:",
+            "player.json:",
+            "player.json.slip:",
+            "player.osc:",
+            "player.osc.slip:",
+            "player.tuio:",
+            "player.tuio.slip:",
+            "player.tuio.osc:",
+            "player.tuio.osc.slip:",
+            "player:?open=wrong",
+            "player:?open=%s"%os.path.relpath(readable),
+            "player:?open=%s:%s"%(os.path.relpath(readable),
+                                  os.path.relpath(readable)),
+            "player:?open=%s%s"%(prefix, readable),
+            "player:?open=%s%s"%(prefix, os.path.dirname(readable)),
+            "player:?interval=0",
+            "player:?interval=2000",
+            ),
+        "invalid": (
+            ("player:opaque", ValueError),
+            ("player://:7777", ValueError),
+            ("player://[::]", ValueError),
+            ("player://[::]/path", ValueError),
+            ("player://[::]:7777/path", ValueError),
+            ("player:#fragment", ValueError),
+            ("player:?wrong=wrong", ValueError),
+            ("player:?interval=wrong", ValueError),
+            )},
+
+    "rec": {
+        "valid": (
+            "rec:",
+            "rec:?timelimit=1000",
+            "rec:?timelimit=none",
+            "rec:?timelimit=inf",
+            "rec:?sizelimit=1000",
+            "rec:?sizelimit=none",
+            "rec:?sizelimit=inf",
+            "rec:?oversizecut=100",
+            "rec:?fps=100",
+            "rec:?timewarping",
+            "rec:?timewarping=false",
+            "rec:?request=query",
+            ),
+        "invalid": (
+            ("rec:opaque", ValueError),
+            ("rec://%s%s"%(prefix, readable), ValueError),
+            ("rec://:7777", ValueError),
+            ("rec://[::]", ValueError),
+            ("rec://[::]/path", ValueError),
+            ("rec://[::]:7777/path", ValueError),
+            ("rec:#fragment", ValueError),
+            ("rec:?wrong=wrong", ValueError),
+            ("rec:?timelimit=wrong", TypeError),
+            ("rec:?sizelimit=wrong", TypeError),
+            ("rec:?oversizecut=wrong", TypeError),
+            ("rec:?fps=wrong", TypeError),
+            ("rec:?timewarping=wrong", TypeError),
             )},
 
     "viz": {
@@ -690,6 +759,18 @@ class TestPlay(LoaderTest):
         super().__init__("play", *args, **kwargs)
 
 # -------------------------------------------------------------------
+# Player
+class TestPlayer(LoaderTest):
+    def __init__(self, *args, **kwargs):
+        super().__init__("player", *args, **kwargs)
+
+# -------------------------------------------------------------------
+# Rec
+class TestRec(LoaderTest):
+    def __init__(self, *args, **kwargs):
+        super().__init__("rec", *args, **kwargs)
+
+# -------------------------------------------------------------------
 # Dump
 class TestDump(LoaderTest):
     def __init__(self, *args, **kwargs):
@@ -718,6 +799,8 @@ def suite():
         TestTcp,
         TestLog,
         TestPlay,
+        TestPlayer,
+        TestRec,
         TestSlip,
         TestPickle,
         TestJson,

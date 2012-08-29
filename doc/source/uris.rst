@@ -8,7 +8,7 @@ O = Mac OS X, L = Linux, W = Windows
 
 Mode
 
-I = Input, O = Output, F = Function
+I = Input, O = Output, W = Worker
 
 .. raw:: html
 
@@ -31,13 +31,13 @@ I = Input, O = Output, F = Function
 	   <td><ossupport>I</ossupport></td>
 	   <td><url>play[.&lt;ENCODING&gt;]:&lt;FILEPATH&gt;</url></td>
 	   <td><url>loop, speed, interval</url></td>
-	   <td>Replay data from log file (default <url>json</url>)</td></tr>
+	   <td>Replay data from log file (default <url>pickle</url>)</td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>O</ossupport></td>
 	   <td><url>log[.&lt;ENCODING&gt;]:&lt;FILEPATH&gt;</url></td>
 	   <td>&nbsp;</td>
-	   <td>Record data to log file (default encoding <url>json</url>)</td></tr>
+	   <td>Record data to log file (default encoding <url>pickle</url>)</td></tr>
 
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
@@ -52,7 +52,7 @@ I = Input, O = Output, F = Function
 	   <td><ossupport>I</ossupport></td>
 	   <td><url>player[.&lt;ENCODING&gt;]:</url></td>
 	   <td><url>interval, open</url></td>
-	   <td>Open GUI player to replay data from log files (default encoding <url>json</url>)</td></tr>
+	   <td>Open GUI player to replay data from log files (default encoding <url>pickle</url>)</td></tr>
 
 	 <!-- Data Processing -->
 	 <tr><th colspan="5"><small>Data Processing</small></th></tr>
@@ -82,31 +82,31 @@ I = Input, O = Output, F = Function
 	   <td>Display multi-touch contacts</td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>F</ossupport></td>
+	   <td><ossupport>W</ossupport></td>
 	   <td><url>filter:[&lt;QUERY&gt;]</url></td>
 	   <td>attr</td>
 	   <td>Discard the products that do not match 'query'</td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>F</ossupport></td>
+	   <td><ossupport>W</ossupport></td>
 	   <td><url>edit:</url></td>
 	   <td>merge, copy, result, **dict</td>
 	   <td>Apply to all the received products <i>dict</i></td></tr>
 	 <!-- <tr> -->
 	 <!-- 	<td><ossupport>OLW</ossupport></td> -->
-	 <!-- 	<td><ossupport>F</ossupport></td> -->
+	 <!-- 	<td><ossupport>W</ossupport></td> -->
 	 <!-- 	<td><url>filterout:[&lt;QUERY&gt;]</url></td> -->
 	 <!-- 	<td>&nbsp;</td> -->
 	 <!-- 	<td>Discard the products that match 'query'</td></tr> -->
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>F</ossupport></td>
+	   <td><ossupport>W</ossupport></td>
 	   <td><url>calib:</url></td>
 	   <td><url>matrix, screen, attr, request, merge, copy, result</url></td>
 	   <td>Apply a 4x4 transformation matrix</td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>F</ossupport></td>
+	   <td><ossupport>W</ossupport></td>
 	   <td><url>filtering:</url></td>
 	   <td><url>uri, attr, request, merge, copy, result</url></td>
 	   <td>Filter product data using <code>filtering</code> library</td></tr>
@@ -114,13 +114,13 @@ I = Input, O = Output, F = Function
 	 <tr><th colspan="5"><small>Timing utils</small></th></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>F</ossupport></td>
+	   <td><ossupport>W</ossupport></td>
 	   <td><url>timekeeper:</url></td>
 	   <td>merge, copy, result</td>
 	   <td>Mark each received product with a timetag</td></tr>
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>F</ossupport></td>
+	   <td><ossupport>W</ossupport></td>
 	   <td><url>lag:[&lt;MSEC&gt;]</url></td>
 	   <td>&nbsp;</td>
 	   <td>Add a lag to each received product</td></tr>
@@ -288,14 +288,14 @@ I = Input, O = Output, F = Function
 
        <p><a name="2"><sup>2</sup></a> The available query keys are
 	 obtained from the union of the available query keys of all the uri
-	 components. As an example, the uri <url>out:bridge:</url> is by
-	 default translated to <url>out:json.udp://[::1]:7898</url>, so it
+	 components. As an example, the uri <url>out.json://[::1]:7777</url> is by
+	 default translated to <url>out.json.udp://[::1]:7777</url>, so it
 	 owns the query keys of the json encoder (request, filter) and of
-	 the udp socket node (writeend). 
+	 the udp socket node (writeend).
 
        <p><a name="4"><sup>4</sup></a>Some encodings have default
-	 input/output devices (e.g. <url>in:tuio:</url> is by default translated into
-	 <url>in:tuio.udp://[::]:3333</url>).
+	 input/output devices (e.g. <url>in.tuio:</url> is by default translated into
+	 <url>in.tuio.udp://[::]:3333</url>).
 
        <p><a name="5"><sup>5</sup></a>It cannot be used to form composed URLs.</p>
 

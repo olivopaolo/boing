@@ -30,15 +30,16 @@ class ContactViz(Consumer):
     RATIOSIZE = 2
     """SI device size is respected (if possible)"""
     SISIZE = 3'''
-            
+
     def __init__(self, antialiasing=False, fps=60, parent=None):
-        super().__init__(request=QRequest("diff.*.contacts|source"), 
+        super().__init__(request=QRequest("diff.*.contacts|source"),
                        hz=fps, parent=parent)
         self._sources = {}
         self.__gui = ContactWidget(weakref.proxy(self), antialiasing)
         self.__gui.show()
+        self.__gui.raise_()
         '''self.__display = DisplayDevice.create()
-        if self.__display.url.scheme=="dummy": 
+        if self.__display.url.scheme=="dummy":
             print("WARNING: using dummy DisplayDevice")
             self.__display.debug()
         self.drawmode = ContactViz.SISIZE'''
@@ -108,7 +109,7 @@ class ContactWidget(QtGui.QWidget):
         ctrlQ = QtGui.QShortcut('Ctrl+Q', self)
         ctrlQ.activated.connect(QtGui.QApplication.instance().quit)
         """position circle size"""
-        self.phi = 4 
+        self.phi = 4
         self.__fps_count = 0
         self.__fps_previous = 0
         self.__fps_timer = QtCore.QTimer()
@@ -139,7 +140,7 @@ class ContactWidget(QtGui.QWidget):
             """contactstate = source.contacts.get("contacts", {})
             pos_si_range = contactstate.get("pos_si_range")
             if pos_si_range is not None:
-                deviceratio = float(pos_si_range[0])/pos_si_range[1] 
+                deviceratio = float(pos_si_range[0])/pos_si_range[1]
             else: deviceratio = None
             if pos_si_range and self.drawmode!=ContactViz.WINSIZE:
                 # Draw device area
@@ -180,13 +181,13 @@ class ContactWidget(QtGui.QWidget):
                     path.moveTo(*pos0);
                     posI = pos0
                     for memento in history[1:]:
-                        if "rel_pos" in memento: 
+                        if "rel_pos" in memento:
                             posI = memento["rel_pos"]
                             posI = self.__tovizpos(posI, deviceratio)
                             path.lineTo(*posI)
                             count += 1
                     painter.strokePath(path, painter.pen())
-                # Draw boundingbox if defined                
+                # Draw boundingbox if defined
                 if "boundingbox" in stateN \
                         and "rel_size" in stateN["boundingbox"]:
                     bb = stateN["boundingbox"]
@@ -200,11 +201,11 @@ class ContactWidget(QtGui.QWidget):
                     bb_brush_color.setAlphaF(0.5)
                     painter.setBrush(bb_brush_color)
                     painter.translate(bb_x, bb_y)
-                    if bb_angle is not None: 
+                    if bb_angle is not None:
                         painter.rotate(bb_angle[0]*180/math.pi)
                     painter.drawEllipse(QtCore.QPoint(0,0),
                                         int(bb_rel_size[0] * width),
-                                        int(bb_rel_size[1] * height))     
+                                        int(bb_rel_size[1] * height))
                     painter.restore()
                 # Draw objclass if defined
                 if "objclass" in stateN:
@@ -219,7 +220,7 @@ class ContactWidget(QtGui.QWidget):
                     angle = stateN["si_angle"][0]
                     dx = math.cos(angle) * l
                     dy = math.sin(angle) * l
-                    painter.drawLine(x-dx, y-dy, x+dx, y+dy)           
+                    painter.drawLine(x-dx, y-dy, x+dx, y+dy)
                     painter.restore()
                 # Draw speed if defined
                 if "rel_speed" in stateN:
@@ -287,7 +288,7 @@ class ContactWidget(QtGui.QWidget):
             self.__fps_count += 1
             painter.drawText(5, height-5, "fps: %d Hz"%self.__fps_previous)
         self.oldest = None
-                
+
     def keyPressEvent(self, event):
         key = event.key()
         if key==QtCore.Qt.Key_Space:
@@ -299,7 +300,7 @@ class ContactWidget(QtGui.QWidget):
                 self.__fps_timer.stop()
             self.update()
         else: QtGui.QWidget.keyPressEvent(self, event)
-        
+
     def sizeHint(self):
         return self.sizehint
 
@@ -332,11 +333,11 @@ class ContactWidget(QtGui.QWidget):
         self.__fps_previous = self.__fps_count
         self.__fps_count = 0
         self.update()
-    
+
     '''
     def __contextmenu(self, pos):
         """Show the context menu."""
-        menu = QtGui.QMenu(self)        
+        menu = QtGui.QMenu(self)
         showconf = QtGui.QAction('Show config panel', menu) ;
         self.connect(showconf, QtCore.SIGNAL("triggered()"), self.__configpanel)
         menu.addAction(showconf)

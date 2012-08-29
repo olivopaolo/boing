@@ -37,7 +37,7 @@ class Player(FilePlayer):
     """The Player class defines a producer node that can play log
     files. The Player owns a playlist of files and a graphical user
     interface for similar to other music players."""
-    def __init__(self, decoder, sender, extensions=("",), open=tuple(),
+    def __init__(self, decoder, sender, extensions=("",), open="",
                  speed=1, interval=0,
                  offer=Offer(Offer.UndefinedProduct()), parent=None):
         super().__init__(None, decoder, sender, interval=interval,

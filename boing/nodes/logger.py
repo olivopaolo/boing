@@ -45,7 +45,9 @@ class ProductBuffer(QtCore.QObject):
         """Number of products stored in buffer."""
         self._sum = 0
         """Maximum number of stored products."""
-        self._sizelimit = assertIsInstance(sizelimit, int)
+        self._sizelimit = None \
+            if sizelimit is None or sizelimit==float("inf") \
+            else assertIsInstance(sizelimit, int)
         """When stored products exceed 'sizelimit', instead of keeping
         'sizelimit' products, it keeps 'sizelimit'-'oversizecut'
         products, so that productDrop is not invoked anytime a new
@@ -62,7 +64,9 @@ class ProductBuffer(QtCore.QObject):
         return self._sizelimit
 
     def setSizeLimit(self, sizelimit):
-        self._sizelimit = sizelimit
+        self._sizelimit = None \
+            if sizelimit is None or sizelimit==float("inf") \
+            else assertIsInstance(sizelimit, int)
         self._checkSizeLimit()
 
     def append(self, products):
@@ -129,18 +133,20 @@ class ProductBuffer(QtCore.QObject):
             yield record
 
     def _checkSizeLimit(self):
-        # Check maximum number of products
-        if self._sum>self._sizelimit:
-            count = 0
-            for i, record in enumerate(self._buffer):
-                count += len(record.products)
-                if count>=self.oversizecut: break
-            del self._buffer[:i+1]
-            self._sum -= count
-            self.productDrop.emit()
-            rvalue = True
+        if self._sizelimit is None: rvalue = False
         else:
-            rvalue = False
+            # Check maximum number of products
+            if self._sum>self._sizelimit:
+                count = 0
+                for i, record in enumerate(self._buffer):
+                    count += len(record.products)
+                    if count>=self.oversizecut: break
+                del self._buffer[:i+1]
+                self._sum -= count
+                self.productDrop.emit()
+                rvalue = True
+            else:
+                rvalue = False
         return rvalue
 
     def __len__(self):
