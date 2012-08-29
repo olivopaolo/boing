@@ -32,6 +32,8 @@ def additional_tests(modules=[]):
         tests += test__init__.suite()
         from boing.test.net import test_json
         tests += test_json.suite()
+        from boing.test.net import test_pickle
+        tests += test_pickle.suite()
         from boing.test.net import test_osc
         tests += test_osc.suite()
         from boing.test.net import test_slip

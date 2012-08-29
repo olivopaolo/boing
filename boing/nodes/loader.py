@@ -18,7 +18,7 @@ from PyQt4 import QtCore
 import pyparsing
 
 from boing.core import QRequest, Functor, Identity
-from boing.net import bytes, json, slip, tcp, udp
+from boing.net import bytes, pickle, json, slip, tcp, udp
 from boing.nodes import encoding, ioport
 from boing.nodes.multitouch import attrToRequest
 from boing.net import tcp, udp
@@ -328,6 +328,43 @@ def createSingle(uri, mode="", parent=None):
             device = createSingle(loweruri, "out")
             node = encoder + textdecoder + device
 
+    # PICKLE
+    elif uri.scheme=="pickle":
+        assertUriModeIn(uri, mode, "in", "out")
+        extended = copy.copy(uri)
+        extended.scheme += ".slip.file" if uri.path else ".udp"
+        logger.info(
+            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
+        return createSingle(extended, mode, parent)
+
+    elif uri.scheme.startswith("pickle."):
+        assertUriModeIn(uri, mode, "in", "out")
+        query = parseQuery(uri, "request", "noslip", "protocol")
+        loweruri = lower(uri, "pickle", query.keys())
+        noslip = assertIsInstance(query.pop("noslip", False), bool)
+        if not noslip:
+            if loweruri.scheme=="file":
+                loweruri.scheme = "slip.%s"%loweruri.scheme
+                logger.info(
+                    "PICKLE over FILE is SLIP encoded by default (set noslip to disable)")
+            if loweruri.scheme=="tcp":
+                loweruri.scheme = "slip.%s"%loweruri.scheme
+                logger.info(
+                    "PICKLE over TCP is SLIP encoded by default (set noslip to disable)")
+        if mode=="in":
+            if "request" in query: raise ValueError(
+                "Unexpected query keys: 'request'")
+            if "protocol" in query: raise ValueError(
+                "Unexpected query keys: 'protocol'")
+            device = createSingle(loweruri, "in")
+            decoder = encoding.PickleDecoder(blender=Functor.MERGE, **query)
+            node = device + decoder
+        elif mode=="out":
+            encoder = encoding.PickleEncoder(blender=Functor.RESULTONLY, **query)
+            textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
+            device = createSingle(loweruri, "out")
+            node = encoder + textdecoder + device
+
     # JSON
     elif uri.scheme=="json":
         assertUriModeIn(uri, mode, "in", "out")
@@ -352,8 +389,8 @@ def createSingle(uri, mode="", parent=None):
                 logger.info(
                     "JSON over TCP is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
-            if "request" in query:
-                raise ValueError("Unexpected query keys: 'request'")
+            if "request" in query: raise ValueError(
+                "Unexpected query keys: 'request'")
             device = createSingle(loweruri, "in")
             decoder = encoding.JsonDecoder(blender=Functor.MERGE)
             node = device + decoder
@@ -649,12 +686,13 @@ def _kwstr2value(string):
     elif string.lower()=="true": rvalue = True
     elif string.lower()=="false": rvalue = False
     elif string.lower()=="none": rvalue = None
-    elif string.isdecimal(): rvalue = int(string)
     else:
         try:
-            rvalue = float(string)
+            rvalue = int(string)
         except ValueError:
-            rvalue = string
+            try:
+                rvalue = float(string)
+            except ValueError: rvalue = string
     return rvalue
 
 def lower(uri, schemecut="", keys=tuple()):

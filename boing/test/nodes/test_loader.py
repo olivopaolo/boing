@@ -284,6 +284,60 @@ uris["slip"] = {
                     )),
     }
 
+uris["pickle"] = {
+    "valid":
+        tuple(_addEncoding(url, "pickle") \
+                  for url in itertools.chain(
+                    uris["file"]["valid"],
+                    uris["udp"]["valid"],
+                    uris["tcp"]["valid"],
+                    uris["slip"]["valid"],
+                    )) + (
+        "in.pickle.stdin:",
+        "in.pickle:",
+        "in.pickle://:7777",
+        "in.pickle://[::]",
+        "in.pickle://[::]:7777",
+        "in.pickle://%s%s"%(prefix, readable),
+        "in.pickle:?noslip",
+        "in.pickle:?noslip=false",
+        "out.pickle://[::1]:7777",
+        "out.pickle://%s%s"%(prefix, target),
+        "out.pickle.stdout:",
+        "out.pickle://[::1]:7777?noslip",
+        "out.pickle://[::1]:7777?noslip=false",
+        "out.pickle://[::1]:7777?protocol=None",
+        "out.pickle://[::1]:7777?protocol=3",
+        "out.pickle://[::1]:7777?protocol=-1",
+        "out.pickle://[::1]:7777?request=query",
+        ),
+    "invalid":
+        tuple((_addEncoding(url, "pickle"), exp) \
+                  for url, exp in itertools.chain(
+                    uris["file"]["invalid"],
+                    uris["udp"]["invalid"],
+                    uris["tcp"]["invalid"],
+                    uris["slip"]["invalid"],
+                    )) + (
+        ("pickle:", ValueError),
+        ("in.pickle:opaque", ValueError),
+        ("in.pickle://:7777/path", ValueError),
+        ("in.pickle://[::]/path", ValueError),
+        ("in.pickle://[::]:7777/path", ValueError),
+        ("in.pickle:./unexistent-relative", IOError),
+        ("in.pickle:?wrong=wrong", ValueError),
+        ("in.pickle:?noslip=wrong", TypeError),
+        ("in.pickle:?request=query", ValueError),
+        ("in.pickle:?protocol=3", ValueError),
+        ("out.pickle:", ValueError),
+        ("out.pickle://[::1]", ValueError),
+        ("out.pickle://:7777", ValueError),
+        ("out.pickle://[::1]:7777?wrong=wrong", ValueError),
+        ("out.pickle://[::1]:7777?noslip=wrong", TypeError),
+        ("out.pickle://[::1]:7777?protocol=wrong", TypeError),
+        ),
+    }
+
 uris["json"] = {
     "valid":
         tuple(_addEncoding(url, "json") \
@@ -605,6 +659,12 @@ class TestOsc(LoaderTest):
         super().__init__("osc", *args, **kwargs)
 
 # -------------------------------------------------------------------
+# PICKLE
+class TestPickle(LoaderTest):
+    def __init__(self, *args, **kwargs):
+        super().__init__("pickle", *args, **kwargs)
+
+# -------------------------------------------------------------------
 # JSON
 class TestJson(LoaderTest):
     def __init__(self, *args, **kwargs):
@@ -659,6 +719,7 @@ def suite():
         TestLog,
         TestPlay,
         TestSlip,
+        TestPickle,
         TestJson,
         TestOsc,
         TestTuio,

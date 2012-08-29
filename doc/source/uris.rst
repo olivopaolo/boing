@@ -192,6 +192,18 @@ I = Input, O = Output, F = Function
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>I</ossupport></td>
+	   <td><url>pickle</url></td>
+	   <td><url>noslip</url></td>
+	   <td><a href="http://docs.python.org/py3k/library/pickle.html">pickle</a> to products</td></tr>
+	 <tr>
+	   <td><ossupport>OLW</ossupport></td>
+	   <td><ossupport>O</ossupport></td>
+	   <td><url>pickle</url></td>
+	   <td><url>protocol, request, noslip</url></td>
+	   <td>Products to <a href="http://docs.python.org/py3k/library/pickle.html">pickle</a></td></tr>
+	 <tr>
+	   <td><ossupport>OLW</ossupport></td>
+	   <td><ossupport>I</ossupport></td>
 	   <td><url>json</url></td>
 	   <td><url>noslip</url></td>
 	   <td><a href="http://www.json.org/">JSON</a> to products</td></tr>

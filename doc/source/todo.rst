@@ -7,12 +7,10 @@ Package todo
 
 Today or tomorrow:
 
-- add the pickle encoding.
-- move rst-doc to doc/source
+- write more tutorials.
 
 This week:
 
-- write more tutorials.
 
 Next week:
 

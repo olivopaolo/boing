@@ -18,7 +18,7 @@ from PyQt4 import QtCore
 
 from boing.core import Offer, QRequest, Functor
 from boing.nodes.logger import FilePlayer
-from boing.net import json, osc, slip, tuio, Decoder
+from boing.net import pickle, json, osc, slip, tuio, Decoder
 from boing.utils import assertIsInstance, deepupdate, quickdict
 
 # -------------------------------------------------------------------
@@ -83,6 +83,44 @@ class SlipDecoder(Functor):
                         slip.decode(value, self._slipbuffer)
                     for packet in packets:
                         yield (("data", packet), )
+
+# -------------------------------------------------------------------
+# pickle
+
+class PickleEncoder(Functor):
+
+    def __init__(self, wrap=False, protocol=None,
+                 request=QRequest.ANY, blender=Functor.MERGECOPY, parent=None):
+        super().__init__(request, Offer(quickdict(data=bytes())),
+                         blender, parent=parent)
+        self.wrap = assertIsInstance(wrap, bool)
+        self.protocol = assertIsInstance(protocol, None, int)
+
+    def _process(self, sequence, producer):
+        if self.wrap:
+            products = tuple(map(quickdict, sequence))
+            yield (("data", pickle.encode(quickdict(timetag=datetime.datetime.now(),
+                                                    products=products),
+                                          self.protocol)), )
+        else:
+            for operands in sequence:
+                yield (("data", pickle.encode(quickdict(operands),
+                                              self.protocol)),)
+
+
+class PickleDecoder(Functor):
+
+    def __init__(self, blender=Functor.MERGECOPY, parent=None):
+        super().__init__(QRequest("data"), Offer(Offer.UndefinedProduct()),
+                         blender, parent=parent)
+
+    def _process(self, sequence, producer):
+        for operands in sequence:
+            for name, value in operands:
+                if value:
+                    product = pickle.decode(value)
+                    yield product.items() if hasattr(product, "items") \
+                        else (("array", product), )
 
 # -------------------------------------------------------------------
 # JSON
