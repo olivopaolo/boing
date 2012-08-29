@@ -45,11 +45,21 @@ installed. In order to do so, type in a terminal::
 It is also possible to test only a subset of the |boing|'s
 modules::
 
+  cd <BOING-DIRECTORY>
   python3 boing/test/run.py [MODULE [MODULE ...]]
 
 The available modules are: :code:`core`, :code:`filtering`,
 :code:`gesture`, :code:`net`, :code:`nodes`, :code:`utils`. If no
 module is specified, all the available modules will be tested.
+
+If you are interested to check the code coverage, you may use the tool
+called `coverage by Ned Batchelder`_. Once the tool has been
+installed, you simply have to type::
+
+  cd <BOING-DIRECTORY>
+  coverage run --source boing boing/test/run.py
+  coverage report -m --omit=*dns_sd*,*display*,*pydot
+
 
 
 .. _`Python 3.2`: http://python.org/download/
@@ -57,3 +67,4 @@ module is specified, all the available modules will be tested.
 .. _`Nokia's Qt`: http://qt.nokia.com
 .. _numpy: http://numpy.scipy.org
 .. _pyparsing: http://pyparsing.wikispaces.com
+.. _`coverage by Ned Batchelder`: http://nedbatchelder.com/code/coverage/
