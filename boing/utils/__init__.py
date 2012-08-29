@@ -37,7 +37,7 @@ class quickdict(dict):
 
     def __getattr__(self, key):
         if key in self or isinstance(key, str) and key.startswith("__"):
-            return dict.__getattr__(self, key)
+            return dict.__getitem__(self, key)
         else:
             rvalue = quickdict()
             self[key] = rvalue
