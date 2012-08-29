@@ -36,8 +36,9 @@ def assertIsInstance(obj, *valid):
 class quickdict(dict):
 
     def __getattr__(self, key):
-        if key in self or isinstance(key, str) and key.startswith("__"):
-            return dict.__getitem__(self, key)
+        if key in self: return self[key]
+        elif isinstance(key, str) and key.startswith("__"):
+            raise AttributeError(key)
         else:
             rvalue = quickdict()
             self[key] = rvalue
