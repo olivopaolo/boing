@@ -13,8 +13,9 @@ Products debugging
 Products editing
 ----------------
 
-.. autoclass:: Filter
-   :members:
+..
+  .. autoclass:: Filter
+     :members:
 
 .. autoclass:: Editor
    :members:
