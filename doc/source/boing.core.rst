@@ -10,7 +10,7 @@ This module provides the following class:
    :members: UndefinedProduct
 
 .. autoclass:: boing.core.Request
-   :members: test, items, filter, filterout,
+   :members: test, items, filter, filterout
 
 .. autoclass:: boing.core.QRequest
 

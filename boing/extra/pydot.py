@@ -9,6 +9,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+'''
 import collections
 import io
 
@@ -34,7 +35,7 @@ class DotGrapher(Grapher):
         deepDump(data, stream, indent=2, end="\l", sort=False)
         print(end="\l", file=stream)
         file.add_node(pydot.Node(self._ref(self._getId(node)),
-                                 label=stream.getvalue(), 
+                                 label=stream.getvalue(),
                                  shape="box"))
 
     def _drawSiblings(self, node, file, level, maxdepth, memo):
@@ -51,7 +52,7 @@ class DotGrapher(Grapher):
                 edge = pydot.Edge(self._ref(self._getId(node)),
                                   self._ref(self._getId(siblings)))
                 file.add_edge(edge)
-                    
+
     def _drawEpilogue(self, node, file, level):
         pass
 
@@ -85,3 +86,4 @@ class DotGrapherProducer():
         for node in self._starters:
             self._grapher.draw(node, graph, maxdepth=self.maxdepth, memo=memo)
         graph.write_ps('/tmp/boing.ps')
+'''

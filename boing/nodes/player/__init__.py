@@ -39,7 +39,7 @@ class Player(FilePlayer):
     interface for similar to other music players."""
     def __init__(self, decoder, sender, extensions=("",), open="",
                  speed=1, interval=0,
-                 offer=Offer(Offer.UndefinedProduct()), parent=None):
+                 offer=Offer(Offer.UNDEFINED), parent=None):
         super().__init__(None, decoder, sender, interval=interval,
                          offer=offer, parent=None)
         self._mode = PLAYALL

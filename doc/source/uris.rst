@@ -80,12 +80,12 @@ I = Input, O = Output, W = Worker
 	   <td><url>viz:</url></td>
 	   <td><url>antialiasing, fps</url></td>
 	   <td>Display multi-touch contacts</td></tr>
-	 <tr>
+	 <!--<tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>W</ossupport></td>
 	   <td><url>filter:[&lt;QUERY&gt;]</url></td>
 	   <td>attr</td>
-	   <td>Discard the products that do not match 'query'</td></tr>
+	   <td>Discard the products that do not match 'query'</td></tr>-->
 	 <tr>
 	   <td><ossupport>OLW</ossupport></td>
 	   <td><ossupport>W</ossupport></td>

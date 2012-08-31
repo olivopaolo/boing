@@ -63,19 +63,14 @@ class Offer(tuple):
     """An offer defines the list of products that a producer
     advertises to be its deliverable objects.
 
+    :const:`Offer.UNDEFINED` can be used to define the producer's offer,
+    when the real offer cannot be defined a priori. This avoids to
+    have empty offers, when they cannot be predeterminated.
+
     """
-    pass
 
-    class UndefinedProduct:
-        """UndefinedProduct instances can be used to define a
-        producer's offer, when the real offer cannot be defined a
-        priori. This avoids to have empty offers, when they cannot be
-        predeterminated.
-
-        """
-        def __repr__(self): return "Product.UNDEFINED"
-        def __eq__(self, other): return isinstance(other, Offer.UndefinedProduct)
-        def __ne__(self, other): return not isinstance(other, Offer.UndefinedProduct)
+    class _UndefinedProduct:
+        def __repr__(self): return "Offer.UNDEFINED"
 
     def __new__(cls, *args, iter=None):
         """Constructor.
@@ -122,51 +117,46 @@ class Offer(tuple):
             memo[ref] = rvalue
         return rvalue
 
+Offer.UNDEFINED = Offer._UndefinedProduct()
+
 # -------------------------------------------------------------------
 # Request
 
 class Request(metaclass=abc.ABCMeta):
-    """The Request abstract class defines objects for filtering
-    products.  Each consumer has got a request so that producers know
-    if it is useful or not to deliver a product to a consumer.
+    """The class :class:`Request` is an abstract class used by
+    :class:`Consumer` objects for specifing the set of products they
+    are insterested to. The method :meth:`test` is used to check
+    whether a product matches the request.
 
-    Request.NONE and Request.ANY define respectively a no product and
-    any product requests.
+    :const:`Request.NONE` and :const:`Request.ANY` define respectively
+    a "no product" and "any product" requests.
 
-    The Request class implements the Composite design
-    pattern. Composite requests can be obtained simply adding singular
-    requests, e.g. comp = r1 + r2. Request.NONE is the identity
-    element of Request sum.
+    :class:`Request` objects may also indicate the internal parts of a
+    product to which a producer may be interested. The method
+    :meth:`items` returns the sequence of the product's parts a
+    producer is interested to.
 
-    Request instances are immutable objects.
+    The class :class:`Request` implements the design pattern
+    "Composite": different requests can be combined into a single
+    request by using the sum operation (e.g. :code:`comp = r1 +
+    r2`). A composite request matches the union of the products that
+    are matched by the requests whom it is
+    composed. :const:`Request.NONE` is the identity element of the sum
+    operation.
+
+    :class:`Request` objects are immutable.
 
     """
 
     @abc.abstractmethod
     def test(self, product):
-        """Return whether *product* matches the request."""
+        """Return whether the *product* matches the request."""
         raise NotImplementedError()
 
     @abc.abstractmethod
     def items(self, product):
-        """Return an iterator over the *product*'s items ((key, value)
-        pairs) that match the request, if *product* can be subdivided, otherwise
-        return the pair (None, *product)."""
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def filter(self, product):
-        """Return the subset of *product* that matches the request, if
-        *product* can be subdivided, otherwise return *product*, if
-        product matches the request, else return None."""
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def filterout(self, product):
-        """Return the subset of *product* that does not match the
-        request, if *product* can be subdivided, otherwise return
-        *product*, if product does not match the request, else return
-        None."""
+        """Return an iterator over the *product*'s internal parts
+        (i.e. (key, value) pairs) that match the request."""
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -174,89 +164,74 @@ class Request(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def __eq__(self, other): raise NotImplementedError()
-
     def __ne__(self, other): return not self==other
 
     def __add__(self, other):
-        if other is Request.ANY or self==other:
-            rvalue = other
-        elif other is Request.NONE:
-            rvalue = self
-        elif isinstance(other, Request):
-            rvalue = _CompositeRequest(self, other)
-        else: raise TypeError(
-            "Expected type Request, not '%s'"%type(other).__name__)
-        return rvalue
+        assertIsInstance(other, Request)
+        return other if other is Request.ANY or self==other else \
+            self if other is Request.NONE else \
+            _CompositeRequest(self, other)
+
+    # @abc.abstractmethod
+    # def filter(self, product):
+    #     """The method :meth:`filter` tries to create a new
+    #     object composed only by the demanded parts. Return the subset
+    #     of *product* that matches the request, if *product* can be
+    #     subdivided, otherwise return *product*, if product matches the
+    #     request, else return None."""
+    #     raise NotImplementedError()
+
+    # @abc.abstractmethod
+    # def filterout(self, product):
+    #     """The method :meth:`filterout` tries to create a new object
+    #     composed only by the elements that are not required. Return the
+    #     subset of *product* that does not match the request, if
+    #     *product* can be subdivided, otherwise return *product*, if
+    #     product does not match the request, else return None."""
+    #     raise NotImplementedError()
+
 
 class _AnyRequest(Request):
 
-    def __init__(self):
-        pass
-
-    def test(self, product):
-        return True
+    def test(self, product): return True
 
     def items(self, product):
-        return product.items() if hasattr(product, "items") else (product,)
+        return product.items() if isinstance(product, collections.Mapping) \
+            else enumerate(product) if isinstance(product, collections.Sequence) \
+            else ((k,v) for k,v in dict(product) if not k.startswith("_"))
 
-    def filter(self, product):
-        return copy.copy(product)
-
-    def filterout(self, product):
-        return None
-
-    def __eq__(self, other):
-        return other is Request.ANY
+    def __eq__(self, other): return other is Request.ANY
 
     def __add__(self, other):
-        if isinstance(other, Request):
-            return self
-        else: raise TypeError(
-            "Expected type Request, not '%s'"%type(other).__name__)
+        assertIsInstance(other, Request)
+        return self
 
     def __iadd__(self, other):
-        if isinstance(other, Request):
-            return self
-        else: raise TypeError(
-            "Expected type Request, not '%s'"%type(other).__name__)
+        assertIsInstance(other, Request)
+        return self
 
-    def __hash__(self):
-        return hash(True)
+    def __hash__(self): return hash(True)
+    def __repr__(self): return "Request.ANY"
 
-    def __repr__(self):
-        return "Request.ANY"
+    # def filter(self, product): return copy.copy(product)
+    # def filterout(self, product): return None
+
 
 class _NoneRequest(Request):
 
-    def __init__(self):
-        pass
-
-    def test(self, product):
-        return False
-
-    def items(self, product):
-        return tuple()
-
-    def filter(self, product):
-        return None
-
-    def filterout(self, product):
-        return copy.copy(product)
-
-    def __eq__(self, other):
-        return other is Request.NONE
+    def test(self, product): return False
+    def items(self, product): return tuple()
+    def __eq__(self, other): return other is Request.NONE
 
     def __add__(self, other):
-        if isinstance(other, Request):
-            return other
-        else: raise TypeError(
-            "Expected type Request, not '%s'"%type(other).__name__)
+        assertIsInstance(other, Request)
+        return other
 
-    def __hash__(self):
-        return hash(False)
+    def __hash__(self): return hash(False)
+    def __repr__(self): return "Request.NONE"
 
-    def __repr__(self):
-        return "Request.NONE"
+    # def filter(self, product): return None
+    # def filterout(self, product): return copy.copy(product)
 
 Request.ANY = _AnyRequest()
 Request.NONE = _NoneRequest()
@@ -265,16 +240,16 @@ class _CompositeRequest(Request):
 
     def __init__(self, *requests):
         super().__init__()
-        self._children = set()
+        cumulate = set()
         for req in requests:
+            assertIsInstance(req, Request)
             if req is Request.NONE:
                 continue
             elif isinstance(req, _CompositeRequest):
-                self._children.update(req._children)
-            elif isinstance(req, Request):
-                self._children.add(req)
-            else: raise TypeError(
-                "Expected type Request, not '%s'"%type(req).__name__)
+                cumulate.update(req._children)
+            else:
+                cumulate.add(req)
+        self._children = frozenset(cumulate)
 
     def test(self, product):
         for child in self._children:
@@ -284,59 +259,43 @@ class _CompositeRequest(Request):
         return rvalue
 
     def items(self, product):
-        return itertools.join(*(child.items(product) for child in self._children))
-
-    def filter(self, product):
-        rvalue = product
-        for child in self._children:
-            rvalue = child.filter(rvalue)
-        return rvalue
-
-    def filterout(self, product):
-        rvalue = product
-        for child in self._children:
-            rvalue = child.filterout(rvalue)
-        return rvalue
+        return itertools.join(*(child.items(product) \
+                                    for child in self._children))
 
     def __eq__(self, other):
         return isinstance(other, _CompositeRequest) \
             and self._children==other._children
 
-    def __hash__(self):
-        raise NotImplementedError()
+    def __hash__(self): return hash(self._children)
+
+    # def filter(self, product): raise NotImplementedError()
+    # def filterout(self, product): raise NotImplementedError()
 
 
 class LambdaRequest(Request):
-    """
-    The LambdaRequest is a Request that can be initialized using a
+    """The LambdaRequest is a Request that must initialized using a
     lambda function.
     """
-    def __init__(self, test=None):
+    def __init__(self, test):
         super().__init__()
-        self._customtest = assertIsInstance(test, None, collections.Callable)
+        self._func = assertIsInstance(test, collections.Callable)
 
     def test(self, product):
-        if self._customtest is not None:
-            return self._customtest(product)
-        else:
-            raise NotImplementedError()
+        return product is Offer.UNDEFINED or self._func(product)
 
     def items(self, product):
         return tuple() if not self.test(product) \
-            else product.items() if hasattr(product, "items") else (product, )
-
-    def filter(self, product):
-        return copy.copy(product) if self.test(product) else None
-
-    def filterout(self, product):
-        return copy.copy(product) if not self.test(product) else None
+            else product.items() if isinstance(product, collections.Mapping) \
+            else enumerate(product) if isinstance(product, collections.Sequence) \
+            else ((k,v) for k,v in dict(product) if not k.startswith("_"))
 
     def __eq__(self, other):
-        return isinstance(other, LambdaRequest) \
-            and self._customtest==other._customtest
+        return isinstance(other, LambdaRequest) and self._func==other._func
 
-    def __hash__(self):
-        return hash(self._customtest)
+    def __hash__(self): return hash(self._func)
+
+    # def filter(self, product): raise NotImplementedError()
+    # def filterout(self, product): raise NotImplementedError()
 
 # -------------------------------------------------------------------
 # Producer

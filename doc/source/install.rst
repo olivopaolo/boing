@@ -58,7 +58,7 @@ installed, you simply have to type::
 
   cd <BOING-DIRECTORY>
   coverage run --source boing boing/test/run.py
-  coverage report -m --omit=*dns_sd*,*display*,*pydot
+  coverage report -m --omit=*dns_sd*,*display*
 
 
 

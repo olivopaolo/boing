@@ -569,6 +569,7 @@ def createSingle(uri, mode="", parent=None):
                          else Functor.MERGECOPY
         node = Editor(query, blender)
 
+        '''
     elif uri.scheme=="filter":
         from boing.nodes import Filter
         uri = copy.copy(uri)
@@ -577,7 +578,7 @@ def createSingle(uri, mode="", parent=None):
         uri.opaque = QRequest(uri.opaque) if uri.opaque else QRequest.NONE
         if "attr" in query:
             uri.opaque += attrToRequest(query["attr"]) + QRequest("diff.removed")
-        node = Filter(uri.opaque)
+        node = Filter(uri.opaque)'''
 
     elif uri.scheme=="calib":
         from boing.nodes.multitouch import Calibration

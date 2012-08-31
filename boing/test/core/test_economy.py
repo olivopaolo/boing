@@ -57,31 +57,19 @@ class TestLambdaRequest(unittest.TestCase):
     def setUp(self):
         self.functor = lambda product: bool(product)
 
-    def test_creation_empty(self):
-        request = LambdaRequest()
-
-    def test_creation_None(self):
-        request = LambdaRequest(None)
-
     def test_creation_raises(self):
         self.assertRaises(TypeError, LambdaRequest, "wrong")
 
     def test_test(self):
-        request = LambdaRequest()
-        self.assertRaises(NotImplementedError, request.test, "ANYTHING")
         request = LambdaRequest(self.functor)
         self.assertTrue(request.test(True))
         self.assertFalse(request.test(False))
 
     def test_equal(self):
-        self.assertEqual(LambdaRequest(), LambdaRequest())
-        self.assertEqual(LambdaRequest(None), LambdaRequest(None))
         self.assertEqual(LambdaRequest(self.functor),
                          LambdaRequest(self.functor))
 
     def test_hash(self):
-        hash(LambdaRequest())
-        hash(LambdaRequest(None))
         hash(LambdaRequest(self.functor))
 
 
@@ -109,9 +97,7 @@ class Test_CompositeRequest(unittest.TestCase):
 # -------------------------------------------------------------------
 
 def eqRequestFactory(other):
-    return LambdaRequest(
-        lambda product: isinstance(product, Offer.UndefinedProduct) \
-            or product==other)
+    return LambdaRequest(lambda product: product==other)
 
 def storeProducts(consumer, products, producer):
     storage = consumer.__dict__.setdefault("storage", list())
@@ -122,7 +108,7 @@ class TestProducer(QtBasedTest):
     # FIXME: Add tag tests
 
     def test_creation(self):
-        producer = Producer(offer=Offer(Offer.UndefinedProduct()))
+        producer = Producer(offer=Offer(Offer.UNDEFINED))
         ref = weakref.ref(producer)
         del producer
         self.assertIsNone(ref())
@@ -131,16 +117,16 @@ class TestProducer(QtBasedTest):
         self.assertRaises(TypeError, Producer, wrong="wrong")
 
     def test_connect_demandChanged(self):
-        producer = Producer(offer=Offer(Offer.UndefinedProduct()))
+        producer = Producer(offer=Offer(Offer.UNDEFINED))
         producer.demandChanged.connect(lambda : None)
 
     def test_connect_demandedOfferChanged(self):
-        producer = Producer(offer=Offer(Offer.UndefinedProduct()))
+        producer = Producer(offer=Offer(Offer.UNDEFINED))
         producer.demandedOfferChanged.connect(lambda : None)
 
     def test_offer(self):
-        producer = Producer(offer=Offer(Offer.UndefinedProduct()))
-        self.assertEqual(producer.offer(), Offer(Offer.UndefinedProduct()))
+        producer = Producer(offer=Offer(Offer.UNDEFINED))
+        self.assertEqual(producer.offer(), Offer(Offer.UNDEFINED))
         offer = Offer("statue", "painting")
         producer = Producer(offer=offer)
         self.assertEqual(producer.offer(), offer)
@@ -148,7 +134,7 @@ class TestProducer(QtBasedTest):
         self.assertNotEqual(producer.offer(), Offer("statue"))
 
     def test_meetsRequest(self):
-        producer = Producer(offer=Offer(Offer.UndefinedProduct()))
+        producer = Producer(offer=Offer(Offer.UNDEFINED))
         self.assertTrue(producer.meetsRequest(eqRequestFactory("statue")))
         self.assertTrue(producer.meetsRequest(Request.ANY))
         producer = Producer(Offer("statue", "obelisk"))
@@ -159,7 +145,7 @@ class TestProducer(QtBasedTest):
                 eqRequestFactory("statue")+eqRequestFactory("obelisk")))
 
     def test_addObservers(self):
-        producer = Producer(offer=Offer(Offer.UndefinedProduct()))
+        producer = Producer(offer=Offer(Offer.UNDEFINED))
         refprod = weakref.ref(producer)
         self.assertRaises(TypeError, producer.addObserver, None)
         self.assertRaises(TypeError, producer.addObserver, "wrong")
@@ -382,7 +368,7 @@ class TestProducer(QtBasedTest):
         for i, (template, n) in enumerate((("statue", 4),
                                            ("painting", 3),
                                            ("obelisk", 3))):
-            producers.append(Producer(Offer(Offer.UndefinedProduct())))
+            producers.append(Producer(Offer(Offer.UNDEFINED)))
             tid = QtCore.QTimer(producers[i],
                                 timeout=makeFunctor(producers[i], template, n))
             tid.start(20)

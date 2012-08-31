@@ -100,10 +100,8 @@ class SimpleGrapher(Grapher):
     def _drawNode(self, node, file, level):
         b = SimpleGrapher.getIndent(level)
         print(b+"%s: {"%(node.__class__.__name__), file=file)
-        data = self.request.filter(node._debugData())
-        if data:
-            for key, value in data.items():
-                print(b+"  %s: %s,"%(str(key), str(value)), file=file)
+        for key, value in self.request.items(node._debugData()):
+            print(b+"  %s: %s,"%(str(key), str(value)), file=file)
 
     def _drawSiblings(self, node, file, level, maxdepth, memo):
         b = SimpleGrapher.getIndent(level)

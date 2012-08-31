@@ -111,7 +111,7 @@ class PickleEncoder(Functor):
 class PickleDecoder(Functor):
 
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(QRequest("data"), Offer(Offer.UndefinedProduct()),
+        super().__init__(QRequest("data"), Offer(Offer.UNDEFINED),
                          blender, parent=parent)
 
     def _process(self, sequence, producer):
@@ -146,7 +146,7 @@ class JsonEncoder(Functor):
 class JsonDecoder(Functor):
 
     def __init__(self, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(QRequest("str"), Offer(Offer.UndefinedProduct()),
+        super().__init__(QRequest("str"), Offer(Offer.UNDEFINED),
                          blender, parent=parent)
 
     def _process(self, sequence, producer):

@@ -344,7 +344,7 @@ class Player(Producer):
     stopped = QtCore.pyqtSignal()
 
     def __init__(self, parser, sender, speed=1.0, loop=False, interval=1000,
-                 offer=Offer(Offer.UndefinedProduct()), parent=None):
+                 offer=Offer(Offer.UNDEFINED), parent=None):
         super().__init__(offer, parent=parent)
         self._parser = assertIsInstance(parser, Player.Parser)
         self._sender = assertIsInstance(sender, Player.Sender)

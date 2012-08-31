@@ -303,6 +303,7 @@ class Editor(Functor):
 
 # -------------------------------------------------------------------
 
+'''
 class Filter(WiseWorker):
     """Instances of the :class:`Filter` class forward only the subset
     of the received products that matches the filtering *query*.
@@ -349,6 +350,7 @@ class Filter(WiseWorker):
             if self.offer()!=updated:
                 self._cumulatedoffer = updated
                 self.offerChanged.emit()
+'''
 
 # -------------------------------------------------------------------
 

@@ -23,8 +23,7 @@ class QRequest(Request):
 
     def test(self, product):
         """Return whether *product* matches the request."""
-        return isinstance(product, Offer.UndefinedProduct) \
-            or self._query.test(product)
+        return product is Offer.UNDEFINED or self._query.test(product)
 
     def items(self, product):
         """Return an iterator over the *product*'s items ((key, value)
@@ -32,23 +31,9 @@ class QRequest(Request):
         return the pair (None, *product)."""
         return self._query.items(product)
 
-    def filter(self, product):
-        """Return the subset of *product* that matches the request, if
-        *product* can be subdivided, otherwise return *product*, if
-        product matches the request, else return None."""
-        return self._query.filter(product)
-
-    def filterout(self, product):
-        """Return the subset of *product* that does not match the
-        request, if *product* can be subdivided, otherwise return
-        *product*, if product does not match the request, else return
-        None."""
-        return self._query.filterout(product)
-
     def __eq__(self, other):
-        return isinstance(other, QRequest) \
-            and self._query==other.query()
-        
+        return isinstance(other, QRequest) and self._query==other.query()
+
     def __add__(self, other):
         if other is Request.ANY or self==other:
             rvalue = other
@@ -68,5 +53,19 @@ class QRequest(Request):
     def __repr__(self):
         return "QRequest('%s')"%self._query
 
+    '''
+    def filter(self, product):
+        """Return the subset of *product* that matches the request, if
+        *product* can be subdivided, otherwise return *product*, if
+        product matches the request, else return None."""
+        return self._query.filter(product)
+
+    def filterout(self, product):
+        """Return the subset of *product* that does not match the
+        request, if *product* can be subdivided, otherwise return
+        *product*, if product does not match the request, else return
+        None."""
+        return self._query.filterout(product)
+    '''
 
 
