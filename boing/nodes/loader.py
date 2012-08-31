@@ -508,6 +508,38 @@ def createSingle(uri, mode="", parent=None):
             raise ImportError(
                 "'libmtdev' is not available on this platform: %s"%sys.platform)'''
 
+    # evdev
+    elif uri.scheme=="evdev":
+        if sys.platform == "linux2":
+            assertUriModeIn(uri, mode, "in", "")
+            from boing.extra import evdev
+            node = evdev.InBridge(str(uri.path))
+        else:
+            raise ValueError(
+                "'evdev' is not available on this platform: %s"%sys.platform)
+
+    # uinput
+    elif uri.scheme=="uinput":
+        if sys.platform == "linux2":
+            assertUriModeIn(uri, mode, "out", "")
+            from boing.extra import evdev
+            from evdev import ecodes as e
+            cap = {
+                e.EV_MSC : [e.MSC_SCAN],
+                e.EV_KEY : [e.BTN_MISC, e.BTN_TOOL_PEN, e.BTN_TOOL_RUBBER,
+                            e.BTN_TOUCH, e.BTN_STYLUS],
+                e.EV_ABS : [
+                    (e.ABS_X, (0, 9600, 0, 0)),
+                    (e.ABS_Y, (0, 7200, 0, 0)),
+                    (e.ABS_PRESSURE, (0, 256, 0, 0)),
+                    ]
+            }
+            node = evdev.OutBridge(cap)
+        else:
+            raise ValueError(
+                "'uinput' is not available on this platform: %s"%sys.platform)
+
+
     # -------------------------------------------------------------------
     # DATA PROCESSING
     elif uri.scheme=="nop":
