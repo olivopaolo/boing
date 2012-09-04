@@ -1,6 +1,9 @@
-=========================================
- boing - Creating and managing pipelines
-=========================================
+==================================================
+ :mod:`boing` --- Creating and managing pipelines
+==================================================
+
+.. module:: boing
+   :synopsis: Creating and managing pipelines.
 
 Developers can easily deploy Boing pipelines by invoking the toolkit's
 API in their Python code. The most important element is the function

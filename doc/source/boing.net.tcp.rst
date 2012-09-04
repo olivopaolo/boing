@@ -1,6 +1,6 @@
-===============================
- boing.net.tcp - TCP utilities
-===============================
+========================================
+ :mod:`boing.net.tcp` --- TCP utilities
+========================================
 
 .. todo:: Improve docs for the module boing.net.tcp
 

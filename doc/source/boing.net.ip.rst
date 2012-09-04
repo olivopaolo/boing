@@ -1,6 +1,6 @@
-=============================
- boing.net.ip - IP utilities
-=============================
+======================================
+ :mod:`boing.net.ip` --- IP utilities
+======================================
 
 .. automodule:: boing.net.ip
    :members: resolve, addrToString

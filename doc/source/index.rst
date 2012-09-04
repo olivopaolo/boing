@@ -29,9 +29,6 @@ Showcase
 
 .. raw:: html
 
-   <script type="text/javascript"
-           src="_static/fancyBox/lib/jquery-1.7.2.min.js"></script>
-
    <!-- Add fancyBox main JS and CSS files -->
    <script type="text/javascript"
            src="_static/fancyBox/source/jquery.fancybox.js"></script>

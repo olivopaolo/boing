@@ -1,6 +1,6 @@
-===============================
- boing.net.udp - UDP utilities
-===============================
+========================================
+ :mod:`boing.net.udp` --- UDP utilities
+========================================
 
 .. todo:: Improve docs for the module boing.net.udp
 

@@ -286,7 +286,38 @@ passed to the visualizer widget.
 Event recording and replaying
 =============================
 
-.. todo:: Describe the record/replay functionality.
+The |boing| toolkit also provides some tools for recording input
+events into log files and some other tools for replaying them. These
+operations are often really helpful during the development and
+debugging of applications. The simplest way to log events into a file
+is to use the node :code:`log:`. As an example, consider running the
+following command::
+
+   boing "in.tuio: + (viz: | log:./log.bz2)"
+
+Now, all the gestures you make on your tactile device will be recorded
+and written to the file :code:`./log.bz2`. Then, stop the pipeline by
+pressing Ctrl-C and let's replay the recorded gestures by executing
+the command::
+
+   boing "play:./log.bz2 + viz:"
+
+Quite easy, isn't it? It is also possible to configure the player to
+endlessly rerun the log and set the replay speed. To do so, simply run
+this command::
+
+   boing "play:./log.bz2?loop&speed=0.2 + viz:"
+
+A more powerful tool for replaying log files is the :code:`player:`
+node: thanks to its GUI, it enables users to easily define a playlist
+of log files that the node will reproduce. As an example, run the
+following command::
+
+   boing "player: + viz:"
+
+Playlists can be exported so that the :code:`player:` tool becomes
+very useful during the application testing for executing the unit
+test.
 
 .. rubric:: Footnotes
 

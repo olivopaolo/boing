@@ -75,7 +75,6 @@ Someday:
 *Docs*:
 
 * Check which Ubuntu packages are really necessary.
-* When Sphinx will use jquery1.7, change in index.rst the jquery request.
 
 Docs todo
 =========
