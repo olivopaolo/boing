@@ -2,8 +2,8 @@
  First steps
 =============
 
-This tutorial helps you starting to use the |boing| toolkit by
-providing simple examples of the toolkit's fuctionalities.
+This tutorial provides few simple examples of the functionality of the
+toolkit to help you starting to use the |boing| toolkit.
 
 Let's consider to have a multi-touch input device, like a tablet or a
 touch-screen. What cool things can I do with |boing|? |boing| enables to
@@ -71,7 +71,7 @@ Congratulations! You have created your first |boing| pipeline!
 Exploring the data
 ==================
 
-Now, let's try new functionalities by adding new nodes. Stop the
+Now, let's try new functionalities by adding a new node. Stop the
 previous pipeline by closing the visualizer widget or pressing Ctrl-C
 on the terminal, and type in the terminal::
 
@@ -95,13 +95,13 @@ and type in the terminal::
 Now, when you touch your multi-touch device, you can see that the
 terminal prints the subset of the data structures that refers only to
 the contact data. This is because the query :code:`$..contacts`
-addresses to any data named as :code:`contact`, searched at any level
+addresses to any data named as :code:`contacts`, searched at any level
 of the structure. Such query language can be very useful during
 development and testing phases for highlighting only the relevant
 information.
 
-A more exhaustive description of the data structure and the query
-language can be found in the :doc:`../functionalities` section. For
+A more exhaustive description of the data structure and of the query
+language can be found in the :doc:`data model <datamodel>` section. For
 now, let's leave the data structure and we consider the functioning of
 the pipeline: it's not difficult to understand that the :code:`|`
 operator (*Pipe*) is used to connect in parallel the nodes :code:`viz:` and
@@ -199,19 +199,94 @@ pipeline.
 
 As you can see, a very important feature of |boing| is that you can
 simultaneously connect many devices to different applications. Such
-feature eases the usage of debugging tools and enables multi-device
+feature eases the usage of debugging tools and it enables multi-device
 and multi-user applications.
 
-Input data processing
-=====================
+Data processing
+===============
 
-.. todo:: Describe the filtering, calibration functionalities.
+The |boing| toolkit is not only able to redirect input data to
+different destinations, but it also enables to process the transferred
+data. With regard to the multi-touch devices, recurring operations are
+the removal of the sensor noise and the calibration of the touch
+points. In order to accomplish these tasks, the toolkit provides
+two functional nodes that can be easily employed in our
+pipelines. As an example, let's run a new pipeline using the following
+command::
+
+   boing "in.tuio: + filtering: + calib:?screen=left + viz:"
+
+Now, when you touch your tactile device you should still see the
+interactions on the visualizer widget, but now they look more smooth
+and they are rotated 90 degrees counterclockwise. By employing the
+:code:`filtering:` node, we added the default smoothing filter, which
+is applied by default to the position of the contact points, while the
+node :code:`calib:` performs the calibration of the touch points [#]_.
+
+The structure of the current pipeline is shown in :ref:`figure 3.5 <figure5>`.
+
+.. _figure5:
+.. only:: html
+
+   .. figure:: images/firststeps5.svg
+      :align: center
+
+      Figure 3.5: Pipeline obtained from the configuration
+      :code:`in.tuio: + filtering: + calib:?screen=left + viz:`
+
+.. only:: latex
+
+   .. figure:: images/firststeps5.pdf
+      :align: center
+
+      Pipeline obtained from the configuration :code:`in.tuio: +
+      filtering: + calib:?screen=left + viz:`
+
+In order to better understand the result of the processing stage, it
+may be useful to show at the same time the raw data and the processed
+one. In order to achieve such result, stop the previous pipeline and
+run the following command::
+
+   boing "in.tuio: + (filtering: + calib:?screen=left + edit:?source=filtered | nop:) + viz:"
+
+Now, when you touch your input device you can see on the visualizer
+widget both the raw tracks and the processed tracks, so that it is
+easier to note the effect of the processing stage. The structure of
+the modified pipeline is shown in :ref:`figure 3.6 <figure6>`. Note
+that this behaviour has been obtained by adding a parallel branch
+constituted only by the node :code:`nop:`, which simply forwards the
+incoming data without making any modifications, and adding the node
+:code:`edit:?source=filtered`, which labels the events of the
+processing branch so that they belong to the source *filtered* (the
+name is not relevant). This latter step is necessary since the data of
+the two parallel branches is merged into a single stream before being
+passed to the visualizer widget.
+
+.. _figure6:
+.. only:: html
+
+   .. figure:: images/firststeps6.svg
+      :align: center
+
+      Figure 3.6: Pipeline obtained from the configuration
+
+      :code:`in.tuio: + (filtering: + calib:?screen=left +
+      edit:?source=filtered | nop:) + viz:`
+
+.. only:: latex
+
+   .. figure:: images/firststeps6.pdf
+      :align: center
+
+      Figure 3.6: Pipeline obtained from the configuration
+      :code:`in.tuio: + (filtering: + calib:?screen=left +
+      edit:?source=filtered | nop:) + viz:`
 
 
 Event recording and replaying
 =============================
 
-.. todo:: Describe the filtering, calibration functionalities.
+.. todo:: Describe the record/replay functionality.
 
 .. rubric:: Footnotes
 
@@ -220,6 +295,9 @@ Event recording and replaying
 .. [#] For a deeper presentation of pipeline configurations, see the :doc:`../functionalities` section.
 
 .. [#] For more output sources, see the :doc:`../functionalities` section.
+
+.. [#] For a more exhaustive presentation of nodes :code:`filtering:` and :code:`calib:`, see the next tutorials.
+
 
 .. _`TUIO trackers`: http://www.tuio.org/?software
 .. _JSONPath: http://goessner.net/articles/JsonPath/

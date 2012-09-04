@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="13cm" height="2cm" viewBox="9 9 252 22" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <rect style="fill: #ffffff" x="220" y="10" width="40" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="220" y="10" width="40" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="240" y="22.0667">
+      <tspan x="240" y="22.0667">viz:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="10" y="10" width="40" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="10" y="10" width="40" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="30" y="22.0667">
+      <tspan x="30" y="22.0667">in.tuio:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="70" y="10" width="40" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="70" y="10" width="40" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="90" y="22.0667">
+      <tspan x="90" y="22.0667">filtering:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="130" y="10" width="69.9" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="130" y="10" width="69.9" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="164.95" y="22.0667">
+      <tspan x="164.95" y="22.0667">calib:?screen=left</tspan>
+    </text>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="50" y1="20" x2="65.3937" y2="20"/>
+    <polygon style="fill: #000000" points="68.3937,20 64.3937,22 65.3937,20 64.3937,18 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="68.3937,20 64.3937,22 65.3937,20 64.3937,18 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="110.503" y1="20" x2="125.388" y2="20"/>
+    <polygon style="fill: #000000" points="128.388,20 124.388,22 125.388,20 124.388,18 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="128.388,20 124.388,22 125.388,20 124.388,18 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="199.9" y1="20" x2="215.882" y2="20"/>
+    <polygon style="fill: #000000" points="218.882,20 214.882,22 215.882,20 214.882,18 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="218.882,20 214.882,22 215.882,20 214.882,18 "/>
+  </g>
+</svg>
