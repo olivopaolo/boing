@@ -9,6 +9,23 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+"""The module :mod:`boing.net.ntp` provides few functions for handling
+the `Network Time Protocol (NTP) <http://www.ntp.org/>`_.
+
+*Example*::
+
+    import datetime
+    from boing.net import ntp
+    srvtime = ntp.ntpFromServer("europe.pool.ntp.org")
+    srvdatetime = ntp.ntp2datetime(srvtime)
+    now = datetime.datetime.now()
+    print("Server time:", srvdatetime)
+    print("Local time:", now)
+    print("Delta:", now - srvdatetime)
+
+"""
+
+
 import datetime
 import struct
 import time
@@ -32,20 +49,27 @@ def _dump(data):
     return output.getvalue()
 
 def ntpDecode(data):
+    """Return the POSIX timestamp obtained from decoding the bytes object
+    *data*."""
     #print "ntpDecode:",_dump(data)
     seconds, picoseconds = struct.unpack("!2I", data)
     #print "ntpDecode:", seconds, picoseconds
     return seconds + picoseconds/_kNtpFrac
 
 def ntpEncode(t):
+    """Return the bytes object obtained from encoding the POSIX
+    timestamp *t*."""
     seconds = int(t)
     picoseconds = int((t-seconds)*_kNtpFrac)
     #print "ntpEncode:", seconds, picoseconds
     data = struct.pack("!2I", seconds, picoseconds)
     #print "ntpEncode:",_dump(data)
     return data
-    
+
 def ntpFromServer(server):
+    """Send an ntp time query to the *server* and return the obtained
+    POSIX timestamp. The request is sent by using an UDP connection to
+    the port 123 of the NTP server."""
     import socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     data = '\x1b' + 47 * '\0'
@@ -54,9 +78,13 @@ def ntpFromServer(server):
     return ntpDecode(data[40:48])
 
 def ntp2datetime(t):
+    """Return the :class:`datetime.datetime` instance corresponding to
+    the POSIX timestamp *t*."""
     return datetime.datetime.fromtimestamp(t-_kUnixEpoch)
 
 def datetime2ntp(dt):
+    """Return the POSIX timestamp corresponding to the
+    :class:`datetime.datetime` instance *dt*."""
     return _kUnixEpoch + time.mktime(dt.timetuple())+1e-6*dt.microsecond
 
 # -------------------------------------------------------------------------

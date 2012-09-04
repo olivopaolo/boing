@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="17cm" height="9cm" viewBox="10 11 321 175" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <rect style="fill: #ffffff" x="250" y="70" width="80" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="250" y="70" width="80" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="290" y="82.0667">
+      <tspan x="290" y="82.0667">out.tuio://[::1]:3335</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="20" y="70" width="40" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="20" y="70" width="40" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="40" y="82.0667">
+      <tspan x="40" y="82.0667">in.tuio:</tspan>
+    </text>
+  </g>
+  <text font-size="12.8" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="40.7" y="100.233">
+    <tspan x="40.7" y="100.233"></tspan>
+  </text>
+  <g>
+    <rect style="fill: #ffffff" x="80" y="70" width="40" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="80" y="70" width="40" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="100" y="82.0667">
+      <tspan x="100" y="82.0667">filtering:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="250" y="142" width="40" height="20.4667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="250" y="142" width="40" height="20.4667"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="270" y="154.3">
+      <tspan x="270" y="154.3">rec:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="20" y="142" width="40" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="20" y="142" width="40" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="40" y="154.067">
+      <tspan x="40" y="154.067">player:</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="140" y="70" width="69.9" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="140" y="70" width="69.9" height="20"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="174.95" y="82.0667">
+      <tspan x="174.95" y="82.0667">calib:?screen=left</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="230" y="106" width="2" height="20"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #ffffff" x="230" y="106" width="2" height="20"/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="60" y1="80" x2="75.3937" y2="80"/>
+    <polygon style="fill: #000000" points="78.3937,80 74.3937,82 75.3937,80 74.3937,78 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="78.3937,80 74.3937,82 75.3937,80 74.3937,78 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="120.503" y1="80" x2="135.388" y2="80"/>
+    <polygon style="fill: #000000" points="138.388,80 134.388,82 135.388,80 134.388,78 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="138.388,80 134.388,82 135.388,80 134.388,78 "/>
+  </g>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="209.9,80 220,80 220,116 230,116 "/>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="232.986,116 240,116 240,80 245.391,80 "/>
+    <polygon style="fill: #000000" points="248.391,80 244.391,82 245.391,80 244.391,78 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="248.391,80 244.391,82 245.391,80 244.391,78 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="230,116 240,116 240,152.233 245.433,152.233 "/>
+    <polygon style="fill: #000000" points="248.433,152.233 244.433,154.233 245.433,152.233 244.433,150.233 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="248.433,152.233 244.433,154.233 245.433,152.233 244.433,150.233 "/>
+  </g>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="60.4895,152 220,152 220,116 230,116 "/>
+  <text font-size="6.77333" style="fill: #000000;text-anchor:start;font-family:monospace;font-style:normal;font-weight:normal" x="20" y="30">
+    <tspan x="20" y="30">$ boing "(in.tuio: + filtering: + calib:?screen=left | player:)</tspan>
+    <tspan x="20" y="38.4667">           + (out.tuio://[::1]:3335 | rec:)"</tspan>
+  </text>
+  <text font-size="9.03111" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="10" y="20">
+    <tspan x="10" y="20">Command:</tspan>
+  </text>
+  <text font-size="9.03111" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="10" y="60">
+    <tspan x="10" y="60">Pipeline obtained:</tspan>
+  </text>
+  <g>
+    <polygon style="fill: #ffffb3" points="24,96 70,96 76,102 76,120 24,120 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 0.6; stroke: #000000" points="24,96 70,96 76,102 76,120 24,120 "/>
+  </g>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" points="70,96 70,102 76,102 "/>
+  <text font-size="4.51549" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="26" y="104">
+    <tspan x="26" y="104">Read TUIO events </tspan>
+    <tspan x="26" y="109.644">from the UDP socket</tspan>
+    <tspan x="26" y="115.289">at port 3333</tspan>
+  </text>
+  <g>
+    <polygon style="fill: #ffffb3" points="84,96 130,96 136,102 136,114 84,114 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 0.6; stroke: #000000" points="84,96 130,96 136,102 136,114 84,114 "/>
+  </g>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" points="130,96 130,102 136,102 "/>
+  <text font-size="4.51549" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="86" y="104">
+    <tspan x="86" y="104">Smooth the track</tspan>
+    <tspan x="86" y="109.644">of the contacts</tspan>
+  </text>
+  <g>
+    <polygon style="fill: #ffffb3" points="144,96 198,96 204,102 204,124 144,124 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 0.6; stroke: #000000" points="144,96 198,96 204,102 204,124 144,124 "/>
+  </g>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" points="198,96 198,102 204,102 "/>
+  <text font-size="4.51549" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="146" y="104">
+    <tspan x="146" y="104">Calibrate the position</tspan>
+    <tspan x="146" y="109.644">of the contacts by</tspan>
+    <tspan x="146" y="115.289">rotating 90 degrees</tspan>
+    <tspan x="146" y="120.933">counterclockwise</tspan>
+  </text>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="43.1836" y1="95.7305" x2="40" y2="90"/>
+  <g>
+    <polygon style="fill: #ffffb3" points="24,168 64,168 70,174 70,186 24,186 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 0.6; stroke: #000000" points="24,168 64,168 70,174 70,186 24,186 "/>
+  </g>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" points="64,168 64,174 70,174 "/>
+  <text font-size="4.51549" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="26" y="176">
+    <tspan x="26" y="176">Replay events</tspan>
+    <tspan x="26" y="181.644">logged into files</tspan>
+  </text>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="44" y1="168" x2="40" y2="162"/>
+  <g>
+    <polygon style="fill: #ffffb3" points="254,168 292,168 298,174 298,186 254,186 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 0.6; stroke: #000000" points="254,168 292,168 298,174 298,186 254,186 "/>
+  </g>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" points="292,168 292,174 298,174 "/>
+  <text font-size="4.51549" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="256" y="176">
+    <tspan x="256" y="176">Record events</tspan>
+    <tspan x="256" y="181.644">into log files</tspan>
+  </text>
+  <g>
+    <polygon style="fill: #ffffb3" points="254,96 314,96 320,102 320,126 254,126 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 0.6; stroke: #000000" points="254,96 314,96 320,102 320,126 254,126 "/>
+  </g>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" points="314,96 314,102 320,102 "/>
+  <text font-size="4.51549" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="256" y="104">
+    <tspan x="256" y="104">Forward the processed</tspan>
+    <tspan x="256" y="109.644">contact events as a</tspan>
+    <tspan x="256" y="115.289">TUIO stream to a local</tspan>
+    <tspan x="256" y="120.933">UDP socket at port 3335</tspan>
+  </text>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="104" y1="96" x2="100" y2="90"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="168" y1="96" x2="164" y2="90"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="284" y1="96" x2="280" y2="90"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="273" y1="168" x2="270" y2="162.467"/>
+</svg>

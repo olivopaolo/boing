@@ -10,9 +10,15 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+"""The module :mod:`boing.net.ip` provides few functions related to
+IP addressing.
+
+"""
+
 import socket
 
-from PyQt4.QtNetwork import QAbstractSocket
+from PyQt4.QtNetwork import QAbstractSocket, QHostAddress
+from boing.utils import assertIsInstance
 
 PF_INET = socket.PF_INET if "PF_INET" in socket.__dict__ else socket.AF_INET
 PF_INET6 = socket.PF_INET6 if "PF_INET6" in socket.__dict__ else socket.AF_INET6
@@ -24,15 +30,16 @@ def IN6_IS_ADDR_MULTICAST(addr):
     return (addr[0]==0xff)"""
 
 def resolve(addr, port, family=0, type=0):
+    """Return a pair (addr, port) representing the IP address
+    associated to the host *host* for the specified port, family and
+    socket type."""
     info = socket.getaddrinfo(addr, port, family, type)
     family, socktype, proto, canonname, addr = info[0]
     return addr
 
-def getProtocolFamilyName(family):
-    return {PF_INET:"PF_INET", PF_INET6:"PF_INET6"}.get(family,"PF_UNSPEC")
-
 def addrToString(addr):
-    """Convert a QHostAddress to string."""
+    """Return a string representing the QHostAddress *addr*."""
+    assertIsInstance(addr, QHostAddress)
     if addr.protocol()==QAbstractSocket.IPv4Protocol:
         return addr.toString()
     elif addr.protocol()==QAbstractSocket.IPv6Protocol:
@@ -42,7 +49,7 @@ def addrToString(addr):
             c = (addr[i]<<8)+addr[i+1]
             if c==0:
                 if i==0: s += ":"
-                if not zeros: 
+                if not zeros:
                     s += ":"
                     zeros = True
             else:
@@ -51,5 +58,8 @@ def addrToString(addr):
                 if zeros: zeros = False
         return s
     else: return ""
+
+def getProtocolFamilyName(family):
+    return {PF_INET:"PF_INET", PF_INET6:"PF_INET6"}.get(family,"PF_UNSPEC")
 
 

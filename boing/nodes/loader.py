@@ -71,7 +71,12 @@ grammar = pyparsing.operatorPrecedence(
 # URI expressions evaluation
 
 def create(expr, parent=None):
-    """Create a new node from *expr*."""
+    """Return a new node created as defined in the expression *expr*,
+    with parent object *parent*. If *expr* is composed by a single
+    URI, the returned object will be a new node correspondent to the
+    provided URI; if *expr* is formed by an URI expression, the
+    returned object will be a composed node (See
+    :ref:`node-composition`)."""
     rvalue = grammar.parseString(str(expr))[0]
     if isinstance(rvalue, str):
         return createSingle(expr, parent=parent)

@@ -9,6 +9,9 @@ toolkit |boing|:
    :maxdepth: 2
 
    firststeps
+   developer
+
+..
    redirection
    logging
    osc
@@ -16,4 +19,3 @@ toolkit |boing|:
    multitouch
    configuration
    scriptadvanced
-   developer

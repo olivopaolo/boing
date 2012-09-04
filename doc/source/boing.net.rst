@@ -1,6 +1,6 @@
-
-boing.net
-=========
+===========================================
+ boing.net - Networking and encoding tools
+===========================================
 
 .. automodule:: boing.net
 
@@ -16,3 +16,13 @@ Each encoding has been implemented in a different submodule:
    boing.net.slip
    boing.net.json
    boing.net.osc
+   boing.net.pickle
+
+
+Common networking utilities:
+
+.. toctree::
+   boing.net.ip
+   boing.net.tcp
+   boing.net.udp
+   boing.net.ntp

@@ -11,8 +11,10 @@
    tutorials
    concepts
    uris
-   boing
+   apidoc
    changelog
+   authors
+   license
    todo
 
 Indices and tables

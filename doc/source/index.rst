@@ -11,21 +11,21 @@ multi-touch and gesture enabled applications.
 |boing| enables to create pipelines for connecting different input
 sources to multiple target destinations (e.g. applications, logs,
 etc.)  and eventually process the data before being dispatched.
-|boing| provides a set of preconfigured functional nodes that enable
-to:
+|boing| provides a set of functional nodes that enable to:
 
-- read and decode input sources (TUIO, OSC, JSON);
-- encode and forward data to target outputs (TUIO, OSC, JSON);
+- read and decode input sources (e.g. TUIO, OSC, JSON);
+- encode and forward data to target outputs (e.g. TUIO, OSC, JSON);
 - record and replay the data flow;
 - process gesture data (calibration, smoothing filtering, debugging, etc.);
 
-|boing| is licensed under the `GNU GPL2`_ license and it is being
-developed by `Paolo Olivo`_ and `Nicolas Roussel`_.
+..
+   |boing| is licensed under the `GNU GPL2`_ license and it is being
+   developed by `Paolo Olivo`_ and `Nicolas Roussel`_.
 
 :doc:`Get started! <install>`
 
-Gallery
-=======
+Showcase
+========
 
 .. raw:: html
 
@@ -69,25 +69,46 @@ Gallery
    </script>
 
    <div id="pipeline-title" style="display: none;">
-     Example of pipeline created using Boing.<br>
+     Example of the functionality of a Boing pipeline.<br>
      <a href="introduction.html">Read more</a>
-     <p id="fancyBoxLink"> Created using
+     <p id="fancyBoxLink"> Showcase created using
+        <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
+     </p>
+   </div>
+
+   <div id="example-title" style="display: none;">
+
+     Concrete usage example: the toolkit is used to calibrate and
+     smooth the input events of a TUIO device. At the same time,
+     events are recorded so that, if something interesting happens,
+     they can be logged into a file for replaying them.<br />
+
+     <a href="firststeps.html">Read more</a>
+     <p id="fancyBoxLink"> Showcase created using
+        <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
+     </p>
+   </div>
+
+   <div id="code-title" style="display: none;">
+     Code snippet for creating a simple pipeline from your own code.<br>
+     <a href="developer.html">Read more</a>
+     <p id="fancyBoxLink"> Showcase created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
      </p>
    </div>
 
    <div id="recorder-title" style="display: none;">
-     Gesture recorder.<br>
+     The gesture recorder tool.<br>
      <a href="functionalities.html#the-recorder-todo">Read more</a>
-     <p id="fancyBoxLink"> Created using
+     <p id="fancyBoxLink"> Showcase created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
      </p>
    </div>
 
    <div id="player-title" style="display: none;">
-     Gesture playlist player.<br>
+     The gesture playlist player.<br>
      <a href="functionalities.html#the-player-todo">Read more</a>
-     <p id="fancyBoxLink"> Created using
+     <p id="fancyBoxLink"> Showcase created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
      </p>
    </div>
@@ -95,22 +116,32 @@ Gallery
    <p style="text-align: center;">
       <a style="text-decoration: none;" class="fancybox" rel="group"
          href="_static/pipeline.png" data-title-id="pipeline-title"
-	 title="Example of pipeline created using Boing.">
+	 title="Example of the functionality of a Boing pipeline.">
          <img class="thumb" src="_static/pipeline-th.png">
       </a>
       <a style="text-decoration: none;" class="fancybox" rel="group"
+         href="_static/example.png" data-title-id="example-title"
+	 title="Concrete usage example.">
+         <img class="thumb" src="_static/example-th.png">
+      </a>
+      <a style="text-decoration: none;" class="fancybox" rel="group"
+         href="_static/code.png" data-title-id="code-title"
+	 title="Code snippet for creating a simple pipeline from your own code.">
+         <img class="thumb" src="_static/code-th.png">
+      </a>
+      <a style="text-decoration: none;" class="fancybox" rel="group"
          href="_images/recorder.png" data-title-id="recorder-title"
-	 title="Gesture recorder.">
+	 title="The gesture recorder tool.">
          <img class="thumb" src="_images/recorder.png" width="15%">
       </a>
       <a style="text-decoration: none;" class="fancybox" rel="group"
          href="_images/player.png" data-title-id="player-title"
-	 title="Gesture playlist player.">
+	 title="The gesture playlist player.">
          <img class="thumb" src="_images/player.png" width="13%">
       </a>
    </p>
    <!--<p style="text-align: center; font-size: small;">
-      <i>Gallery</i>
+      <i>Showcase</i>
    </p>-->
 
 .. _`Paolo Olivo`: http://www.olivopaolo.it

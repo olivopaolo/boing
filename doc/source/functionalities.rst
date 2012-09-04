@@ -1,6 +1,6 @@
-================
- Funtionalities
-================
+=============================
+ Funtionality of the toolkit
+=============================
 
 .. todo::
    Speak about the default nodes and the node uris convention.

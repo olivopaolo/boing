@@ -1,16 +1,13 @@
-============
- boing.core
-============
+==========================================
+ boing.core - The pipeline infrastructure
+==========================================
 
 .. automodule:: boing.core
 
-This module provides the following class:
-
 .. autoclass:: boing.core.Offer
-   :members: UndefinedProduct
 
 .. autoclass:: boing.core.Request
-   :members: test, items, filter, filterout
+   :members: test, items
 
 .. autoclass:: boing.core.QRequest
 

@@ -9,6 +9,11 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+"""The module :mod:`boing.core` contains the classes that constitute
+the infrastructure of |boing| pipelines.
+
+"""
+
 # Facade pattern to make things easier.
 from boing.core.economy \
     import Offer, Request, LambdaRequest, Producer, Consumer, Identity, Functor

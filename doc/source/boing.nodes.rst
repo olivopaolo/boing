@@ -1,17 +1,16 @@
-=============
- boing.nodes
-=============
+=========================================
+ boing.nodes - The nodes of the pipeline
+=========================================
 
 .. automodule:: boing.nodes
 
-Products debugging
-------------------
+.. rubric:: Products debugging
+
 
 .. autoclass:: Dump(request=Request.ANY, mode='items', separator='\\n\\n', src=False, dest=False, depth=None, parent=None)
    :members:
 
-Products editing
-----------------
+.. rubric:: Products editing
 
 ..
   .. autoclass:: Filter
@@ -23,8 +22,7 @@ Products editing
 .. autoclass:: DiffArgumentFunctor
    :members:
 
-Timing utilities
-----------------
+.. rubric:: Timing utilities
 
 .. autoclass:: Timekeeper
    :members:
