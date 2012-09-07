@@ -2,303 +2,272 @@
  Nodes reference table
 =======================
 
-Platform
+.. role:: tn
+.. role:: url
+.. role:: arg
+.. role:: oss
 
-O = Mac OS X, L = Linux, W = Windows
+.. |S| replace:: :ref:`OSs <osstable>`
+.. |M| replace:: :ref:`Mode <modestable>`
 
-Mode
+.. |subheader| raw:: html
 
-I = Input, O = Output, W = Worker
+   <tr><th class="subheader" colspan="5">
 
-.. raw:: html
+.. table::
+   :class: uritable
+   :name: Node URIs
 
-       <table style="font-size: small">
-	 <tr>
-	   <th colspan="2">&nbsp;</th>
-	   <th>Node URIs</th>
-	   <th><small>URI query keys<a href="#2"><sup>2</sup></a></small></th>
-	   <th><small>Description</small></th>
-	 </tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>&lt;in|out&gt;.[&lt;ENCODINGS&gt;.]&lt;IODEVICE&gt;</url></td>
-	   <td>&nbsp;</td>
-	   <td>Data bridge using custom input device and
-	     decodings<a href="#4"><sup>4</sup></a></td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>play[.&lt;ENCODING&gt;]:&lt;FILEPATH&gt;</url></td>
-	   <td><url>loop, speed, interval</url></td>
-	   <td>Replay data from log file (default <url>pickle</url>)</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>log[.&lt;ENCODING&gt;]:&lt;FILEPATH&gt;</url></td>
-	   <td>&nbsp;</td>
-	   <td>Record data to log file (default encoding <url>pickle</url>)</td></tr>
+   +---------------------------------------------------------------------------------------------------+
+   |:tn:`Node URIs`                                                                                    |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   ||S|||M||Value                       |Query keys [#f2]_     |description |subheader| Data           |
+   |   |   |                            |                      |Redirection                            |
+   +===+===+============================+======================+=======================================+
+   |LWX|I  ||inbridge|                  |                      |listen and decode data from an input   |
+   |   |   |                            |                      |device                                 |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  ||outbridge|                 |                      |encode and forward the data to a target|
+   |   |   |                            |                      |destination |subheader| Record/Replay  |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|I  ||play|                      |:arg:`loop, speed,    |replay a log file (default encoding    |
+   |   |   |                            |interval`             ||pickle|)                              |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  ||log|                       |                      |record data to log file (default       |
+   |   |   |                            |                      |encoding |pickle|)                     |
+   |   |   |                            |                      |                                       |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  |:url:`rec:`                 |:arg:`request,        |data recorder with GUI                 |
+   |   |   |                            |timelimit, sizelimit, |                                       |
+   |   |   |                            |oversizecut, fps,     |                                       |
+   |   |   |                            |timewarping`          |                                       |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|I  ||player|                    |:arg:`interval, open` |log files player with GUI (default     |
+   |   |   |                            |                      |encoding |pickle|) |subheader| Data    |
+   |   |   |                            |                      |Debug                                  |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  ||dump|                      |:arg:`request, mode,  |dump products to an output device      |
+   |   |   |                            |separator, src, dest, |                                       |
+   |   |   |                            |depth`                |                                       |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  ||stat|                      |:arg:`request, fps`   |print products statistics to an output |
+   |   |   |                            |                      |device                                 |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  |:url:`viz:`                 |:arg:`antialiasing,   |display multi-touch contacts           |
+   |   |   |                            |fps`                  ||subheader| Data Processing            |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|W  |:url:`nop:`                 |                      |no operation node                      |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|W  |:url:`edit:`                |:url:`merge, copy,    |apply to all the received products     |
+   |   |   |                            |result, **dict`       |\**dict                                |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|W  |:url:`calib:`               |:url:`matrix, screen, |apply a 4x4 transformation matrix      |
+   |   |   |                            |attr, request, merge, |                                       |
+   |   |   |                            |copy, result`         |                                       |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|W  |:url:`filtering:`           |:url:`uri, attr,      |filter product data                    |
+   |   |   |                            |request, merge, copy, |                                       |
+   |   |   |                            |result`               |                                       |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|W  |:url:`timekeeper:`          |:url:`merge, copy,    |mark each received product with a      |
+   |   |   |                            |result`               |timetag                                |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|W  |:url:`lag:[<msec>]`         |                      |add a lag to each received product     |
+   +---+---+----------------------------+----------------------+---------------------------------------+
 
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>rec:</url></td>
-	   <td><url>request, timelimit, sizelimit, oversizecut, fps, timewarping
-	       </url></td>
-	   <td>Recorder with GUI</td></tr>
+.. |inbridge| raw:: html
 
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>player[.&lt;ENCODING&gt;]:</url></td>
-	   <td><url>interval, open</url></td>
-	   <td>Open GUI player to replay data from log files (default encoding <url>pickle</url>)</td></tr>
+   <span class="url">in[.<a href="#encodings">&lt;encoding&gt;</a>]<a
+   href="#input-output-devices">&lt;InputDevice&gt;</a></span>
 
-	 <!-- Data Processing -->
-	 <tr><th colspan="5"><small>Data Processing</small></th></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>nop:</url></td>
-	   <td>&nbsp;</td>
-	   <td>No operation node</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>dump&lt;&lt;OUTPUT-DEVICE&gt;|:&gt;</url></td>
-	   <td><url>request, mode, separator, src, dest, depth</url></td>
-	   <td>Dump products to an output device (default stdout:)</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>stat&lt;&lt;OUTPUT-DEVICE&gt;|:&gt;</url></td>
-	   <td><url>request, fps</url></td>
-	   <td>Print products statistics to an output device (default stdout)</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>viz:</url></td>
-	   <td><url>antialiasing, fps</url></td>
-	   <td>Display multi-touch contacts</td></tr>
-	 <!--<tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>W</ossupport></td>
-	   <td><url>filter:[&lt;QUERY&gt;]</url></td>
-	   <td>attr</td>
-	   <td>Discard the products that do not match 'query'</td></tr>-->
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>W</ossupport></td>
-	   <td><url>edit:</url></td>
-	   <td>merge, copy, result, **dict</td>
-	   <td>Apply to all the received products <i>dict</i></td></tr>
-	 <!-- <tr> -->
-	 <!-- 	<td><ossupport>OLW</ossupport></td> -->
-	 <!-- 	<td><ossupport>W</ossupport></td> -->
-	 <!-- 	<td><url>filterout:[&lt;QUERY&gt;]</url></td> -->
-	 <!-- 	<td>&nbsp;</td> -->
-	 <!-- 	<td>Discard the products that match 'query'</td></tr> -->
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>W</ossupport></td>
-	   <td><url>calib:</url></td>
-	   <td><url>matrix, screen, attr, request, merge, copy, result</url></td>
-	   <td>Apply a 4x4 transformation matrix</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>W</ossupport></td>
-	   <td><url>filtering:</url></td>
-	   <td><url>uri, attr, request, merge, copy, result</url></td>
-	   <td>Filter product data using <code>filtering</code> library</td></tr>
-	 <!-- Timing utils -->
-	 <tr><th colspan="5"><small>Timing utils</small></th></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>W</ossupport></td>
-	   <td><url>timekeeper:</url></td>
-	   <td>merge, copy, result</td>
-	   <td>Mark each received product with a timetag</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>W</ossupport></td>
-	   <td><url>lag:[&lt;MSEC&gt;]</url></td>
-	   <td>&nbsp;</td>
-	   <td>Add a lag to each received product</td></tr>
-	 <!-- IO devices -->
-	 <tr><th colspan="5">IO devices</th></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>stdin:</url></td>
-	   <td>&nbsp;</td>
-	   <td>Standard input</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>stdout:</url></td>
-	   <td>&nbsp;</td>
-	   <td>Standard output</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>&lt;ABSOLUTE-FILEPATH&gt;</url></td>
-	   <td><url>uncompress, postend</url></td>
-	   <td>Absolute filepath (Read Only)</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>&lt;ABSOLUTE-FILEPATH&gt;</url></td>
-	   <td>&nbsp;</td>
-	   <td>Absolute filepath (Write Only)</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>&lt;RELATIVE-FILEPATH&gt;</url></td>
-	   <td><url>uncompress, postend</url></td>
-	   <td>Relative filepath (Read Only)<a href="#5"><sup>5</sup></a></td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>&lt;RELATIVE-FILEPATH&gt;</url></td>
-	   <td>&nbsp;</td>
-	   <td>Relative filepath (Write Only)<a href="#5"><sup>5</sup></a></td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>udp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
-	   <td>&nbsp;</td>
-	   <td>Read from UDP socket</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>udp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
-	   <td><url>writeend</url></td>
-	   <td>Write to UDP socket</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>tcp://&lt;HOST&gt;:&lt;PORT&gt;</url></td>
-	   <td>&nbsp;</td>
-	   <td>Read/Write on TCP socket</td></tr>
+.. |outbridge| raw:: html
 
-	 <!-- Encodings -->
-	 <tr><th colspan="5">Encodings</th></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>slip</url></td>
-	   <td>&nbsp;</td>
-	   <td>Bytestream from/to <a href="http://www.cse.iitb.ac.in/~bestin/btech-proj/slip/x365.html">SLIP</a></td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>pickle</url></td>
-	   <td><url>noslip</url></td>
-	   <td><a href="http://docs.python.org/py3k/library/pickle.html">pickle</a> to products</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>pickle</url></td>
-	   <td><url>protocol, request, noslip</url></td>
-	   <td>Products to <a href="http://docs.python.org/py3k/library/pickle.html">pickle</a></td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>json</url></td>
-	   <td><url>noslip</url></td>
-	   <td><a href="http://www.json.org/">JSON</a> to products</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>O</ossupport></td>
-	   <td><url>json</url></td>
-	   <td><url>request, noslip</url></td>
-	   <td>Products to <a href="http://www.json.org/">JSON</a></td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>osc</url></td>
-	   <td><url>rt, noslip</url></td>
-	   <td>Bytestream from/to <a href="http://opensoundcontrol.org/">OSC</a></td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>tuio[.osc]</url></td>
-	   <td><url>rawsource</url></td>
-	   <td>Multi-touch events from/to <a href="http://www.tuio.org/">TUIO</a></td></tr>
-	 <!-- <tr> -->
-	 <!-- 	<td><ossupport>L</ossupport></td> -->
-	 <!-- 	<td><ossupport>I</ossupport></td> -->
-	 <!-- 	<td><url>mtdev</url></td> -->
-	 <!-- 	<td>&nbsp;</td> -->
-	 <!-- 	<td>Multi-touch events from <code>mtdev</code> -->
-	 <!-- 	  device<a href="#6"><sup>6</sup></a></td></tr> -->
-       </table>
-       <br>
+   <span class="url">out[.<a href="#encodings">&lt;encoding&gt;</a>]<a
+   href="#input-output-devices">&lt;OutputDevice&gt;</a></span>
 
-       <table style="font-size: small">
-	 <!-- Host-->
-	 <tr><th colspan="4">Host</th></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><i>empty</i></td>
-	   <td>same as any address IPv6</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>0.0.0.0</url></td>
-	   <td>IPv4 any address</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>I</ossupport></td>
-	   <td><url>[::]</url></td>
-	   <td>IPv6 any address</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>127.0.0.1</url></td>
-	   <td>IPv4 loopback</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>[::1]</url></td>
-	   <td>IPv6 loopback</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>x.x.x.x</url></td>
-	   <td>specific IPv4 address</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>[x:x:x:x:x:x:x:x]</url></td>
-	   <td>specific IPv6 address</td></tr>
-	 <tr>
-	   <td><ossupport>OLW</ossupport></td>
-	   <td><ossupport>IO</ossupport></td>
-	   <td><url>hostname</url></td>
-	   <td>specific hostname</td></tr>
-       </table>
+.. |play| raw:: html
 
-       <p><a name="1"><sup>1</sup></a>On Windows, in order to define a file
-	 using the scheme <url>file</url> it is necessary to place the
-	 character <url>'/'</url> (slash) before the drive letter.
-	 (e.g. <url>file:///C:/Windows/explorer.exe</url>)
-       </p>
+   <span class="url">play[.<a href="#encodings">&lt;encoding&gt;</a>]:&lt;filepath&gt;</span>
 
-       <p><a name="2"><sup>2</sup></a> The available query keys are
-	 obtained from the union of the available query keys of all the uri
-	 components. As an example, the uri <url>out.json://[::1]:7777</url> is by
-	 default translated to <url>out.json.udp://[::1]:7777</url>, so it
-	 owns the query keys of the json encoder (request, filter) and of
-	 the udp socket node (writeend).
+.. |log| raw:: html
 
-       <p><a name="4"><sup>4</sup></a>Some encodings have default
-	 input/output devices (e.g. <url>in.tuio:</url> is by default translated into
-	 <url>in.tuio.udp://[::]:3333</url>).
+   <span class="url">log[.<a href="#encodings">&lt;encoding&gt;</a>]:&lt;filepath&gt;</span>
 
-       <p><a name="5"><sup>5</sup></a>It cannot be used to form composed URLs.</p>
+.. |dump| raw:: html
 
-       <!-- <p><a name="6"><sup>6</sup></a><code>mtdev</code> decoding only -->
-       <!--   works on linux device files (e.g. <url>/dev/input/event6</url>).</p> -->
+   <span class="url">dump[.<a href="#encodings">&lt;encoding&gt;</a>]<a
+   href="#input-output-devices">&lt;OutputDevice&gt;</a></span>
 
+.. |stat| raw:: html
+
+   <span class="url">stat[.<a href="#encodings">&lt;encoding&gt;</a>]<a
+   href="#input-output-devices">&lt;OutputDevice&gt;</a></span>
+
+.. |player| raw:: html
+
+   <span class="url">player[.<a href="#encodings">&lt;encoding&gt;</a>]:</span>
+
+.. |pickle| raw:: html
+
+   <span class="url"><a href="#encodings">pickle</a></span>
+
+
+Encodings
+=========
+
+.. table::
+   :class: uritable
+   :name: Encodings
+
+   +---------------------------------------------------------------------------------------------------+
+   |:tn:`Encodings` [#f3]_                                                                             |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   ||S|||M||Value                       |Query keys            | Description                           |
+   +===+===+============================+======================+=======================================+
+   |LWX|IO |:url:`slip`                 |                      |bytestream from/to SLIP_               |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|I  |:url:`pickle`               |:arg:`noslip`         | pickle_ to products                   |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  |:url:`pickle`               |:arg:`protocol,       |Products to pickle_                    |
+   |   |   |                            |request, noslip`      |                                       |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|I  |:url:`json`                 |:arg:`noslip`         |JSON_ to products                      |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  |:url:`json`                 |:arg:`request, noslip`|products to JSON_                      |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|IO |:url:`osc`                  |:arg:`rt, noslip`     |bytestream from/to OSC_                |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|IO |:url:`tuio[.osc]`           |:arg:`rawsource`      |Multi-touch events from/to TUIO_       |
+   |   |   |                            |                      |                                       |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+
+
+Input/Output devices
+====================
+
+.. table::
+   :class: uritable
+   :name: Input/Output devices
+
+   +---------------------------------------------------------------------------------------------------+
+   |:tn:`Input/Output devices`                                                                         |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   ||S|||M|| Value                      | Query keys           | Description                           |
+   +===+===+============================+======================+=======================================+
+   |LWX|I  |:url:`:[stdin]`             |                      |read from standard input               |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|I  |:url:`:[stdout]`            |                      |write to standard output               |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|I  | :url:`[.file]:<filepath>`  |:arg:`uncompress,     |read from file                         |
+   |   |   |                            |postend`              |                                       |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  | :url:`[.file]:<filepath>`  |                      |write to file                          |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|I  ||udpsocket|                 |                      |read from UDP socket                   |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|O  ||udpsocket|                 |:arg:`writeend`       |write to UDP socket                    |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+   |LWX|IO ||tcpsocket|                 |:arg:`writeend`       |read/write on TCP socket               |
+   +---+---+----------------------------+----------------------+---------------------------------------+
+
+.. |udpsocket| raw:: html
+
+   <span class="url">[.udp]://<a href="#hosts">&lt;host&gt;</a>:&lt;port&gt;</span>
+
+.. |tcpsocket| raw:: html
+
+   <span class="url">.tcp://<a href="#hosts">&lt;host&gt;</a>:&lt;port&gt;</span>
+
+Hosts
+=====
+
+.. table::
+   :class: uritable
+   :name: Hosts
+
+   +---------------------------------------------------------+
+   |:tn:`Hosts`                                              |
+   +---+---+------------------------+------------------------+
+   ||S|||M||Value                   |Description             |
+   +===+===+========================+========================+
+   |LWX|I  |*empty*                 |same as IPv6 any address|
+   +---+---+------------------------+------------------------+
+   |LWX|I  |:url:`0.0.0.0`          |IPv4 any address        |
+   +---+---+------------------------+------------------------+
+   |LWX|I  |:url:`[::]`             |IPv6 any address        |
+   +---+---+------------------------+------------------------+
+   |LWX|IO |:url:`127.0.0.1`        |IPv4 loopback           |
+   +---+---+------------------------+------------------------+
+   |LWX|IO |:url:`[::1]`            |IPv6 loopback           |
+   +---+---+------------------------+------------------------+
+   |LWX|IO |:url:`x.x.x.x`          |specific IPv4 address   |
+   +---+---+------------------------+------------------------+
+   |LWX|IO |:url:`[x:x:x:x:x:x:x:x]`|specific IPv6 address   |
+   +---+---+------------------------+------------------------+
+   |LWX|IO |:url:`<hostname>`       |specific hostname       |
+   +---+---+------------------------+------------------------+
+
+Modes
+=====
+
+.. _modestable:
+.. table::
+   :class: uritable
+   :name: Modes
+
+   +---------------------------------+
+   |:tn:`Modes`                      |
+   +----------+----------------------+
+   |Value     |Description           |
+   +==========+======================+
+   |I         |Input                 |
+   +----------+----------------------+
+   |O         |Output                |
+   +----------+----------------------+
+   |W         |Worker                |
+   +----------+----------------------+
+
+OS support
+==========
+
+.. _osstable:
+.. table::
+   :class: uritable
+   :name: OS support
+
+   +---------------------------------+
+   |:tn:`OS support`                 |
+   +----------+----------------------+
+   |Value     |Description           |
+   +==========+======================+
+   |:oss:`L`  |Linux                 |
+   +----------+----------------------+
+   |:oss:`W`  |Windows 7 [#f1]_      |
+   +----------+----------------------+
+   |:oss:`X`  |OS X                  |
+   +----------+----------------------+
+
+.. rubric:: Footnotes
+
+.. [#f1] On Windows, in order to define a file using the scheme
+         ``file:`` it is necessary to place the character '/' (slash)
+         before the drive letter
+         (e.g. ``file:///C:/Windows/explorer.exe``).
+
+.. [#f2] The available query keys are obtained from the union of the
+         available query keys of all the uri components. As an
+         example, the URI ``out.json://[::1]:7777`` is by default
+         translated to ``out.json.udp://[::1]:7777``, so it owns the
+         query keys of the JSON encoder (``request, filter``) and of
+         the udp socket node (``writeend``).
+
+.. [#f3] Some encodings have default input/output devices
+         (e.g. ``in.tuio:`` is by default translated into
+         ``in.tuio.udp://[::]:3333``).
+
+
+.. _SLIP: http://www.cse.iitb.ac.in/~bestin/btech-proj/slip/x365.html
+.. _pickle: http://docs.python.org/py3k/library/pickle.html
+.. _JSON: http://www.json.org/
+.. _OSC: http://opensoundcontrol.org/
+.. _TUIO: http://www.tuio.org/

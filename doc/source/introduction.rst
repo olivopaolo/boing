@@ -32,14 +32,13 @@ only.
 
       Example of pipeline created using |boing|.
 
-Even if the tactile devices provides different data structures
-(i.e. TUIO and mtdev), |boing| enables to merge them in a single data
-stream (in this example the TUIO and the JSON stream). Contact events
-are also processed before being passed to the application: |boing|
-provides nodes to smooth or calibrate the input data (e.g. position,
-speed, etc.). As shown in the example, pipelines can be composed by
-parallel branches so that each input/output can have its own
-processing suite.
+Even if the tactile devices provides different data structures,
+|boing| enables to merge them in a single data stream (in this example
+the TUIO and the JSON stream). Contact events are also processed
+before being passed to the application: |boing| provides nodes to
+smooth or calibrate the input data (e.g. position, speed, etc.). As
+shown in the example, pipelines can be composed by parallel branches
+so that each input/output can have its own processing suite.
 
 |boing|  does not impose a specific data model; instead it exploits a
 query path language (similar to JSONPath_) for accessing the data to

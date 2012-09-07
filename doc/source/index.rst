@@ -35,10 +35,6 @@ Showcase
    <link rel="stylesheet" type="text/css" media="screen"
          href="_static/fancyBox/source/jquery.fancybox.css" />
 
-   <!-- Add my gallery CSS files -->
-   <link rel="stylesheet" type="text/css" media="screen"
-         href="_static/gallery.css" />
-
    <script type="text/javascript">
       $(document).ready(function() {
          $(".fancybox").fancybox({

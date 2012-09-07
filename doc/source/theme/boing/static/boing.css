@@ -1,0 +1,44 @@
+
+/* -- showcase layout--------------------------------------------------- */
+
+.thumb {
+  vertical-align: middle;
+  margin: 0 3px;
+}
+
+#fancyBoxLink {
+  float: right;
+  text-align: right;
+  font-size: x-small;
+}
+
+.fancybox-next {
+  right: -90px;
+}
+
+.fancybox-prev {
+  left: -90px;
+}
+
+/* -- Nodes reference table -------------------------------------------- */
+
+.tn {
+  font-size: large;
+}
+
+.subheader {
+  font-size: x-small;
+}
+
+.url {
+  font-family: Monospace;
+}
+
+.arg {
+  font-family: Monospace;
+}
+
+.uritable {
+  font-size: small;
+  margin-bottom: 30px;
+}

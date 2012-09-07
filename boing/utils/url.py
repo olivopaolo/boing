@@ -204,7 +204,7 @@ class URL(object):
 
     generic = re.compile(
         '^'
-        '([^:/?#]+)'      # scheme
+        '([^:/?#]*)'      # scheme
         ':'
         '(.*)'            # relative url
         '$'

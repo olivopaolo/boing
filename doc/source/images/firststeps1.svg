@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
-<svg width="6cm" height="2cm" viewBox="9 9 102 22" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="7cm" height="2cm" viewBox="9 9 122 22" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <g>
-    <rect style="fill: #ffffff" x="10" y="10" width="40" height="20.4667"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="10" y="10" width="40" height="20.4667"/>
-    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="30" y="22.3">
-      <tspan x="30" y="22.3">in.tuio:</tspan>
+    <rect style="fill: #ffffff" x="10" y="10" width="60" height="20.4667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="10" y="10" width="60" height="20.4667"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="40" y="22.3">
+      <tspan x="40" y="22.3">in.tuio://:3333</tspan>
     </text>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="70" y="10" width="40" height="20.4667"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="70" y="10" width="40" height="20.4667"/>
-    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="90" y="22.3">
-      <tspan x="90" y="22.3">viz:</tspan>
+    <rect style="fill: #ffffff" x="90" y="10" width="40" height="20.4667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="90" y="10" width="40" height="20.4667"/>
+    <text font-size="6.77333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="110" y="22.3">
+      <tspan x="110" y="22.3">viz:</tspan>
     </text>
   </g>
   <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="50.4492" y1="20.2333" x2="65.4327" y2="20.2333"/>
-    <polygon style="fill: #000000" points="68.4327,20.2333 64.4327,22.2333 65.4327,20.2333 64.4327,18.2333 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="68.4327,20.2333 64.4327,22.2333 65.4327,20.2333 64.4327,18.2333 "/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x1="70.4968" y1="20.2333" x2="85.5109" y2="20.2333"/>
+    <polygon style="fill: #000000" points="88.5109,20.2333 84.5109,22.2333 85.5109,20.2333 84.5109,18.2333 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="88.5109,20.2333 84.5109,22.2333 85.5109,20.2333 84.5109,18.2333 "/>
   </g>
 </svg>

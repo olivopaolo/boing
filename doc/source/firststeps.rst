@@ -24,7 +24,7 @@ First of all, it is important to know that all the |boing|'s tools are
 invoked by using the script :command:`boing`. Open a terminal and
 type::
 
-   boing "in.tuio: + viz:"
+   boing "in.tuio://:3333 + viz:"
 
 The script should have opened a window displaying a grid. Now when you
 touch your multi-touch device, you will be able to see the contact
@@ -39,9 +39,9 @@ structure of the pipeline. [#]_
 
 In the previous example, the pipeline was composed by two nodes:
 
-- :code:`in.tuio:` corresponds to a node that reads the socket,
+- ``in.tuio://:3333`` corresponds to a node that reads the socket,
   decodes the TUIO stream and provides the multi-touch events;
-- :code:`viz:` corresponds to the *Contact Visualizer*, a widget
+- ``viz:`` corresponds to the *Contact Visualizer*, a widget
   that shows the information of the contact points, such as position,
   track and speed.
 
@@ -56,7 +56,7 @@ represented in :ref:`figure 3.1 <figure1>`.
       :align: center
 
       Figure 3.1: Pipeline obtained from the configuration
-      :code:`in.tuio: + viz:`.
+      :code:`in.tuio://:3333 + viz:`.
 
 .. only:: latex
 
@@ -64,7 +64,7 @@ represented in :ref:`figure 3.1 <figure1>`.
       :align: center
 
       Pipeline obtained from the configuration
-      :code:`in.tuio: + viz:`.
+      :code:`in.tuio://:3333 + viz:`.
 
 Congratulations! You have created your first |boing| pipeline!
 
@@ -75,11 +75,11 @@ Now, let's try new functionalities by adding a new node. Stop the
 previous pipeline by closing the visualizer widget or pressing Ctrl-C
 on the terminal, and type in the terminal::
 
-  boing "in.tuio: + (viz: | dump:)"
+  boing "in.tuio://:3333 + (viz: | dump:)"
 
 As before the contact visualizer appears again, but this time, when
 you touch the multi-touch device, the terminal prints a lot of data!
-The terminal output represents all the data that the :code:`in.tuio:`
+The terminal output represents all the data that the :code:`in.tuio://:3333`
 node can produce and send to the connected nodes. This tutorial is not
 aimed to provide an exaustive description of the message structure;
 for the moment, simply observe that data messages are hierarchical
@@ -90,7 +90,7 @@ for the indexing or the filtering of data messages. In order to
 understand the usefulness of such query language, stop the pipeline
 and type in the terminal::
 
-  boing "in.tuio: + (viz: | dump:?request=$..contacts)"
+  boing "in.tuio://:3333 + (viz: | dump:?request=$..contacts)"
 
 Now, when you touch your multi-touch device, you can see that the
 terminal prints the subset of the data structures that refers only to
@@ -116,14 +116,14 @@ pipeline.
       :align: center
 
       Figure 3.2: Pipeline obtained from the configuration
-      :code:`in.tuio: + (viz: | dump:)`.
+      :code:`in.tuio://:3333 + (viz: | dump:)`.
 
 .. only:: latex
 
    .. figure:: images/firststeps2.pdf
       :align: center
 
-      Pipeline obtained from the configuration :code:`in.tuio: +
+      Pipeline obtained from the configuration :code:`in.tuio://:3333 +
       (viz: | dump:)`.
 
 Combining input sources with external applications
@@ -171,13 +171,9 @@ different inputs, like for example a second multi-touch device enabled
 to send its TUIO messages to the local port 3334. Let's try a new
 pipeline by running the command::
 
-   boing "(in.tuio: | in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)"
+   boing "(in.tuio://:3333 | in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)"
 
-Note that for the first input it has not been necessary to define the
-port number, since the default port for the TUIO protocol is
-the 3333. For the second one instead the port number has been defined
-to 3334. :ref:`Figure 3.4 <figure4>` shows the structure of the new
-pipeline.
+:ref:`Figure 3.4 <figure4>` shows the structure of the new pipeline.
 
 .. _figure4:
 .. only:: html
@@ -187,14 +183,14 @@ pipeline.
 
       Figure 3.4: Pipeline obtained from the configuration
 
-      :code:`(in.tuio: | in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)`.
+      :code:`(in.tuio://:3333 | in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)`.
 
 .. only:: latex
 
    .. figure:: images/firststeps4.pdf
       :align: center
 
-      Pipeline obtained from the configuration :code:`(in.tuio: |
+      Pipeline obtained from the configuration :code:`(in.tuio://:3333 |
       in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)`.
 
 As you can see, a very important feature of |boing| is that you can
@@ -214,7 +210,7 @@ two functional nodes that can be easily employed in our
 pipelines. As an example, let's run a new pipeline using the following
 command::
 
-   boing "in.tuio: + filtering: + calib:?screen=left + viz:"
+   boing "in.tuio://:3333 + filtering: + calib:?screen=left + viz:"
 
 Now, when you touch your tactile device you should still see the
 interactions on the visualizer widget, but now they look more smooth
@@ -232,14 +228,14 @@ The structure of the current pipeline is shown in :ref:`figure 3.5 <figure5>`.
       :align: center
 
       Figure 3.5: Pipeline obtained from the configuration
-      :code:`in.tuio: + filtering: + calib:?screen=left + viz:`
+      :code:`in.tuio://:3333 + filtering: + calib:?screen=left + viz:`
 
 .. only:: latex
 
    .. figure:: images/firststeps5.pdf
       :align: center
 
-      Pipeline obtained from the configuration :code:`in.tuio: +
+      Pipeline obtained from the configuration :code:`in.tuio://:3333 +
       filtering: + calib:?screen=left + viz:`
 
 In order to better understand the result of the processing stage, it
@@ -247,7 +243,7 @@ may be useful to show at the same time the raw data and the processed
 one. In order to achieve such result, stop the previous pipeline and
 run the following command::
 
-   boing "in.tuio: + (filtering: + calib:?screen=left + edit:?source=filtered | nop:) + viz:"
+   boing "in.tuio://:3333 + (filtering: + calib:?screen=left + edit:?source=filtered | nop:) + viz:"
 
 Now, when you touch your input device you can see on the visualizer
 widget both the raw tracks and the processed tracks, so that it is
@@ -270,7 +266,7 @@ passed to the visualizer widget.
 
       Figure 3.6: Pipeline obtained from the configuration
 
-      :code:`in.tuio: + (filtering: + calib:?screen=left +
+      :code:`in.tuio://:3333 + (filtering: + calib:?screen=left +
       edit:?source=filtered | nop:) + viz:`
 
 .. only:: latex
@@ -279,7 +275,7 @@ passed to the visualizer widget.
       :align: center
 
       Figure 3.6: Pipeline obtained from the configuration
-      :code:`in.tuio: + (filtering: + calib:?screen=left +
+      :code:`in.tuio://:3333 + (filtering: + calib:?screen=left +
       edit:?source=filtered | nop:) + viz:`
 
 
@@ -293,7 +289,7 @@ debugging of applications. The simplest way to log events into a file
 is to use the node :code:`log:`. As an example, consider running the
 following command::
 
-   boing "in.tuio: + (viz: | log:./log.bz2)"
+   boing "in.tuio://:3333 + (viz: | log:./log.bz2)"
 
 Now, all the gestures you make on your tactile device will be recorded
 and written to the file :code:`./log.bz2`. Then, stop the pipeline by
@@ -321,13 +317,18 @@ test.
 
 .. rubric:: Footnotes
 
-.. [#] If you are unfamiliar with the TUIO protocol, consider having a look to the available `TUIO trackers`_, or jumping to the :doc:`multitouch`, in order to discover the different ways |boing| exploits to connect to the input devices.
+.. [#] If you are unfamiliar with the TUIO protocol, consider having a
+       look to the available `TUIO trackers`_, or jumping to the
+       :doc:`multitouch`, in order to discover the different ways
+       |boing| exploits to connect to the input devices.
 
-.. [#] For a deeper presentation of pipeline configurations, see the :doc:`../functionalities` section.
+.. [#] For a deeper presentation of pipeline configurations, see the
+       :doc:`../functionalities` section.
 
-.. [#] For more output sources, see the :doc:`../functionalities` section.
+.. [#] For more output sources, see the :doc:`../uris`.
 
-.. [#] For a more exhaustive presentation of nodes :code:`filtering:` and :code:`calib:`, see the next tutorials.
+.. [#] For a more exhaustive presentation of nodes :code:`filtering:`
+       and :code:`calib:`, see the next tutorials.
 
 
 .. _`TUIO trackers`: http://www.tuio.org/?software

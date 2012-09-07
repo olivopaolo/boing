@@ -24,7 +24,7 @@ pipelines::
    app = PyQt4.QtGui.QApplication(sys.argv)
 
    # Create nodes
-   n1 = boing.create("in.tuio:")
+   n1 = boing.create("in.tuio://:3333")
    n2 = boing.create("viz:")
    n3 = boing.create("dump:?request=$..contacts")
 

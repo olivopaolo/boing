@@ -88,7 +88,7 @@ def createSingle(uri, mode="", parent=None):
     """Parse *uri* to load a sigle node."""
     logger = logging.getLogger("loader")
     if not isinstance(uri, URL): uri = URL(str(uri).strip())
-    if not uri.opaque and not uri.scheme and not uri.path:
+    if not uri.opaque and not uri.scheme and not uri.path and not mode:
         raise ValueError("Empty URI")
 
     # -------------------------------------------------------------------
@@ -106,7 +106,7 @@ def createSingle(uri, mode="", parent=None):
     # BRIDGES
     elif uri.scheme in ("in", "out"):
         return createSingle(
-            str(uri).replace(uri.scheme, "udp" if uri.site else "file", 1),
+            str(uri).replace(uri.scheme, "udp" if uri.site else "", 1),
             uri.scheme)
 
     elif uri.scheme.startswith("in."):
@@ -257,25 +257,38 @@ def createSingle(uri, mode="", parent=None):
 
     # -------------------------------------------------------------------
     # IO DEVICES
-    elif uri.scheme=="stdin":
-        assertUriModeIn(uri, mode, "in", "")
-        assertUriQuery(uri, None)
-        if uri.opaque or uri.path or uri.site or uri.fragment:
-            raise ValueError("Invalid URI: %s"%uri)
+    elif not uri.scheme:
+        if uri.site:
+            scheme = "udp"
+            if not str(uri).startswith(":"): scheme += ":"
+            extended = scheme+str(uri)
+            logger.info("URI has incomplete IO device, assuming: %s"%extended)
+            node = createSingle(extended, mode, parent)
+        elif uri.path and not uri.kind==URL.OPAQUE:
+            scheme = "file"
+            if not str(uri).startswith(":"): scheme += ":"
+            extended = scheme+str(uri)
+            logger.info("URI has incomplete IO device, assuming: %s"%extended)
+            node = createSingle(extended, mode, parent)
         else:
-            encoder = encoding.TextEncoder(blender=Functor.MERGE)
-            reader = ioport.DataReader(CommunicationDevice(sys.stdin))
-            node = reader + encoder
+            if uri.opaque=="stdin" or not uri.opaque and mode=="in":
+                assertUriModeIn(uri, mode, "in")
+                assertUriQuery(uri, None)
+                encoder = encoding.TextEncoder(blender=Functor.MERGE)
+                if not uri.opaque: logger.info(
+                    "URI has incomplete IO device, assuming: :stdin")
+                reader = ioport.DataReader(CommunicationDevice(sys.stdin))
+                node = reader + encoder
+            elif uri.opaque=="stdout" or not uri.opaque and mode=="out":
+                assertUriModeIn(uri, mode, "out")
+                assertUriQuery(uri, None)
+                if not uri.opaque: logger.info(
+                    "URI has incomplete IO device, assuming: :stdout")
+                node = ioport.DataWriter(IODevice(sys.stdout))
+            else:
+                raise ValueError("Invalid URI: %s"%uri)
 
-    elif uri.scheme=="stdout":
-        assertUriModeIn(uri, mode, "out", "")
-        assertUriQuery(uri, None)
-        if uri.opaque or uri.path or uri.site or uri.fragment:
-            raise ValueError("Invalid URI: %s"%uri)
-        else:
-            node = ioport.DataWriter(IODevice(sys.stdout))
-
-    elif uri.scheme in ("", "file"):
+    elif uri.scheme=="file":
         if uri.kind==URL.OPAQUE or uri.site or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
         elif not uri.path:
@@ -336,15 +349,7 @@ def createSingle(uri, mode="", parent=None):
     # -------------------------------------------------------------------
     # ENCODINGS
     # SLIP
-    elif uri.scheme=="slip":
-        assertUriModeIn(uri, mode, "in", "out")
-        extended = copy.copy(uri)
-        extended.scheme += ".udp" if uri.site else ".file"
-        logger.info(
-            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
-        return createSingle(extended, mode, parent)
-
-    elif uri.scheme.startswith("slip."):
+    elif uri.scheme.startswith("slip.") or uri.scheme=="slip":
         assertUriModeIn(uri, mode, "in", "out")
         loweruri = lower(uri, "slip")
         if mode=="in":
@@ -361,28 +366,21 @@ def createSingle(uri, mode="", parent=None):
             node = encoder + textdecoder + device
 
     # PICKLE
-    elif uri.scheme=="pickle":
-        assertUriModeIn(uri, mode, "in", "out")
-        extended = copy.copy(uri)
-        extended.scheme += ".slip.file" if uri.path else ".udp"
-        logger.info(
-            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
-        return createSingle(extended, mode, parent)
-
-    elif uri.scheme.startswith("pickle."):
+    elif uri.scheme=="pickle" or uri.scheme.startswith("pickle."):
         assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "request", "noslip", "protocol")
         loweruri = lower(uri, "pickle", query.keys())
         noslip = assertIsInstance(query.pop("noslip", False), bool)
         if not noslip:
-            if loweruri.scheme=="file":
-                loweruri.scheme = "slip.%s"%loweruri.scheme
-                logger.info(
-                    "PICKLE over FILE is SLIP encoded by default (set noslip to disable)")
             if loweruri.scheme=="tcp":
                 loweruri.scheme = "slip.%s"%loweruri.scheme
                 logger.info(
                     "PICKLE over TCP is SLIP encoded by default (set noslip to disable)")
+            elif loweruri.kind!=URL.OPAQUE and loweruri.path:
+                loweruri.scheme = "slip.%s"%loweruri.scheme if loweruri.scheme \
+                    else "slip"
+                logger.info(
+                    "PICKLE over FILE is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
             if "request" in query: raise ValueError(
                 "Unexpected query keys: 'request'")
@@ -400,28 +398,21 @@ def createSingle(uri, mode="", parent=None):
             node = encoder + textdecoder + device
 
     # JSON
-    elif uri.scheme=="json":
-        assertUriModeIn(uri, mode, "in", "out")
-        extended = copy.copy(uri)
-        extended.scheme += ".slip.file" if uri.path else ".udp"
-        logger.info(
-            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
-        return createSingle(extended, mode, parent)
-
-    elif uri.scheme.startswith("json."):
+    elif uri.scheme=="json" or uri.scheme.startswith("json."):
         assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "request", "noslip")
         loweruri = lower(uri, "json", query.keys())
         noslip = assertIsInstance(query.pop("noslip", False), bool)
         if not noslip:
-            if loweruri.scheme=="file":
-                loweruri.scheme = "slip.%s"%loweruri.scheme
-                logger.info(
-                    "JSON over FILE is SLIP encoded by default (set noslip to disable)")
             if loweruri.scheme=="tcp":
                 loweruri.scheme = "slip.%s"%loweruri.scheme
                 logger.info(
                     "JSON over TCP is SLIP encoded by default (set noslip to disable)")
+            elif loweruri.kind!=URL.OPAQUE and loweruri.path:
+                loweruri.scheme = "slip.%s"%loweruri.scheme if loweruri.scheme \
+                    else "slip"
+                logger.info(
+                    "JSON over FILE is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
             if "request" in query: raise ValueError(
                 "Unexpected query keys: 'request'")
@@ -435,28 +426,21 @@ def createSingle(uri, mode="", parent=None):
             node = encoder + textencoder + device
 
     # OSC
-    elif uri.scheme=="osc":
-        assertUriModeIn(uri, mode, "in", "out")
-        extended = copy.copy(uri)
-        extended.scheme += ".slip.file" if uri.path else ".udp"
-        logger.info(
-            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
-        return createSingle(extended, mode, parent)
-
-    elif uri.scheme.startswith("osc."):
+    elif uri.scheme=="osc" or uri.scheme.startswith("osc."):
         assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "rt", "noslip")
         loweruri = lower(uri, "osc", query.keys())
         noslip = assertIsInstance(query.pop("noslip", False), bool)
         if not noslip:
-            if loweruri.scheme=="file":
-                loweruri.scheme = "slip.%s"%loweruri.scheme
-                logger.info(
-                    "OSC over FILE is SLIP encoded by default (set noslip to disable)")
             if loweruri.scheme=="tcp":
                 loweruri.scheme = "slip.%s"%loweruri.scheme
                 logger.info(
                     "OSC over TCP is SLIP encoded by default (set noslip to disable)")
+            elif loweruri.kind!=URL.OPAQUE and loweruri.path:
+                loweruri.scheme = "slip.%s"%loweruri.scheme if loweruri.scheme \
+                    else "slip"
+                logger.info(
+                    "OSC over FILE is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
             device = createSingle(loweruri, "in")
             decoder = encoding.OscDecoder(blender=Functor.MERGE, **query)
@@ -471,20 +455,7 @@ def createSingle(uri, mode="", parent=None):
             node = encoder + decoder + oscdebug + device
 
     # TUIO
-    elif uri.scheme=="tuio":
-        assertUriModeIn(uri, mode, "in", "out")
-        extended = copy.copy(uri)
-        if uri.path: extended.scheme += ".osc.slip.file"
-        else:
-            extended.scheme += ".osc.udp"
-            if uri.site.port==0:
-                extended.site.port = 3333
-                logger.info("No port number specified in the URI, assuming: %s"%extended.site.port)
-        logger.info(
-            "No transport protocol specified in the URI, assuming: %s"%extended.scheme)
-        return createSingle(extended, mode, parent)
-
-    elif uri.scheme.startswith("tuio."):
+    elif uri.scheme=="tuio" or uri.scheme.startswith("tuio."):
         assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "rawsource")
         loweruri = lower(uri, "tuio", query.keys())
@@ -519,14 +490,14 @@ def createSingle(uri, mode="", parent=None):
         assertUriQuery(uri, None)
         node = Identity()
 
-    elif uri.scheme in ("dump", "stat"):
-        extended = copy.copy(uri)
-        extended.scheme += ".udp" if extended.site \
-            else ".file" if extended.path \
-            else ".stdout"
-        return createSingle(extended, mode, parent)
+    # elif uri.scheme in ("dump", "stat"):
+    #     extended = copy.copy(uri)
+    #     extended.scheme += ".udp" if extended.site \
+    #         else ".file" if extended.path \
+    #         else ".stdout"
+    #     return createSingle(extended, mode, parent)
 
-    elif uri.scheme.startswith("dump."):
+    elif uri.scheme.startswith("dump.") or uri.scheme=="dump":
         from boing.nodes import Dump
         assertUriModeIn(uri, mode, "", "out")
         query = parseQuery(uri,
@@ -537,7 +508,7 @@ def createSingle(uri, mode="", parent=None):
         device = createSingle(lower(uri, "dump", query.keys()), "out")
         node = dump + encoder + device
 
-    elif uri.scheme.startswith("stat."):
+    elif uri.scheme=="stat" or uri.scheme.startswith("stat."):
         from boing.nodes import StatProducer
         assertUriModeIn(uri, mode, "", "out")
         query = parseQuery(uri, "request", "filter", "fps")
@@ -736,8 +707,9 @@ def lower(uri, schemecut="", keys=tuple()):
         - all keys in *keys* are removed from the uri's query data ;"""
     rvalue = URL(str(uri))
     # Cut scheme
-    if schemecut:
-        rvalue.scheme = rvalue.scheme.replace("%s."%schemecut, "", 1)
+    if schemecut and uri.scheme.startswith(schemecut):
+        rvalue.scheme = rvalue.scheme.replace(schemecut, "", 1)
+        if rvalue.scheme.startswith("."): rvalue.scheme = rvalue.scheme[1:]
     # Cut query keys
     f = lambda kw: kw[0] not in keys
     rvalue.query.data = dict(filter(f, rvalue.query.data.items()))
