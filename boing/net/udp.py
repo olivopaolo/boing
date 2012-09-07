@@ -46,8 +46,8 @@ class UdpSocket(QUdpSocket):
         """Raises Exception if UDP socket cannot be bound at specified
         host and port."""
         if not host: 
-            if family==ip.PF_INET: host = QHostAddress.Any
-            else: host = QHostAddress.AnyIPv6
+            if family==ip.PF_INET6: host = QHostAddress.AnyIPv6
+            else: host = QHostAddress.Any
         if not QHostAddress(host) in (QHostAddress.Any, 
                                       QHostAddress.AnyIPv6):
             host, port = ip.resolve(host, port, 

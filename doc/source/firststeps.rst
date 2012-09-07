@@ -14,7 +14,7 @@ calibrate the contacts' position or apply a smoothing filter.
 
 To make things easier, let's consider that your device can send the
 information of the contact events as a TUIO stream on the local
-port 3333. [#]_
+port 3333. [#f1]_
 
 
 Showing multi-touch events
@@ -35,7 +35,10 @@ that defines the configuration of the pipeline that is to be
 created. Configurations are defined by a formula where the operands
 define the functionality of the nodes of the pipeline, while the
 operators define how the nodes are connected, therefore also the
-structure of the pipeline. [#]_
+structure of the pipeline.
+
+..
+   [#f2]_
 
 In the previous example, the pipeline was composed by two nodes:
 
@@ -160,7 +163,7 @@ sources and the final applications.
 Thanks to the many supported encodings, |boing| can easily fit different
 combinations of devices and applications. In this basic example, let's
 consider to have an application listening for a TUIO stream on the
-local port 3335 [#]_. If you don't have a TUIO application, simply open a
+local port 3335 [#f3]_. If you don't have a TUIO application, simply open a
 new terminal and launch a new |boing| instance using the command::
 
    boing "in.tuio://:3335 + viz:"
@@ -171,7 +174,7 @@ different inputs, like for example a second multi-touch device enabled
 to send its TUIO messages to the local port 3334. Let's try a new
 pipeline by running the command::
 
-   boing "(in.tuio://:3333 | in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)"
+   boing "(in.tuio://:3333 | in.tuio://:3334) + (viz: | out.tuio://127.0.0.1:3335)"
 
 :ref:`Figure 3.4 <figure4>` shows the structure of the new pipeline.
 
@@ -183,7 +186,7 @@ pipeline by running the command::
 
       Figure 3.4: Pipeline obtained from the configuration
 
-      :code:`(in.tuio://:3333 | in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)`.
+      :code:`(in.tuio://:3333 | in.tuio://:3334) + (viz: | out.tuio://127.0.0.1:3335)`.
 
 .. only:: latex
 
@@ -191,7 +194,7 @@ pipeline by running the command::
       :align: center
 
       Pipeline obtained from the configuration :code:`(in.tuio://:3333 |
-      in.tuio://:3334) + (viz: | out.tuio://[::1]:3335)`.
+      in.tuio://:3334) + (viz: | out.tuio://127.0.0.1:3335)`.
 
 As you can see, a very important feature of |boing| is that you can
 simultaneously connect many devices to different applications. Such
@@ -217,7 +220,9 @@ interactions on the visualizer widget, but now they look more smooth
 and they are rotated 90 degrees counterclockwise. By employing the
 :code:`filtering:` node, we added the default smoothing filter, which
 is applied by default to the position of the contact points, while the
-node :code:`calib:` performs the calibration of the touch points [#]_.
+node :code:`calib:` performs the calibration of the touch points.
+
+.. [#f4]_
 
 The structure of the current pipeline is shown in :ref:`figure 3.5 <figure5>`.
 
@@ -317,18 +322,20 @@ test.
 
 .. rubric:: Footnotes
 
-.. [#] If you are unfamiliar with the TUIO protocol, consider having a
-       look to the available `TUIO trackers`_, or jumping to the
-       :doc:`multitouch`, in order to discover the different ways
-       |boing| exploits to connect to the input devices.
+.. [#f1] If you are unfamiliar with the TUIO protocol, consider having
+         a look to the available `TUIO trackers`_, or jumping to the
+         :doc:`uris`, in order to discover the different ways |boing|
+         exploits to connect to the input devices.
 
-.. [#] For a deeper presentation of pipeline configurations, see the
-       :doc:`../functionalities` section.
+..
+   [#f2] For a deeper presentation of pipeline configurations, see the
+   :doc:`../functionalities` section.
 
-.. [#] For more output sources, see the :doc:`../uris`.
+.. [#f3] For more output sources, see the :doc:`../uris`.
 
-.. [#] For a more exhaustive presentation of nodes :code:`filtering:`
-       and :code:`calib:`, see the next tutorials.
+..
+   [#f4] For a more exhaustive presentation of nodes
+   :code:`filtering:` and :code:`calib:`, see the next tutorials.
 
 
 .. _`TUIO trackers`: http://www.tuio.org/?software
