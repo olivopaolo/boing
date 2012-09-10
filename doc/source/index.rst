@@ -17,6 +17,7 @@ etc.)  and eventually process the data before being dispatched.
 - encode and forward data to target outputs (e.g. TUIO, OSC, JSON);
 - record and replay the data flow;
 - process gesture data (calibration, smoothing filtering, debugging, etc.);
+- debug and get statistics of the data flow.
 
 ..
    |boing| is licensed under the `GNU GPL2`_ license and it is being
@@ -38,9 +39,7 @@ Showcase
    <script type="text/javascript">
       $(document).ready(function() {
          $(".fancybox").fancybox({
-            wrapCSS    : 'fancybox-custom',
             closeClick : true,
-
             helpers : {
 	       title : {
                   type : 'inside'
@@ -62,7 +61,7 @@ Showcase
    </script>
 
    <div id="pipeline-title" style="display: none;">
-     Example of the functionality of a Boing pipeline.<br>
+     Example of the functionality of a Boing pipeline.<br/ >
      <a href="introduction.html">Read more</a>
      <p id="fancyBoxLink"> Showcase created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
@@ -70,12 +69,10 @@ Showcase
    </div>
 
    <div id="example-title" style="display: none;">
-
      Concrete usage example: the toolkit is used to calibrate and
      smooth the input events of a TUIO device. At the same time,
      events are recorded so that, if something interesting happens,
      they can be logged into a file for replaying them.<br />
-
      <a href="firststeps.html">Read more</a>
      <p id="fancyBoxLink"> Showcase created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
@@ -83,7 +80,7 @@ Showcase
    </div>
 
    <div id="code-title" style="display: none;">
-     Code snippet for creating a simple pipeline from your own code.<br>
+     Code snippet for creating a simple pipeline from your own code.<br />
      <a href="developer.html">Read more</a>
      <p id="fancyBoxLink"> Showcase created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
@@ -91,16 +88,16 @@ Showcase
    </div>
 
    <div id="recorder-title" style="display: none;">
-     The gesture recorder tool.<br>
-     <a href="functionalities.html#the-recorder-todo">Read more</a>
+     The gesture recorder tool.
+     <!--<br /><a href="functionalities.html#the-recorder-todo">Read more</a>-->
      <p id="fancyBoxLink"> Showcase created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
      </p>
    </div>
 
    <div id="player-title" style="display: none;">
-     The gesture playlist player.<br>
-     <a href="functionalities.html#the-player-todo">Read more</a>
+     The gesture playlist player.
+     <!--<br /><a href="functionalities.html#the-player-todo">Read more</a>-->
      <p id="fancyBoxLink"> Showcase created using
         <a target="_black" href="http://fancyapps.com/fancybox/">fancyBox</a>.
      </p>

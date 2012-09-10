@@ -381,8 +381,8 @@ Concrete workers using the tunneling feature are the
 
 .. _node-composition:
 
-Node composition
-================
+.. Node composition
+.. ================
 
 .. todo::
    - Describe the composite nodes and node syntax (+ and | operators).

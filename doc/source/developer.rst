@@ -9,8 +9,9 @@ as argument an URI expression that is used to specify the
 functionality of the nodes to be created and how they are
 connected. The :doc:`uris` is the same as for the command line
 script. Then, the operators :code:`+` and :code:`|` can be used
-compose the pipeline as explained in the section
-:ref:`node-composition`.
+compose the pipeline.
+
+.. as explained in the section :ref:`node-composition`.
 
 The following code can be used as an example for creating |boing|
 pipelines::

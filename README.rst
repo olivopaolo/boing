@@ -1,8 +1,8 @@
-=====
-Boing
-=====
+=======
+ Boing
+=======
 
-A flexible pipeline generator.
+A flexible multi-touch toolkit.
 
 Introduction
 ============
@@ -33,4 +33,4 @@ Installation, Documentation, Examples
 =====================================
 
 Installation instructions, tutorials and general documentation,
-including an API reference can be found in the doc directory.
+including an API reference can be found in the doc/build/html directory.

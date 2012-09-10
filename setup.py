@@ -16,7 +16,8 @@ setup(
     entry_points = {'console_scripts': ["boing = boing.run"]},
     test_suite = "boing.test.run",
     author = "Paolo Olivo",
-    author_email = "paolo.olivo@inria.fr",
+    author_email = "olivopaolo@tiscali.it",
+    url = "http://github.com/olivopaolo/boing",
     description = """
 Boing is a toolkit designed to support the development of multi-touch
 and gesture enabled applications.
@@ -28,5 +29,22 @@ eventually process the data before being dispatched.""",
     install_requires = [
         'numpy>=1.6.1',
         'pyparsing>=1.5.6'
+        ],
+    classifiers = [
+        'Development Status :: 3 - Alpha',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: GNU General Public License v2 (GPLv2)'
+        'Natural Language :: English',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python :: 3.2',
+        'Topic :: Scientific/Engineering :: Human Machine Interfaces',
+        'Topic :: Scientific/Engineering :: Visualization',
+        'Topic :: Software Development :: Testing',
+        'Topic :: Software Development :: User Interfaces',
+        'Topic :: Utilities',
         ],
 )

@@ -8,6 +8,6 @@ The documentation is structured into the following sections:
    :maxdepth: 2
 
    pipeline
-   datamodel
-   functionalities
+.. datamodel
+.. functionalities
 
