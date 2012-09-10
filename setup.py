@@ -19,7 +19,7 @@ props = dict(
     test_suite = "boing.test.run",
     author = "Paolo Olivo",
     author_email = "olivopaolo@tiscali.it",
-    url = "http://github.com/olivopaolo/boing",
+    url = "http://boing.readthedocs.org",
     description = """
 Boing is a toolkit designed to support the development of multi-touch
 and gesture enabled applications.
@@ -33,7 +33,7 @@ eventually process the data before being dispatched.""",
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU General Public License v2 (GPLv2)'
+        'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
         'Natural Language :: English',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
