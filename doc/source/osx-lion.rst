@@ -15,7 +15,8 @@ typing::
 
 .. The package Distribute_ is necessary to run the |boing|'s installer
 .. script. Download the file `distribute_setup.py`_ and type in a
-.. terminal::
+..
+   terminal::
 
 ..   sudo python3.2 distribute_setup.py
 

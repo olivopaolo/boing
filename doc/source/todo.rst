@@ -7,7 +7,7 @@ Toolkit todo
 
 Today or tomorrow:
 
-* upgrade module :mod:`boing.core` documentation and tests.
+* upgrade module :mod:`boing.core` documentation.
 
 This week:
 
