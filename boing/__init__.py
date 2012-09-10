@@ -11,7 +11,7 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 MAJOR = 0
-MINOR = 2
+MINOR = 3
 VERSION = "%d.%d"%(MAJOR,MINOR)
 
 from boing.nodes.loader import create
@@ -36,8 +36,8 @@ def activateConsole(url="", locals=None, banner=None):
                                      __doc__=None)
     if banner is None:
         import sys
-        banner="Boing 0.2 Console\nPython %s on %s\n"%(sys.version,
-                                                       sys.platform)
+        banner="Boing %s Console\nPython %s on %s\n"%(
+            VERSION, sys.version, sys.platform)
     if not url:
         import sys
         from boing.utils.fileutils import CommunicationDevice, IODevice

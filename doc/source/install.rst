@@ -5,19 +5,20 @@
 Download
 ========
 
-The code can be found in a Git repository, at
-http://github.com/olivopaolo/boing.  To get it,
-type in a terminal::
+You can download the current release from `here
+<http://github.com/olivopaolo/boing/downloads>`_.
 
-  git clone http://github.com/olivopaolo/boing
+If you are interested to the development version, you can clone the
+source repository. Open a terminal and type::
+
+  git clone https://github.com/olivopaolo/boing
 
 Installation
 ============
 
 |boing| requires the `Python 3.2`_ interpreter (or newer) and the
-PyQt4_ package (a set of Python bindings for `Nokia's Qt`_
-application framework). Moreover, it also requires the following
-Python packages:
+PyQt4_ package (a set of Python bindings for `Nokia's Qt`_ application
+framework). Moreover, it also requires the following Python packages:
 
 - numpy_
 - pyparsing_

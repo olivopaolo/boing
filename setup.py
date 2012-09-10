@@ -13,7 +13,7 @@ from setuptools import setup, find_packages
 
 props = dict(
     name = "boing",
-    version = "0.2.0",
+    version = "0.3.0",
     packages = find_packages(),
     entry_points = {'console_scripts': ["boing = boing.run"]},
     test_suite = "boing.test.run",
