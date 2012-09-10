@@ -7,9 +7,11 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import sys
+
 from setuptools import setup, find_packages
 
-setup(
+props = dict(
     name = "boing",
     version = "0.2.0",
     packages = find_packages(),
@@ -26,10 +28,6 @@ It enables to create pipelines for connecting different input sources to
 multiple target destinations (e.g. applications, logs, etc.)  and
 eventually process the data before being dispatched.""",
     license = "GPLv2",
-    install_requires = [
-        'numpy>=1.6.1',
-        'pyparsing>=1.5.6'
-        ],
     classifiers = [
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
@@ -48,3 +46,11 @@ eventually process the data before being dispatched.""",
         'Topic :: Utilities',
         ],
 )
+
+if sys.platform in ("linux2", "darwin"):
+    props["install_requires"] = (
+        'numpy>=1.6.1',
+        'pyparsing>=1.5.6',
+        )
+
+setup(**props)

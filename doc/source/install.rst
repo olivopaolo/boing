@@ -5,17 +5,17 @@
 Download
 ========
 
-The code can be found in a Mercurial repository, at
-http://interaction.lille.inria.fr/hg-mint/code/boing/ (access
-restricted). To get it, type in a terminal::
+The code can be found in a Git repository, at
+http://github.com/olivopaolo/boing.  To get it,
+type in a terminal::
 
-  hg clone http://interaction.lille.inria.fr/hg-mint/code/boing/
+  git clone http://github.com/olivopaolo/boing
 
 Installation
 ============
 
 |boing| requires the `Python 3.2`_ interpreter (or newer) and the
-`PyQt 4`_ package (a set of Python bindings for `Nokia's Qt`_
+PyQt4_ package (a set of Python bindings for `Nokia's Qt`_
 application framework). Moreover, it also requires the following
 Python packages:
 
@@ -63,7 +63,7 @@ installed, you simply have to type::
 
 
 .. _`Python 3.2`: http://python.org/download/
-.. _`PyQt 4`: http://www.riverbankcomputing.co.uk/software/pyqt/download/
+.. _PyQt4: http://www.riverbankcomputing.co.uk/software/pyqt/download/
 .. _`Nokia's Qt`: http://qt.nokia.com
 .. _numpy: http://numpy.scipy.org
 .. _pyparsing: http://pyparsing.wikispaces.com

@@ -2,23 +2,22 @@
  |boing| on OS X 10.7
 ======================
 
-PyQt4
-=====
+PyQt4 and Distribute
+====================
 
-If you have `Mac Ports`_, getting PyQt is as simple as typing::
+If you have `Mac Ports`_, getting PyQt4_ and Distribute_ is as simple as
+typing::
 
-  sudo port install py32-pyqt4
+  sudo port install py32-pyqt4 py32-distribute
 
+.. Distribute
+.. ==========
 
-Distribute
-==========
+.. The package Distribute_ is necessary to run the |boing|'s installer
+.. script. Download the file `distribute_setup.py`_ and type in a
+.. terminal::
 
-The package distribute_ is necessary to run the |boing|'s installer
-script. Download the file `distribute_setup.py`_ and type in a
-terminal::
-
-  sudo python3.2 distribute_setup.py
-
+..   sudo python3.2 distribute_setup.py
 
 |boing|
 =======
@@ -38,5 +37,7 @@ simple solution is to set the installer target directory using the option
 
 
 .. _`Mac Ports`: http://www.macports.com
-.. _distribute: http://packages.python.org/distribute/index.html
+.. _PyQt4: http://www.riverbankcomputing.co.uk/software/pyqt/intro
+
+.. _Distribute: http://packages.python.org/distribute/index.html
 .. _distribute_setup.py: http://python-distribute.org/distribute_setup.py
