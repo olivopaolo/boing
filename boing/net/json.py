@@ -9,10 +9,10 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""The json module provides methods and classes for supporting JSON
-object serialization. It uses the python json standard module, but it
-provides a default solution for serializing bytestrings and
-datetime.datetime objects.
+"""The module :mod:`boing.net.json` provides methods and classes for
+supporting JSON object serialization. It uses the python json standard
+module, but it provides a default solution for serializing bytestrings
+and datetime.datetime objects.
 
 Encoder and Decoder classes provide a standard interface for the JSON
 encoding.

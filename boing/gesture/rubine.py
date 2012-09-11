@@ -9,8 +9,8 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""The boing.gesture.rubine module provides an implementation of the
-Rubine's gesture recognition algorithm.
+"""The module :mod:`boing.gesture.rubine` provides an implementation
+of the Rubine's gesture recognition algorithm.
 
 """
 

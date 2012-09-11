@@ -4,5 +4,5 @@
 
 .. todo:: Improve docs for the module boing.net.tcp
 
-.. automodule:: boing.net.tcp
-   :members: TcpSocket, TcpConnection, TcpServer
+.. module:: boing.net.tcp
+   :synopsis: TCP utilities

@@ -16,8 +16,8 @@
 #  "Features and Future of Open Sound Control version 1.1 for NIME"
 
 
-"""The osc module provides methods and classes for handling OSC
-formatted messages.
+"""The module :mod:`boing.net.osc` provides methods and classes for
+handling OSC formatted messages.
 
 Encoder and Decoder classes provide a standard interface for the OSC
 encoding.

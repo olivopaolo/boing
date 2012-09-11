@@ -9,7 +9,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""The :mod:`boing.nodes` module contains a set of generic utility nodes.
+"""The module :mod:`boing.nodes` contains a set of generic utility nodes.
 
 """
 

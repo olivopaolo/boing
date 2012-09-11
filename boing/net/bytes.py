@@ -9,9 +9,9 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""The bytes module implements the adapter design pattern by providing
-the standard string encoding functionalities as Encoder and Decoder
-objects.
+"""The :mod:`boing.net.bytes` module implements the adapter design
+pattern by providing the standard string encoding functionalities as
+Encoder and Decoder objects.
 
 """
 

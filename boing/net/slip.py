@@ -14,8 +14,8 @@
 #     Nonstandard for transmission of IP datagrams over serial lines: SLIP
 #     http://tools.ietf.org/html/rfc1055
 
-"""The slip module provides methods and classes for supporting the
-SLIP protocol encoding and decoding.
+"""The module :mod:`boing.net.slip` provides methods and classes for
+supporting the SLIP protocol encoding and decoding.
 
 """
 

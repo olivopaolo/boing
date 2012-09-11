@@ -10,7 +10,7 @@
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
 
-"""The :mod:`boing.utils` module contains generic utility
+"""The module :mod:`boing.utils` contains generic utility
 classes and functions.
 
 """
@@ -23,6 +23,7 @@ import sys
 from PyQt4 import QtCore
 
 def assertIsInstance(obj, *valid):
+    """Raise TypeError if *obj* is not an instance of a class in *valid*."""
     classes = tuple(map(lambda t: type(None) if t is None else t, valid))
     if not isinstance(obj, classes): raise TypeError(
         "Expected type %s, not '%s'"%(

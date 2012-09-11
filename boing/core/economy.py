@@ -665,7 +665,7 @@ class Consumer(Observer):
         self._consume(products, producer)
 
     def _consume(self, products, producer):
-        """Consume *products* posted from *producer*."""
+        """Consume the *products* posted from *producer*."""
         # Call custom function if defined, otherwise use default method.
         return self.__consume(self, products, producer) \
             if self.__consume is not None \

@@ -9,8 +9,9 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""The pickle module provides methods and classes for supporting Python
-object serialization. It uses the python pickle standard module.
+"""The module :mod:`boing.net.pickle` provides methods and classes for
+supporting Python object serialization. It uses the python pickle
+standard module.
 
 Encoder and Decoder classes provide a standard interface for the pickle
 encoding.

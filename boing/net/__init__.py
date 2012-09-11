@@ -9,7 +9,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""The *boing.net* module provides classes and methods to ease the
+"""The module :mod:`boing.net` provides classes and methods to ease the
 usage of sockets and networking encodings, like for example JSON, OSC,
 SLIP, etc.
 

@@ -10,7 +10,13 @@ API in their Python code. The most important element is the function
 :func:`boing.create`, which is used to instantiate the nodes of
 the pipeline.
 
-.. autofunction:: boing.create
+.. function:: boing.create(expr, parent=None)
+
+   Return a new node created as defined in the expression *expr*, with
+   parent object *parent*. If *expr* is composed by a single URI, the
+   returned object will be a new node correspondent to the provided
+   URI; if *expr* is formed by an URI expression, the returned object
+   will be a composed node.
 
 All the available nodes are listed and described in the :doc:`uris`.
 
@@ -57,7 +63,19 @@ custom |boing| pipelines::
 
 .. todo:: Describe how to configure the pipeline dinamically
 
-.. autofunction:: boing.activateConsole
+.. function:: boing.activateConsole(url="", locals=None, banner=None)
+
+   Enable a Python interpreter at *url*.
+
+   The optional *locals* argument specifies the dictionary in which
+   code will be executed; it defaults to a newly created dictionary
+   with key "__name__" set to "__console__" and key "__doc__" set to
+   None.
+
+   The optional *banner* argument specifies the banner to print before
+   the first interaction; by default it prints a banner similar to the
+   one printed by the real Python interpreter.
+
 
 
 
