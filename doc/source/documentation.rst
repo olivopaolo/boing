@@ -12,6 +12,7 @@
    concepts
    uris
    apidoc
+   support
    changelog
    authors
    license
