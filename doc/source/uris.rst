@@ -18,62 +18,68 @@
    :class: uritable
    :name: Node URIs
 
-   +---------------------------------------------------------------------------------------------------+
-   |:tn:`Node URIs`                                                                                    |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   ||S|||M||Value                       |Query keys [#f2]_     |Description |subheader| Data           |
-   |   |   |                            |                      |Redirection                            |
-   +===+===+============================+======================+=======================================+
-   |LWX|I  ||inbridge|                  |                      |listen and decode data from an input   |
-   |   |   |                            |                      |device                                 |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  ||outbridge|                 |                      |encode and forward the data to a target|
-   |   |   |                            |                      |destination |subheader| Record/Replay  |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|I  ||play|                      |:arg:`loop, speed,    |replay a log file (default encoding    |
-   |   |   |                            |interval`             ||pickle|)                              |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  ||log|                       |                      |record data to log file (default       |
-   |   |   |                            |                      |encoding |pickle|)                     |
-   |   |   |                            |                      |                                       |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  |:url:`rec:`                 |:arg:`request,        |data recorder with GUI                 |
-   |   |   |                            |timelimit, sizelimit, |                                       |
-   |   |   |                            |oversizecut, fps,     |                                       |
-   |   |   |                            |timewarping`          |                                       |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|I  ||player|                    |:arg:`interval, open` |log files player with GUI (default     |
-   |   |   |                            |                      |encoding |pickle|) |subheader| Data    |
-   |   |   |                            |                      |Debug                                  |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  ||dump|                      |:arg:`request, mode,  |dump products to an output device      |
-   |   |   |                            |separator, src, dest, |                                       |
-   |   |   |                            |depth`                |                                       |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  ||stat|                      |:arg:`request, fps`   |print products statistics to an output |
-   |   |   |                            |                      |device                                 |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  |:url:`viz:`                 |:arg:`antialiasing,   |display multi-touch contacts           |
-   |   |   |                            |fps`                  ||subheader| Data Processing            |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|W  |:url:`nop:`                 |                      |no operation node                      |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|W  |:url:`edit:`                |:url:`merge, copy,    |apply to all the received products     |
-   |   |   |                            |result, **dict`       |\**dict                                |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|W  |:url:`calib:`               |:url:`matrix, screen, |apply a 4x4 transformation matrix      |
-   |   |   |                            |attr, request, merge, |                                       |
-   |   |   |                            |copy, result`         |                                       |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|W  |:url:`filtering:`           |:url:`uri, attr,      |filter product data                    |
-   |   |   |                            |request, merge, copy, |                                       |
-   |   |   |                            |result`               |                                       |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|W  |:url:`timekeeper:`          |:url:`merge, copy,    |mark each received product with a      |
-   |   |   |                            |result`               |timetag                                |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|W  |:url:`lag:[<msec>]`         |                      |add a lag to each received product     |
-   +---+---+----------------------------+----------------------+---------------------------------------+
+   +----------------------------------------------------------------------------------------------------------+
+   |:tn:`Node URIs`                                                                                           |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   ||S|||M|   |Value                           |Query keys [#f2]_     |Description |subheader| Data           |
+   |   |      |                                |                      |Redirection                            |
+   +===+======+================================+======================+=======================================+
+   |LWX|I     ||inbridge|                      |                      |listen and decode data from an input   |
+   |   |      |                                |                      |device                                 |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O     ||outbridge|                     |                      |encode and forward the data to a target|
+   |   |      |                                |                      |destination |subheader| Record/Replay  |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|I     ||play|                          |:arg:`loop, speed,    |replay a log file (default encoding    |
+   |   |      |                                |interval`             ||pickle|)                              |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O     ||log|                           |                      |record data to log file (default       |
+   |   |      |                                |                      |encoding |pickle|)                     |
+   |   |      |                                |                      |                                       |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O     |:url:`rec:`                     |:arg:`request,        |data recorder with GUI                 |
+   |   |      |                                |timelimit, sizelimit, |                                       |
+   |   |      |                                |oversizecut, fps,     |                                       |
+   |   |      |                                |timewarping`          |                                       |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|I     ||player|                        |:arg:`interval, open` |log files player with GUI (default     |
+   |   |      |                                |                      |encoding |pickle|) |subheader| Data    |
+   |   |      |                                |                      |Debug                                  |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O     ||dump|                          |:arg:`request, mode,  |dump products to an output device      |
+   |   |      |                                |separator, src, dest, |                                       |
+   |   |      |                                |depth`                |                                       |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O     ||stat|                          |:arg:`request, fps`   |print products statistics to an output |
+   |   |      |                                |                      |device                                 |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O     |:url:`viz:`                     |:arg:`antialiasing,   |display multi-touch contacts           |
+   |   |      |                                |fps`                  ||subheader| Data Processing            |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|W     |:url:`nop:`                     |                      |no operation node                      |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|W     |:url:`edit:`                    |:url:`merge, copy,    |apply to all the received products     |
+   |   |      |                                |result, **dict`       |\**dict                                |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|W     |:url:`calib:`                   |:url:`matrix, screen, |apply a 4x4 transformation matrix      |
+   |   |      |                                |attr, request, merge, |                                       |
+   |   |      |                                |copy, result`         |                                       |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|W     |:url:`filtering:[<filter-path>]`|:url:`attr, request,  |filter product data                    |
+   |   |      |                                |merge, copy, result,  |                                       |
+   |   |      |                                |<filter-attr>` [#f4]_ |                                       |
+   |   |      |                                |                      |                                       |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|W     |:url:`timekeeper:`              |:url:`merge, copy,    |mark each received product with a      |
+   |   |      |                                |result`               |timetag                                |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|W     |:url:`lag:[<msec>]`             |                      |add a lag to each received product     |
+   |   |      |                                |                      ||subheader| Utils                      |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
+   |LWX|[#f5]_|:url:`conf:<filepath>`          |                      |composite node containing the pipeline |
+   |   |      |                                |                      |defined into the specified             |
+   |   |      |                                |                      |configuration file.                    |
+   +---+------+--------------------------------+----------------------+---------------------------------------+
 
 .. |inbridge| raw:: html
 
@@ -111,7 +117,6 @@
 
    <span class="url"><a href="#encodings">pickle</a></span>
 
-
 Encodings
 =========
 
@@ -119,27 +124,27 @@ Encodings
    :class: uritable
    :name: Encodings
 
-   +---------------------------------------------------------------------------------------------------+
-   |:tn:`Encodings` [#f3]_                                                                             |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   ||S|||M||Value                       |Query keys            | Description                           |
-   +===+===+============================+======================+=======================================+
-   |LWX|IO |:url:`slip`                 |                      |bytestream from/to SLIP_               |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|I  |:url:`pickle`               |:arg:`noslip`         | pickle_ to products                   |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  |:url:`pickle`               |:arg:`protocol,       |Products to pickle_                    |
-   |   |   |                            |request, noslip`      |                                       |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|I  |:url:`json`                 |:arg:`noslip`         |JSON_ to products                      |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  |:url:`json`                 |:arg:`request, noslip`|products to JSON_                      |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|IO |:url:`osc`                  |:arg:`rt, noslip`     |bytestream from/to OSC_                |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|IO |:url:`tuio[.osc]`           |:arg:`rawsource`      |Multi-touch events from/to TUIO_       |
-   |   |   |                            |                      |                                       |
-   +---+---+----------------------------+----------------------+---------------------------------------+
+   +---------------------------------------------------------------------------------------------------------+
+   |:tn:`Encodings` [#f3]_                                                                                   |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   ||S|||M|  |Value                           |Query keys            | Description                           |
+   +===+=====+================================+======================+=======================================+
+   |LWX|IO   |:url:`slip`                     |                      |bytestream from/to SLIP_               |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|I    |:url:`pickle`                   |:arg:`noslip`         | pickle_ to products                   |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O    |:url:`pickle`                   |:arg:`protocol,       |Products to pickle_                    |
+   |   |     |                                |request, noslip`      |                                       |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|I    |:url:`json`                     |:arg:`noslip`         |JSON_ to products                      |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O    |:url:`json`                     |:arg:`request, noslip`|products to JSON_                      |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|IO   |:url:`osc`                      |:arg:`rt, noslip`     |bytestream from/to OSC_                |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|IO   |:url:`tuio[.osc]`               |:arg:`rawsource`      |Multi-touch events from/to TUIO_       |
+   |   |     |                                |                      |                                       |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
 
 
 Input/Output devices
@@ -149,26 +154,26 @@ Input/Output devices
    :class: uritable
    :name: Input/Output devices
 
-   +---------------------------------------------------------------------------------------------------+
-   |:tn:`Input/Output devices`                                                                         |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   ||S|||M|| Value                      | Query keys           | Description                           |
-   +===+===+============================+======================+=======================================+
-   |LX |I  |:url:`:[stdin]`             |                      |read from standard input               |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|I  |:url:`:[stdout]`            |                      |write to standard output               |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|I  | :url:`[.file]:<filepath>`  |:arg:`uncompress,     |read from file                         |
-   |   |   |                            |postend`              |                                       |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  | :url:`[.file]:<filepath>`  |                      |write to file                          |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|I  ||udpsocket|                 |                      |read from UDP socket                   |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|O  ||udpsocket|                 |:arg:`writeend`       |write to UDP socket                    |
-   +---+---+----------------------------+----------------------+---------------------------------------+
-   |LWX|IO ||tcpsocket|                 |:arg:`writeend`       |read/write on TCP socket               |
-   +---+---+----------------------------+----------------------+---------------------------------------+
+   +---------------------------------------------------------------------------------------------------------+
+   |:tn:`Input/Output devices`                                                                               |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   ||S|||M|  | Value                          | Query keys           | Description                           |
+   +===+=====+================================+======================+=======================================+
+   |LX |I    |:url:`:[stdin]`                 |                      |read from standard input               |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|I    |:url:`:[stdout]`                |                      |write to standard output               |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|I    |   :url:`[.file]:<filepath>`    |:arg:`uncompress,     |read from file                         |
+   |   |     |                                |postend`              |                                       |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O    |   :url:`[.file]:<filepath>`    |                      |write to file                          |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|I    ||udpsocket|                     |                      |read from UDP socket                   |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|O    ||udpsocket|                     |:arg:`writeend`       |write to UDP socket                    |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
+   |LWX|IO   ||tcpsocket|                     |:arg:`writeend`       |read/write on TCP socket               |
+   +---+-----+--------------------------------+----------------------+---------------------------------------+
 
 .. |udpsocket| raw:: html
 
@@ -251,22 +256,30 @@ OS support
 
 .. rubric:: Footnotes
 
-.. [#f1] On Windows, in order to define a file using the scheme
-         ``file:`` it is necessary to place the character '/' (slash)
-         before the drive letter
-         (e.g. ``file:///C:/Windows/explorer.exe``).
-
 .. [#f2] The available query keys are obtained from the union of the
          available query keys of all the uri components. As an
          example, the URI ``out.json://[::1]:7777`` is by default
          translated to ``out.json.udp://[::1]:7777``, so it owns the
-         query keys of the JSON encoder (``request, filter``) and of
+         query keys of the JSON encoder (``request`` and ``filter``) and of
          the udp socket node (``writeend``).
+
+.. [#f4] ``<filter-attr>`` dependes on the requested filter.
+
+.. [#f5] The :ref:`mode <modestable>` depends on the pipeline defined
+         into the configuration file. It is important to note that
+         pipelines may have a closed configuration, which means they
+         do not behave neither as input nor output, nor worker. This
+         happens when all the inputs are connected in series to the
+         outputs.
 
 .. [#f3] Some encodings have default input/output devices
          (e.g. ``in.tuio:`` is by default translated into
          ``in.tuio.udp://[::]:3333``).
 
+.. [#f1] On Windows, in order to define a file using the scheme
+         ``file:`` it is necessary to place the character '/' (slash)
+         before the drive letter
+         (e.g. ``file:///C:/Windows/explorer.exe``).
 
 .. _SLIP: http://www.cse.iitb.ac.in/~bestin/btech-proj/slip/x365.html
 .. _pickle: http://docs.python.org/py3k/library/pickle.html

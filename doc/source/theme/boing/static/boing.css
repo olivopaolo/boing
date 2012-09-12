@@ -1,23 +1,9 @@
 
-/* -- showcase layout--------------------------------------------------- */
+/* -- Showcase layout--------------------------------------------------- */
 
 .thumb {
   vertical-align: middle;
   margin: 0 3px;
-}
-
-#fancyBoxLink {
-  float: right;
-  text-align: right;
-  font-size: x-small;
-}
-
-.fancybox-next {
-  right: -90px;
-}
-
-.fancybox-prev {
-  left: -90px;
 }
 
 /* -- Nodes reference table -------------------------------------------- */

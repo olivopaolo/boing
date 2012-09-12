@@ -1,0 +1,33 @@
+# Pipeline for comparing the result of different smoothing filters.
+#
+# Author: Me
+# Date: Sept 12, 2012
+# File: config-filters.txt
+
+# ONE INPUT: a standard TUIO source
+in.tuio://:3333
+
+# PARALLEL BRANCHES
++ (
+    # Raw input
+    nop:
+
+    # Default filter
+    | filtering: + edit:?source=Default
+
+    # Moving mean filter
+    | filtering:/moving/average?winsize=5 + edit:?source=Mean
+
+    # Moving median filter
+    | filtering:/moving/median?winsize=5 + edit:?source=Median
+
+    # Exponential double filter
+    | filtering:/exponential/double?alpha=1&gamma=1 + edit:?source=Exponential
+
+    # OneEuro filter
+    | filtering:/oneeuro?freq=1 + edit:?source=OneEuro
+    # ---
+  )
+
+# ONE OUTPUT: the visualizer
++ viz:

@@ -1,0 +1,16 @@
+# My multi-touch table without its ugly noise and well calibrated.
+#
+# Author: Me
+# Date: Sept 12, 2012
+# File: my-mt-table.txt
+
+# INPUT: standard TUIO source
+in.tuio://:3333
+
+# FILTERING: OneEuro filter
++ filtering:/oneeuro?freq=60&merge
+
+# CALIBRATION: my 4x4 matrix
++ calib:?merge&matrix=0.98,0,0,0.021,0,0.83,0,0.010,0,0,1,0,0,0,0,1
+
+# NO OUTPUT, so I can reuse this into an external pipeline.

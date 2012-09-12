@@ -9,6 +9,7 @@ toolkit |boing|:
    :maxdepth: 2
 
    firststeps
+   configuration
    developer
 
 ..
@@ -17,5 +18,4 @@ toolkit |boing|:
    osc
    tuio
    multitouch
-   configuration
    scriptadvanced

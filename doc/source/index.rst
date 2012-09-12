@@ -35,11 +35,12 @@ Showcase
            src="_static/fancyBox/source/jquery.fancybox.js"></script>
    <link rel="stylesheet" type="text/css" media="screen"
          href="_static/fancyBox/source/jquery.fancybox.css" />
+   <link rel="stylesheet" type="text/css" media="screen"
+         href="_static/fancyBox-custom.css" />
 
    <script type="text/javascript">
       $(document).ready(function() {
          $(".fancybox").fancybox({
-            closeClick : true,
             helpers : {
 	       title : {
                   type : 'inside'
