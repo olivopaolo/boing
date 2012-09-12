@@ -2,9 +2,7 @@
  Boing
 =======
 
-A flexible multi-touch toolkit
-
-http://boing.readthedocs.org
+A flexible multi-touch toolkit http://boing.readthedocs.org
 
 Introduction
 ============
@@ -40,3 +38,10 @@ including an API reference can be found at:
   http://boing.readthedocs.org
 
 
+Support
+=======
+
+If you need assistance, you can ask for help on the mailing list:
+
+  * Archive : http://librelist.com/browser/boing/
+  * Email   : boing@librelist.com

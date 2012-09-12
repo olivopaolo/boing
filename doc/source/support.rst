@@ -1,9 +1,9 @@
 ==============
- Getting Help
+ Getting help
 ==============
 
 The easiest way to get help with the project is to join the mailing
-list boing@librelist.org.
+list boing@librelist.com.
 
 The archive of the mailing list can be checked out at
 http://librelist.com/browser/boing/ .
