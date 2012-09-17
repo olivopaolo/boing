@@ -24,13 +24,13 @@ class TcpSocket(QTcpSocket):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger("TcpSocket.%d"%id(self))
         self.error.connect(self.__error)
-        
+
     def __error(self, error):
         if error!=QAbstractSocket.RemoteHostClosedError:
             raise RuntimeError(self.errorString())
 
     def connect(self, host, port, family=None):
-        """Raises Exception if host cannot be resolved."""        
+        """Raises Exception if host cannot be resolved."""
         host, port = ip.resolve(host, port,
                                 family if family is not None else 0,
                                 _socket.SOCK_STREAM)[:2]
@@ -38,14 +38,14 @@ class TcpSocket(QTcpSocket):
         return self
 
     def family(self):
-        addr = self.localAddress()        
+        addr = self.localAddress()
         if addr.protocol()==QAbstractSocket.IPv4Protocol:
             family = ip.PF_INET
         elif addr.protocol()==QAbstractSocket.IPv6Protocol:
             family = ip.PF_INET6
         else: family = None
         return family
-        
+
     def name(self):
         """Return the server socket’s address (host, port)."""
         return ip.addrToString(self.localAddress()), self.localPort()
@@ -54,10 +54,8 @@ class TcpSocket(QTcpSocket):
         return ip.addrToString(self.peerAddress()), self.peerPort()
 
     def peerUrl(self):
-        url = URL()
-        url.scheme = "tcp"
-        url.site.host, url.site.port = self.peerName()
-        return url
+        return URL("tcp://%s:%d"%self.peerName()) if self.family()==ip.PF_INET \
+            else URL("tcp://[%s]:%d"%self.peerName())
 
     def read(self):
         return self.receive()
@@ -79,25 +77,22 @@ class TcpSocket(QTcpSocket):
     def send(self, data):
         if self.state()==QAbstractSocket.ConnectedState:
             return self.write(data)
-        else: 
+        else:
             self.logger.warning("send method invoked on disconnected socket.")
             return 0
 
     def url(self):
-        """Return the socket's URL, i.e. tcp://<host>:<port>."""
-        url = URL()
-        url.scheme = "tcp"
-        url.site.host, url.site.port = self.name()
-        return url
-    
+        return URL("tcp://%s:%d"%self.name()) if self.family()==ip.PF_INET \
+            else URL("tcp://[%s]:%d"%self.name())
+
 # -------------------------------------------------------------------------
 
 def TcpConnection(url, family=None):
     """Raises Exception if host cannot be resolved."""
     if not isinstance(url, URL): url = URL(url)
-    if not url.site.host: 
+    if not url.site.host:
         raise ValueError("Target host is mandatory: %s"%url)
-    elif url.site.port==0: 
+    elif url.site.port==0:
         raise ValueError("Target port is mandatory: %s"%url)
     else:
         socket = TcpSocket()
@@ -117,13 +112,13 @@ class TcpServer(QTcpServer):
         self.__factory = factory
         self.__options = options if options is not None else tuple()
         self.setMaxPendingConnections(maxconnections)
-        if not host: 
+        if not host:
             if family==ip.PF_INET6: host = QHostAddress.AnyIPv6
             else: host = QHostAddress.Any
-        if not QHostAddress(host) in (QHostAddress.Any, 
+        if not QHostAddress(host) in (QHostAddress.Any,
                                       QHostAddress.AnyIPv6):
-            host, port = ip.resolve(host, port, 
-                                    family if family is not None else 0, 
+            host, port = ip.resolve(host, port,
+                                    family if family is not None else 0,
                                     _socket.SOCK_STREAM)[:2]
         if not self.listen(QHostAddress(host), int(port)):
             raise Exception(self.errorString())
@@ -132,10 +127,10 @@ class TcpServer(QTcpServer):
         connection = self.__factory(self)
         for option in self.__options: connection.setOption(option)
         connection.setSocketDescriptor(descriptor)
-        self.addPendingConnection(connection)        
+        self.addPendingConnection(connection)
 
     def family(self):
-        addr = self.serverAddress()        
+        addr = self.serverAddress()
         if addr.protocol()==QAbstractSocket.IPv4Protocol:
             family = ip.PF_INET
         elif addr.protocol()==QAbstractSocket.IPv6Protocol:
@@ -149,15 +144,13 @@ class TcpServer(QTcpServer):
 
     def url(self):
         """Return the socket's URL, i.e. tcp://<host>:<port>."""
-        url = URL()
-        url.scheme = "tcp"
-        url.site.host, url.site.port = self.name()
-        return url
+        return URL("tcp://%s:%d"%self.name()) if self.family()==ip.PF_INET \
+            else URL("tcp://[%s]:%d"%self.name())
 
 # -------------------------------------------------------------------
 
 class EchoSocket(TcpSocket):
-    
+
     def __init__(self, parent=None):
         TcpSocket.__init__(self, parent)
         self.logger = logging.getLogger("EchoSocket.%d"%id(self))
@@ -171,11 +164,11 @@ class EchoSocket(TcpSocket):
 
     def __disconnected(self):
         self.logger.debug("Lost client: %s"%str(self.peerName()))
-        
+
     def __echoData(self):
         data, peer = self.receiveFrom()
         self.logger.debug("%s: %s"%(peer, data))
         self.send(data)
-    
+
 def EchoServer(host=None, port=0, family=None, maxconnections=30):
     return TcpServer(host, port, family, maxconnections, EchoSocket)

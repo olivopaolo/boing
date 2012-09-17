@@ -68,7 +68,7 @@ grammar = pyparsing.operatorPrecedence(
      ])
 
 # -----------------------------------------------------------------------
-# URI expressions evaluation
+# Node creation
 
 def create(expr, parent=None):
     """Return a new node created as defined in the expression *expr*,
@@ -85,6 +85,7 @@ def create(expr, parent=None):
 
 def createSingle(uri, mode="", parent=None):
     """Parse *uri* to load a sigle node."""
+    # print("createSingle", uri, mode, parent)
     logger = logging.getLogger("loader")
     if not isinstance(uri, URL): uri = URL(str(uri).strip())
     if not uri.opaque and not uri.scheme and not uri.path and not mode:
@@ -110,11 +111,11 @@ def createSingle(uri, mode="", parent=None):
 
     elif uri.scheme.startswith("in."):
         assertUriModeIn(uri, mode, "")
-        node = createSingle(lower(uri, "in"), "in")
+        node = createSingle(_lower(uri, "in"), "in")
 
     elif uri.scheme.startswith("out."):
         assertUriModeIn(uri, mode, "")
-        node = createSingle(lower(uri, "out"), "out")
+        node = createSingle(_lower(uri, "out"), "out")
 
     # -------------------------------------------------------------------
     # LOGGING
@@ -260,32 +261,31 @@ def createSingle(uri, mode="", parent=None):
         if uri.site:
             scheme = "udp"
             if not str(uri).startswith(":"): scheme += ":"
-            extended = scheme+str(uri)
+            extended = scheme+uri
             logger.info("URI has incomplete IO device, assuming: %s"%extended)
             node = createSingle(extended, mode, parent)
         elif uri.path and not uri.kind==URL.OPAQUE:
             scheme = "file"
             if not str(uri).startswith(":"): scheme += ":"
-            extended = scheme+str(uri)
+            extended = scheme+uri
             logger.info("URI has incomplete IO device, assuming: %s"%extended)
             node = createSingle(extended, mode, parent)
+        elif uri.opaque=="stdin" or not uri.opaque and mode=="in":
+            assertUriModeIn(uri, mode, "in")
+            assertUriQuery(uri, None)
+            encoder = encoding.TextEncoder(blender=Functor.MERGE)
+            if not uri.opaque: logger.info(
+                "URI has incomplete IO device, assuming: :stdin")
+            reader = ioport.DataReader(CommunicationDevice(sys.stdin))
+            node = reader + encoder
+        elif uri.opaque=="stdout" or not uri.opaque and mode=="out":
+            assertUriModeIn(uri, mode, "out")
+            assertUriQuery(uri, None)
+            if not uri.opaque: logger.info(
+                "URI has incomplete IO device, assuming: :stdout")
+            node = ioport.DataWriter(IODevice(sys.stdout))
         else:
-            if uri.opaque=="stdin" or not uri.opaque and mode=="in":
-                assertUriModeIn(uri, mode, "in")
-                assertUriQuery(uri, None)
-                encoder = encoding.TextEncoder(blender=Functor.MERGE)
-                if not uri.opaque: logger.info(
-                    "URI has incomplete IO device, assuming: :stdin")
-                reader = ioport.DataReader(CommunicationDevice(sys.stdin))
-                node = reader + encoder
-            elif uri.opaque=="stdout" or not uri.opaque and mode=="out":
-                assertUriModeIn(uri, mode, "out")
-                assertUriQuery(uri, None)
-                if not uri.opaque: logger.info(
-                    "URI has incomplete IO device, assuming: :stdout")
-                node = ioport.DataWriter(IODevice(sys.stdout))
-            else:
-                raise ValueError("Invalid URI: %s"%uri)
+            raise ValueError("Invalid URI: %s"%uri)
 
     elif uri.scheme=="file":
         if uri.kind==URL.OPAQUE or uri.site or uri.fragment:
@@ -299,7 +299,8 @@ def createSingle(uri, mode="", parent=None):
             assertUriQuery(uri, tuple(filequery)+tuple(readerquery))
             path = str(uri.path)
             # Consider c:/tmp instead of /c:/tmp
-            if sys.platform=="win32" and uri.path.absolute: path = path[1:]
+            if sys.platform=="win32" and uri.path.isAbsolute():
+                path = path[1:]
             if os.path.isfile(path):
                 inputfile = FileReader(uri, **filequery)
                 # FIXME: start should be triggered at outputs ready
@@ -350,10 +351,10 @@ def createSingle(uri, mode="", parent=None):
     # SLIP
     elif uri.scheme.startswith("slip.") or uri.scheme=="slip":
         assertUriModeIn(uri, mode, "in", "out")
-        loweruri = lower(uri, "slip")
+        loweruri = _lower(uri, "slip")
         if mode=="in":
             if not uri.site and uri.site:
-                loweruri.query.data.setdefault("uncompress", "")
+                loweruri.query.setdefault("uncompress", "")
             device = createSingle(loweruri, "in")
             decoder = encoding.SlipDecoder() # blender is fixed to  RESULTONLY
             textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
@@ -368,18 +369,16 @@ def createSingle(uri, mode="", parent=None):
     elif uri.scheme=="pickle" or uri.scheme.startswith("pickle."):
         assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "request", "noslip", "protocol")
-        loweruri = lower(uri, "pickle", query.keys())
+        loweruri = _lower(uri, "pickle", query.keys())
         noslip = assertIsInstance(query.pop("noslip", False), bool)
         if not noslip:
             if loweruri.scheme=="tcp":
-                loweruri.scheme = "slip.%s"%loweruri.scheme
-                logger.info(
-                    "PICKLE over TCP is SLIP encoded by default (set noslip to disable)")
+                loweruri = URL("slip."+loweruri)
+                logger.info("PICKLE over TCP is SLIP encoded by default (set noslip to disable)")
             elif loweruri.kind!=URL.OPAQUE and loweruri.path:
-                loweruri.scheme = "slip.%s"%loweruri.scheme if loweruri.scheme \
-                    else "slip"
-                logger.info(
-                    "PICKLE over FILE is SLIP encoded by default (set noslip to disable)")
+                loweruri = URL("slip."+loweruri) if loweruri.scheme \
+                    else URL("slip"+loweruri)
+                logger.info("PICKLE over FILE is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
             if "request" in query: raise ValueError(
                 "Unexpected query keys: 'request'")
@@ -400,18 +399,16 @@ def createSingle(uri, mode="", parent=None):
     elif uri.scheme=="json" or uri.scheme.startswith("json."):
         assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "request", "noslip")
-        loweruri = lower(uri, "json", query.keys())
+        loweruri = _lower(uri, "json", query.keys())
         noslip = assertIsInstance(query.pop("noslip", False), bool)
         if not noslip:
             if loweruri.scheme=="tcp":
-                loweruri.scheme = "slip.%s"%loweruri.scheme
-                logger.info(
-                    "JSON over TCP is SLIP encoded by default (set noslip to disable)")
+                loweruri = URL("slip."+loweruri)
+                logger.info("JSON over TCP is SLIP encoded by default (set noslip to disable)")
             elif loweruri.kind!=URL.OPAQUE and loweruri.path:
-                loweruri.scheme = "slip.%s"%loweruri.scheme if loweruri.scheme \
-                    else "slip"
-                logger.info(
-                    "JSON over FILE is SLIP encoded by default (set noslip to disable)")
+                loweruri = URL("slip."+loweruri) if loweruri.scheme \
+                    else URL("slip"+loweruri)
+                logger.info("JSON over FILE is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
             if "request" in query: raise ValueError(
                 "Unexpected query keys: 'request'")
@@ -428,18 +425,16 @@ def createSingle(uri, mode="", parent=None):
     elif uri.scheme=="osc" or uri.scheme.startswith("osc."):
         assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "rt", "noslip")
-        loweruri = lower(uri, "osc", query.keys())
+        loweruri = _lower(uri, "osc", query.keys())
         noslip = assertIsInstance(query.pop("noslip", False), bool)
         if not noslip:
             if loweruri.scheme=="tcp":
-                loweruri.scheme = "slip.%s"%loweruri.scheme
-                logger.info(
-                    "OSC over TCP is SLIP encoded by default (set noslip to disable)")
+                loweruri = URL("slip."+loweruri)
+                logger.info("OSC over TCP is SLIP encoded by default (set noslip to disable)")
             elif loweruri.kind!=URL.OPAQUE and loweruri.path:
-                loweruri.scheme = "slip.%s"%loweruri.scheme if loweruri.scheme \
-                    else "slip"
-                logger.info(
-                    "OSC over FILE is SLIP encoded by default (set noslip to disable)")
+                loweruri = URL("slip."+loweruri) if loweruri.scheme \
+                    else URL("slip"+loweruri)
+                logger.info("OSC over FILE is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
             device = createSingle(loweruri, "in")
             decoder = encoding.OscDecoder(blender=Functor.MERGE, **query)
@@ -457,9 +452,9 @@ def createSingle(uri, mode="", parent=None):
     elif uri.scheme=="tuio" or uri.scheme.startswith("tuio."):
         assertUriModeIn(uri, mode, "in", "out")
         query = parseQuery(uri, "rawsource")
-        loweruri = lower(uri, "tuio", query.keys())
+        loweruri = _lower(uri, "tuio", query.keys())
         if not loweruri.scheme.startswith("osc."):
-            loweruri.scheme = "osc.%s"%loweruri.scheme
+            loweruri = URL("osc."+loweruri)
         if mode=="in":
             device = createSingle(loweruri, "in")
             encoder = encoding.TuioDecoder(blender=Functor.MERGE, **query)
@@ -504,7 +499,7 @@ def createSingle(uri, mode="", parent=None):
                            "separator", "mode")
         dump = Dump(**query) # blender is fixed to  RESULTONLY
         encoder = encoding.TextEncoder(blender=Functor.MERGE)
-        device = createSingle(lower(uri, "dump", query.keys()), "out")
+        device = createSingle(_lower(uri, "dump", query.keys()), "out")
         node = dump + encoder + device
 
     elif uri.scheme=="stat" or uri.scheme.startswith("stat."):
@@ -513,7 +508,7 @@ def createSingle(uri, mode="", parent=None):
         query = parseQuery(uri, "request", "filter", "fps")
         stat = StatProducer(**query) # blender is fixed to  RESULTONLY
         encoder = encoding.TextEncoder(blender=Functor.MERGE)
-        device = createSingle(lower(uri, "stat", query.keys()), "out")
+        device = createSingle(_lower(uri, "stat", query.keys()), "out")
         node = stat + encoder + device
 
     elif uri.scheme=="viz":
@@ -608,12 +603,10 @@ def createSingle(uri, mode="", parent=None):
         if not uri.path:
             uri = URL(str(uri).replace("filtering:",
                                        "filtering:/moving/mean", 1))
-            uri.query.data["winsize"] = "5"
+            uri.query["winsize"] = "5"
         query = parseQuery(uri, "attr", "request", "merge", "copy", "result")
-        filteruri = copy.copy(uri)
-        filteruri.scheme = ""
-        filteruri.kind = URL.ABSOLUTE
-        query["functorfactory"] = getFunctorFactory(lower(
+        filteruri = URI(str(uri).replace(uri.scheme, "fltr", 1))
+        query["functorfactory"] = getFunctorFactory(_lower(
                 filteruri, "",
                 ("attr", "request", "merge", "copy", "result")))
         if "attr" in query:
@@ -625,26 +618,26 @@ def createSingle(uri, mode="", parent=None):
 
     # -------------------------------------------------------------------
     # GRAPHERS
-    elif uri.scheme.startswith("grapher."):
-        assertUriModeIn(uri, mode, "", "out")
-        if False: #".pydot" in uri.scheme:
-            from boing.extra.pydot import DotGrapherProducer
-            query = parseQuery(uri, "hz", "request", "maxdepth")
-            assertUriQuery(uri, query)
-            grapher = DotGrapherProducer(**query)
-            #encoder = encoding.TextEncoder(blender=Functor.MERGE)
-            #device = createSingle(lower(uri, "grapher", query), mode="out")
-            node = grapher #+ encoder + device
-            node.grapher = grapher
-        else:
-            from boing.nodes import SimpleGrapherProducer
-            query = parseQuery(uri, "hz", "request", "maxdepth")
-            assertUriQuery(uri, query)
-            grapher = SimpleGrapherProducer(**query)
-            encoder = encoding.TextEncoder(blender=Functor.MERGE)
-            device = createSingle(lower(uri, "grapher", query), mode="out")
-            node = grapher + encoder + device
-            node.grapher = grapher
+    elif uri.scheme=="grapher":
+        assertUriModeIn(uri, mode, "")
+        # if ".pydot" in uri.scheme:
+        #     from boing.extra.pydot import DotGrapherProducer
+        #     query = parseQuery(uri, "hz", "request", "maxdepth")
+        #     assertUriQuery(uri, query)
+        #     grapher = DotGrapherProducer(**query)
+        #     #encoder = encoding.TextEncoder(blender=Functor.MERGE)
+        #     #device = createSingle(_lower(uri, "grapher", query), mode="out")
+        #     node = grapher #+ encoder + device
+        #     node.grapher = grapher
+        # else:
+        from boing.nodes import SimpleGrapherProducer
+        query = parseQuery(uri, "hz", "request", "maxdepth")
+        assertUriQuery(uri, query)
+        grapher = SimpleGrapherProducer(**query)
+        encoder = encoding.TextEncoder(blender=Functor.MERGE)
+        device = createSingle(_lower(uri, "grapher", query), mode="out")
+        node = grapher + encoder + device
+        node.grapher = grapher
     else:
         raise ValueError("Invalid URI: %s"%uri)
 
@@ -666,12 +659,12 @@ class NodeServer(tcp.TcpServer):
 # URI parsing support
 
 def parseQuery(uri, *restrictions):
-    """Return a dict obtained from the uri query data filtered using
+    """Return a dict obtained from the uri query filtered using
     the key list restrictions. If restrictions is empty all the query
-    data is preserved. The query data values are converted using the
+    data is preserved. The query values are converted using the
     function '_kwstr2value'."""
     rvalue = {}
-    for key, value in uri.query.data.items():
+    for key, value in uri.query.items():
         if not restrictions or key in restrictions:
             if key=="request":
                 rvalue[key] = QRequest(value)
@@ -682,7 +675,7 @@ def parseQuery(uri, *restrictions):
             elif key=="result":
                 rvalue["blender"] = Functor.RESULTONLY
             else:
-                rvalue[key] = _kwstr2value(uri.query.data[key])
+                rvalue[key] = _kwstr2value(uri.query[key])
     return rvalue
 
 def _kwstr2value(string):
@@ -700,18 +693,18 @@ def _kwstr2value(string):
             except ValueError: rvalue = string
     return rvalue
 
-def lower(uri, schemecut="", keys=tuple()):
+def _lower(uri, schemecut="", keys=tuple()):
     """Return a copy of *uri* where :
         - *schemecut* is removed from the uri scheme ;
-        - all keys in *keys* are removed from the uri's query data ;"""
+        - all keys in *keys* are removed from the uri's query ;"""
     rvalue = URL(str(uri))
     # Cut scheme
     if schemecut and uri.scheme.startswith(schemecut):
-        rvalue.scheme = rvalue.scheme.replace(schemecut, "", 1)
-        if rvalue.scheme.startswith("."): rvalue.scheme = rvalue.scheme[1:]
+        if uri.scheme.startswith(schemecut+"."): schemecut += "."
+        rvalue = URL(str(rvalue).replace(schemecut, "", 1))
     # Cut query keys
-    f = lambda kw: kw[0] not in keys
-    rvalue.query.data = dict(filter(f, rvalue.query.data.items()))
+    for k in keys:
+        rvalue.query.pop(k, None)
     return rvalue
 
 # -------------------------------------------------------------------
@@ -720,8 +713,8 @@ def lower(uri, schemecut="", keys=tuple()):
 def assertUriQuery(uri, accepted):
     """Raises ValueError if *uri* contains query keys not in *accepted*."""
     if not isinstance(uri, URL): uri = URL(uri)
-    unexpected = uri.query.data if accepted is None \
-        else list(filter(lambda k: k not in accepted, uri.query.data))
+    unexpected = uri.query.keys() if accepted is None \
+        else list(filter(lambda k: k not in accepted, uri.query.keys()))
     if unexpected: raise ValueError(
         "Unexpected query keys: %s"%", ".join("'%s'"%k for k in unexpected))
 

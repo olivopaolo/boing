@@ -48,7 +48,6 @@ uris = {
         "invalid": (
             ("in.stdin:", ValueError),
             ("stdin:", ValueError),
-            ("in.stdin:///absolute", ValueError),
             ("in:stdin?wrong=wrong", ValueError),
             ("in:stdin#fragment", ValueError),
             )},
@@ -69,7 +68,9 @@ uris = {
         "valid": (
             "in:./%s"%os.path.relpath(readable),
             "in:%s%s"%(prefix, readable),
+            "in://%s%s"%(prefix, readable),
             "in.file:./%s"%os.path.relpath(readable),
+            "in.file:%s%s"%(prefix, readable),
             "in.file://%s%s"%(prefix, readable),
             "in:%s%s?uncompress"%(prefix, readable),
             "in:%s%s?uncompress"%(prefix, readable),
@@ -79,7 +80,9 @@ uris = {
             "in:%s%s?postend=False"%(prefix, readable),
             "out:./%s"%os.path.relpath(target), # relative path
             "out:%s%s"%(prefix, target), # absolute path
+            "out://%s%s"%(prefix, target), # absolute path
             "out.file:./%s"%os.path.relpath(target), # relative path
+            "out.file:%s%s"%(prefix, target),
             "out.file://%s%s"%(prefix, target),
             ),
         "invalid": (

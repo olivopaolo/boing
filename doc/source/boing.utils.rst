@@ -25,3 +25,13 @@ functions.
    .. method:: push(line)
 
       Pass *line* to the Python interpreter.
+
+
+
+.. rubric:: Submodules
+
+.. toctree::
+
+   boing.utils.url
+
+.. boing.utils.qpath

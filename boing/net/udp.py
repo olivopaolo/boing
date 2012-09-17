@@ -31,7 +31,7 @@ class UdpSocket(QUdpSocket):
         self.__open = False
         self.error.connect(self.__error)
         self.connected.connect(self.__connected)
-        
+
     def __error(self, error):
         if error not in (QAbstractSocket.RemoteHostClosedError,
                          QAbstractSocket.AddressInUseError) :
@@ -40,18 +40,18 @@ class UdpSocket(QUdpSocket):
     def isOpen(self):
         return self.__open
     # ---------------------------------------------------------------------
-                
+
     def bind(self, host=None, port=0, family=None,
              mode=QUdpSocket.DontShareAddress):
         """Raises Exception if UDP socket cannot be bound at specified
         host and port."""
-        if not host: 
+        if not host:
             if family==ip.PF_INET6: host = QHostAddress.AnyIPv6
             else: host = QHostAddress.Any
-        if not QHostAddress(host) in (QHostAddress.Any, 
+        if not QHostAddress(host) in (QHostAddress.Any,
                                       QHostAddress.AnyIPv6):
-            host, port = ip.resolve(host, port, 
-                                    family if family is not None else 0, 
+            host, port = ip.resolve(host, port,
+                                    family if family is not None else 0,
                                     _socket.SOCK_DGRAM)[:2]
         if not QUdpSocket.bind(self, QHostAddress(host), port, mode):
             raise Exception(self.errorString())
@@ -59,7 +59,7 @@ class UdpSocket(QUdpSocket):
         return self
 
     def family(self):
-        addr = self.localAddress()        
+        addr = self.localAddress()
         if addr.protocol()==QAbstractSocket.IPv4Protocol:
             family = ip.PF_INET
         elif addr.protocol()==QAbstractSocket.IPv6Protocol:
@@ -87,19 +87,17 @@ class UdpSocket(QUdpSocket):
         else: return bytes(), None
 
     def url(self):
-        """Return the socket's URL, i.e. tcp://<host>:<port>."""
-        url = URL()
-        url.scheme = "udp"
-        url.site.host, url.site.port = self.name()
-        return url
+        """Return the socket's URL, i.e. udp://<host>:<port>."""
+        return URL("udp://%s:%d"%self.name()) if self.family()==ip.PF_INET \
+            else URL("udp://[%s]:%d"%self.name())
 
     # ---------------------------------------------------------------------
     # Disconnected mode
-    
+
     def sendTo(self, data, host, port, family=None, resolve=True):
         """Raises Exception if host cannot be resolved."""
-        if resolve: 
-            host, port = ip.resolve(host, port, 
+        if resolve:
+            host, port = ip.resolve(host, port,
                                     family if family is not None else 0,
                                     _socket.SOCK_DGRAM)[:2]
         return self.writeDatagram(data, QHostAddress(host), port)
@@ -122,22 +120,20 @@ class UdpSocket(QUdpSocket):
         return ip.addrToString(self.peerAddress()), self.peerPort()
 
     def peerUrl(self):
-        url = URL()
-        url.scheme = "udp"
-        url.site.host, url.site.port = self.peerName()
-        return url
+        return URL("udp://%s:%d"%self.peerName()) if self.family()==ip.PF_INET \
+            else URL("udp://[%s]:%d"%self.peerName())
 
     def send(self, data):
         if self.state()==QAbstractSocket.ConnectedState:
             return self.write(data)
-        else: 
+        else:
             self.logger.warning("send method invoked on disconnected socket.")
             return 0
 
     """
     # ---------------------------------------------------------------------
     # Multicast mode
-    
+
     def isMulticast(self):
         if sys.platform=='win32':
             h = _socket.inet_aton(self.__sock.getsockname()[0])
@@ -152,7 +148,7 @@ class UdpSocket(QUdpSocket):
         else:
             level, optname = _socket.IPPROTO_IP, _socket.IP_MULTICAST_TTL
         self.__sock.setsockopt(level, optname, ttl)
-            
+
     def setMulticastLoopback(self, boolean):
         if self.__sock.family==ip.PF_INET6:
             level, optname = _socket.IPPROTO_IPV6, _socket.IPV6_MULTICAST_LOOP
@@ -164,21 +160,21 @@ class UdpSocket(QUdpSocket):
 
 def UdpListener(url=None, family=None, options=tuple()):
     """Raises Exception if UDP socket cannot be bound at specified
-    host and port."""    
+    host and port."""
     if not isinstance(url, URL): url = URL(url)
     s = UdpSocket()
     if "reuse" in options:
         kwargs = {"mode": QUdpSocket.ReuseAddressHint}
-    else: 
+    else:
         kwargs = {}
     return s.bind(url.site.host, url.site.port, family, **kwargs)
 
 def UdpSender(url, family=None):
     """Raises Exception if host cannot be resolved or connected."""
     if not isinstance(url, URL): url = URL(url)
-    if not url.site.host: 
+    if not url.site.host:
         raise ValueError("Target host is mandatory: %s"%url)
-    elif url.site.port==0: 
+    elif url.site.port==0:
         raise ValueError("Target port is mandatory: %s"%url)
     s = UdpSocket()
     return s.connect(url.site.host, url.site.port, family)

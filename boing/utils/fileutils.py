@@ -20,7 +20,7 @@ from boing.utils.url import URL
 class IODevice(QtCore.QObject):
     """Class for wrapping a generic file descriptor, like a file,
     the stdin or the stdout."""
-    
+
     # Open mode
     ReadOnly = 0x01
     WriteOnly = 0x02
@@ -89,7 +89,7 @@ class CommunicationDevice(IODevice):
     usefull like Unix not regular files and stdin. TcpSocket and
     UdpSocket do not inherit this class because they inherit specific
     Qt classes."""
-    
+
     readyRead = QtCore.pyqtSignal()
 
     def __init__(self, fd, parent=None):
@@ -97,7 +97,7 @@ class CommunicationDevice(IODevice):
         self.__notifier = QtCore.QSocketNotifier(fd if type(fd)==int else fd.fileno(),
                                                  QtCore.QSocketNotifier.Read,
                                                  activated=self.readyRead)
-    
+
     def __del__(self):
         super().__del__()
         try:
@@ -116,7 +116,7 @@ def openFile(filepath, mode=IODevice.ReadOnly, uncompress=False):
     if mode&IODevice.ReadOnly:
         if mode&IODevice.Append: pymode = "r+b"
         elif mode&IODevice.WriteOnly: pymode = "w+b"
-        else: pymode = "rb"      
+        else: pymode = "rb"
     elif mode&IODevice.Append: pymode = "ab"
     else: pymode = "wb"
     if os.path.splitext(filepath)[1]==".bz2" \
@@ -128,13 +128,14 @@ def openFile(filepath, mode=IODevice.ReadOnly, uncompress=False):
 
 
 class BaseFile(object):
-    """BaseFile defines a set of common methods that any file should have.""" 
+    """BaseFile defines a set of common methods that any file should have."""
 
     def __init__(self, url):
         if not isinstance(url, URL): url = URL(str(url))
         path = str(url.path)
         # Consider c:/tmp instead of /c:/tmp
-        if sys.platform=="win32" and url.path.absolute: path = path[1:]
+        if sys.platform=="win32" and url.path.isAbsolute():
+            path = path[1:]
         self._fileinfo = QtCore.QFileInfo(path)
 
     def absoluteDir(self):
@@ -152,7 +153,7 @@ class BaseFile(object):
 
 
 class File(BaseFile, IODevice):
-    
+
     def __init__(self, url, mode=IODevice.ReadOnly,
                  uncompress=False, parent=None):
         BaseFile.__init__(self, url)
@@ -162,7 +163,7 @@ class File(BaseFile, IODevice):
 
 class CommunicationFile(BaseFile, CommunicationDevice):
 
-    def __init__(self, url, mode=IODevice.ReadOnly, 
+    def __init__(self, url, mode=IODevice.ReadOnly,
                  uncompress=False, parent=None):
         BaseFile.__init__(self, url)
         fd = openFile(self.absoluteFilePath(), mode, uncompress)
@@ -180,12 +181,12 @@ class FileReader(File):
     completed = QtCore.pyqtSignal()
     __read = QtCore.pyqtSignal()
 
-    def __init__(self, url, mode=IODevice.ReadOnly, 
+    def __init__(self, url, mode=IODevice.ReadOnly,
                  uncompress=False, parent=None):
         File.__init__(self, url, mode, uncompress, parent)
         self._atend = False
         self.__read.connect(self.readyRead, QtCore.Qt.QueuedConnection)
-        
+
     def atEnd(self):
         return self._atend
 
@@ -193,7 +194,7 @@ class FileReader(File):
         self.__read.emit()
 
     def read(self, *args, **kwargs):
-        data = File.read(self, *args, **kwargs) 
+        data = File.read(self, *args, **kwargs)
         if not data:
             self._atend = True
             self.completed.emit()
@@ -213,7 +214,7 @@ class FileReader(File):
 if __name__=="__main__":
     import sys
     import traceback
-    app = QtCore.QCoreApplication(sys.argv)    
+    app = QtCore.QCoreApplication(sys.argv)
     filepath = "filetest.dat"
     writer = File(filepath, IODevice.WriteOnly)
     print("Writing file:", writer.fileName())

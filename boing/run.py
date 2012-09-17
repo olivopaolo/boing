@@ -44,8 +44,8 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('--version', action='version', version=version)
 parser.add_argument("-G", dest="graph", nargs="?", default=None,
-                    const="stdout:", metavar="URI",
-                    help="activate pipeline plot (e.g. -G out.stdout:)")
+                    const="grapher:stdout?hz=1&request=*&maxdepth=none", metavar="URI",
+                    help="activate pipeline plot. Default URI: grapher:stdout?hz=1&request=*&maxdepth=none")
 parser.add_argument("-C", dest="console", nargs="?", default=None,
                     const="", metavar="HOST:PORT",
                     help="activate python console")
@@ -80,7 +80,7 @@ except Exception as exc:
 # Handle common options
 if args.graph:
     # Setup graph view
-    node = boing.create("grapher."+args.graph)
+    node = boing.create(args.graph)
     node.grapher.setStarters((pipeline, ))
 
 if args.console is not None:
