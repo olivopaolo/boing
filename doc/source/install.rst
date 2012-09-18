@@ -14,11 +14,11 @@ Download one of the following depending on your platform:
 |File           |Type             |Py     |Size  |
 |               |                 |Version|      |
 +===============+=================+=======+======+
-||tar|          |Source           |3.2    |1.3MB |
+||tar|          |Source           |3.2    |702KB |
 +---------------+-----------------+-------+------+
-||zip|          |Source           |3.2    |1.4MB |
+||zip|          |Source           |3.2    |833KB |
 +---------------+-----------------+-------+------+
-||msi|          |MS Windows MSI   |3.2    |528KB |
+||msi|          |MS Windows MSI   |3.2    |544KB |
 |               |installer        |       |      |
 |               |                 |       |      |
 +---------------+-----------------+-------+------+
