@@ -5,20 +5,11 @@
 PyQt4 and Distribute
 ====================
 
-If you have `Mac Ports`_, getting PyQt4_ and Distribute_ is as simple as
-typing::
+If you have `Mac Ports`_, getting PyQt4_, numpy_ and Distribute_ is as
+simple as typing::
 
-  sudo port install py32-pyqt4 py32-distribute
+  sudo port install py32-pyqt4 py32-distribute py32-numpy
 
-.. Distribute
-.. ==========
-
-.. The package Distribute_ is necessary to run the |boing|'s installer
-.. script. Download the file `distribute_setup.py`_ and type in a
-..
-   terminal::
-
-..   sudo python3.2 distribute_setup.py
 
 |boing|
 =======
@@ -39,6 +30,7 @@ simple solution is to set the installer target directory using the option
 
 .. _`Mac Ports`: http://www.macports.com
 .. _PyQt4: http://www.riverbankcomputing.co.uk/software/pyqt/intro
+.. _numpy: http://numpy.scipy.org/
 
 .. _Distribute: http://packages.python.org/distribute/index.html
 .. _distribute_setup.py: http://python-distribute.org/distribute_setup.py

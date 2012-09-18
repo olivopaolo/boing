@@ -2,10 +2,17 @@
  |boing| on Ubuntu 11.04
 =========================
 
+Python 3.2
+==========
+
 It is possible to install Python 3 directly from the
 standard repositories, by typing in a terminal::
 
   sudo apt-get install python3-dev python3-setuptools
+
+
+PyQt4
+=====
 
 PyQt for Python 3 is not available on the packages repositories so it
 necessary to download the sources and compile them. Prior to compile
@@ -21,7 +28,7 @@ In order to compile SIP, type::
   cd /opt/
   sudo tar -zxvf sip-4.12.4.tar.gz
   cd sip-4.12.4/
-  sudo python3 configure.py
+  sudo python3.2 configure.py
   sudo make
   sudo make install
 
@@ -31,9 +38,23 @@ The same procedure is applied for compiling PyQt::
   cd /opt/
   sudo tar -zxvf PyQt-x11-gpl-4.8.5.tar.gz
   cd PyQt-x11-gpl-4.8.5/
-  sudo python3 configure.py
+  sudo python3.2 configure.py
   sudo make
   sudo make install
+
+
+numpy
+=====
+
+Download the source code of numpy_, extract the archive and type
+in a terminal::
+
+  cd <NUMPY-DIRECTORY>
+  sudo python3.2 setup.py install
+
+
+|boing|
+=======
 
 In order to complete the installation, open a terminal and type::
 
@@ -45,3 +66,6 @@ Other Ubuntu releases
 =====================
 
 * :doc:`Ubuntu 12.04 <ubuntu-precise>`
+
+.. _numpy: http://pypi.python.org/pypi/numpy/1.6.2
+.. _pyparsing: http://pypi.python.org/pypi/pyparsing/1.5.6

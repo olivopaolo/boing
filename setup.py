@@ -7,50 +7,56 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-import sys
+# --- Compile PyQt4 .ui files ---
+import os.path
+from PyQt4 import uic
+uic.compileUiDir(os.path.join(os.path.dirname(__file__), "boing"), True)
+# ---
 
 from setuptools import setup, find_packages
 
-props = dict(
-    name = "boing",
-    version = "0.3.0",
-    packages = find_packages(),
-    entry_points = {'console_scripts': ["boing = boing.run"]},
-    test_suite = "boing.test.run",
-    author = "Paolo Olivo",
-    author_email = "olivopaolo@tiscali.it",
-    url = "http://boing.readthedocs.org",
-    description = """
-Boing is a toolkit designed to support the development of multi-touch
-and gesture enabled applications.
+long_desc = """Boing is a toolkit designed to support the development
+of multi-touch and gesture enabled applications.
 
 It enables to create pipelines for connecting different input sources to
 multiple target destinations (e.g. applications, logs, etc.)  and
-eventually process the data before being dispatched.""",
+eventually process the data before being dispatched."""
+
+kwargs = dict(
+    name = "boing",
+    version = "0.3.0",
+    packages = find_packages(),
+    entry_points = {"console_scripts": ["boing = boing.run"]},
+    test_suite = "boing.test.run",
+
+    author = "Paolo Olivo",
+    author_email = "boing@librelist.com",
+    url = "http://boing.readthedocs.org",
+    description = long_desc,
     license = "GPLv2",
-    classifiers = [
-        'Development Status :: 3 - Alpha',
-        'Environment :: Console',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
-        'Natural Language :: English',
-        'Operating System :: MacOS :: MacOS X',
-        'Operating System :: Microsoft :: Windows',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 3.2',
-        'Topic :: Scientific/Engineering :: Human Machine Interfaces',
-        'Topic :: Scientific/Engineering :: Visualization',
-        'Topic :: Software Development :: Testing',
-        'Topic :: Software Development :: User Interfaces',
-        'Topic :: Utilities',
-        ],
+    classifiers = (
+        "Development Status :: 3 - Alpha",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+        "Natural Language :: English",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3.2",
+        "Topic :: Scientific/Engineering :: Human Machine Interfaces",
+        "Topic :: Scientific/Engineering :: Visualization",
+        "Topic :: Software Development :: Testing",
+        "Topic :: Software Development :: User Interfaces",
+        "Topic :: Utilities",
+        ),
 )
 
+import sys
 if sys.platform in ("linux2", "darwin"):
-    props["install_requires"] = (
-        'numpy>=1.6.1',
+    kwargs["install_requires"] = (
         'pyparsing>=1.5.6',
         )
 
-setup(**props)
+setup(**kwargs)

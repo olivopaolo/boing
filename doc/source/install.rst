@@ -29,9 +29,9 @@ platforms:
 .. toctree::
    :maxdepth: 1
 
-* :doc:`Ubuntu <ubuntu-precise>`
-* :doc:`OS X 10.7 <osx-lion>`
-* :doc:`Windows 7 <windows>`
+   Ubuntu <ubuntu-precise>
+   OS X 10.7 <osx-lion>
+   Windows 7 <windows>
 
 Tests
 =====
