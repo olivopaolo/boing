@@ -18,8 +18,6 @@ from boing.nodes.player import \
     PLAYONE, LOOPONE, PLAYALL, LOOPALL
 from boing.nodes.player.playlist import Track, ListFolder
 
-# Compile all .ui files in this directory
-uic.compileUiDir(os.path.dirname(__file__))
 from boing.nodes.player.uiPlayer import Ui_player
 
 class PlayerWidget(QtGui.QMainWindow, Ui_player):

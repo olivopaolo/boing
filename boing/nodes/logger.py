@@ -22,8 +22,6 @@ from boing.core import Offer, Request, Producer, Consumer
 from boing.net import Decoder
 from boing.utils import fileutils, quickdict, assertIsInstance
 
-# Compile all .ui files in this directory
-uic.compileUiDir(os.path.dirname(__file__))
 from boing.nodes.uiRecorder import Ui_recorder
 #from boing.nodes.uiUrlDialog import Ui_UrlDialog
 

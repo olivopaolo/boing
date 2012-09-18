@@ -28,6 +28,9 @@ kwargs = dict(
     packages = find_packages(),
     entry_points = {"console_scripts": ["boing = boing.run"]},
     test_suite = "boing.test.run",
+    package_data = {
+        'boing.nodes.player': ['icons/*'],
+        },
 
     author = "Paolo Olivo",
     author_email = "boing@librelist.com",
