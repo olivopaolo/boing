@@ -25,6 +25,8 @@ def additional_tests(modules=[]):
         tests += test_observer.suite()
         tests += test_economy.suite()
     if not modules or 'net' in modules:
+        from boing.test.net import test_dns_sd
+        tests += test_dns_sd.suite()
         from boing.test.net import test__init__
         tests += test__init__.suite()
         from boing.test.net import test_json
