@@ -14,20 +14,16 @@
 # configure.py won't be able to consider it as a script.
 
 import argparse
-import itertools
 import logging
-import traceback
 import signal
 import sys
 
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore
 
 import boing
-import boing.utils
 
 prog="boing"
-# usage = """%s [--help] [--version]
-#         %s<command> ..."""%(prog, " "*len(prog))
+
 version = """Boing (version %s)
 
 Copyright 2012, INRIA
@@ -42,7 +38,6 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 parser = argparse.ArgumentParser(
     prog=prog, #usage=usage,
     formatter_class=argparse.RawDescriptionHelpFormatter)
-parser.add_argument('--version', action='version', version=version)
 parser.add_argument("-G", dest="graph", nargs="?", default=None,
                     const="grapher:stdout?hz=1&request=*&maxdepth=none", metavar="URI",
                     help="activate pipeline plot. Default URI: grapher:stdout?hz=1&request=*&maxdepth=none")
@@ -56,24 +51,35 @@ parser.add_argument("-T", dest="traceback", nargs="?", type=int,
                     help="set exceptions traceback depth")
 parser.add_argument("-f", dest="force", action='store_true',
                     help="force execution (avoiding warnings)")
+parser.add_argument("--no-gui", dest="nogui", action='store_true',
+                    help="disable GUI (for running without a display server)")
+parser.add_argument('--version', action='version', version=version)
 parser.add_argument("config", metavar="<expr>",
                     help="define the pipeline configuration")
+
 # Parse sys.argv
 if len(sys.argv)==1: sys.argv.append("-h")
 args = parser.parse_args()
 logging.basicConfig(level=logging.getLevelName(args.logging_level))
 
 # Init application
-QtGui.QApplication.setStyle(QtGui.QStyleFactory.create("plastique"))
-app = QtGui.QApplication(sys.argv)
+if not args.nogui:
+    from PyQt4 import QtGui
+    QtGui.QApplication.setStyle(QtGui.QStyleFactory.create("plastique"))
+    app = QtGui.QApplication(sys.argv)
+else:
+    boing.config["--no-gui"] = True
+    app = QtCore.QCoreApplication(sys.argv)
 # (Reenable Ctrl-C to quit the application)
 timer = QtCore.QTimer(timeout=lambda: None)
 timer.start(150)
 signal.signal(signal.SIGINT, lambda *args: app.quit())
 
+# Init the pipeline
 try:
     pipeline = boing.create(args.config)
 except Exception as exc:
+    import traceback
     logging.error(exc)
     if args.traceback: traceback.print_exc(args.traceback)
 

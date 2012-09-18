@@ -58,6 +58,17 @@ custom |boing| pipelines::
    # Run
    sys.exit(app.exec_())
 
+.. rubric:: Global configuration
+
+The attribute :attr:`boing.config` is a :class:`dict` object used to
+store any global configuration variable.
+
+.. attribute:: config
+
+   :class:`dict` object used to store any global configuration
+   variable. |boing|'s own variables:
+
+   * ``"--no-gui"``: set to ``True`` when GUI is disabled.
 
 .. rubric:: Dynamic configuration
 

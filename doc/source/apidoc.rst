@@ -9,6 +9,8 @@ the toolkit's API is hereinafter provided.
 The |boing| toolkit is structured into the following modules:
 
 .. toctree::
+   :maxdepth: 2
+
    boing
    boing.core
    boing.filtering

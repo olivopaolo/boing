@@ -27,10 +27,10 @@ functions.
       Pass *line* to the Python interpreter.
 
 
-
 .. rubric:: Submodules
 
 .. toctree::
+   :maxdepth: 1
 
    boing.utils.url
 

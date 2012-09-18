@@ -197,6 +197,10 @@ def createSingle(uri, mode="", parent=None):
             QtCore.QTimer.singleShot(300, player.start)
 
     elif uri.scheme=="rec":
+        from boing import config
+        if "--no-gui" in config:
+            raise ValueError(
+                "Cannot use GUI widgets with --no-gui option: %s"%uri)
         from boing.nodes.logger import Recorder
         assertUriModeIn(uri, mode, "", "out")
         if uri.kind==URL.OPAQUE or uri.site or uri.path or uri.fragment:
@@ -217,6 +221,10 @@ def createSingle(uri, mode="", parent=None):
                             mode, parent)
 
     elif uri.scheme.startswith("player."):
+        from boing import config
+        if "--no-gui" in config:
+            raise ValueError(
+                "Cannot use GUI widgets with --no-gui option: %s"%uri)
         from boing.nodes.player import Player
         assertUriModeIn(uri, mode, "", "in")
         if uri.opaque or uri.path or uri.site or uri.fragment:
@@ -466,30 +474,23 @@ def createSingle(uri, mode="", parent=None):
             device = createSingle(loweruri, "out")
             node = encoder + device
 
-        '''# MT-DEV
-    elif uri.scheme=="mtdev":
-        if sys.platform == "linux2":
-            if mode not in ("", "in"): raise ValueError(
-                "Invalid mode for %s: %s"%(uri, mode))
-            elif mode in ("", "in"):
-                import boing.extra.mtdev
-                node = boing.extra.mtdev.MtDevDevice(str(uri.path), **kwargs)
-        else:
-            raise ImportError(
-                "'libmtdev' is not available on this platform: %s"%sys.platform)'''
+    # # MT-DEV
+    # elif uri.scheme=="mtdev":
+    #     if sys.platform == "linux2":
+    #         if mode not in ("", "in"): raise ValueError(
+    #             "Invalid mode for %s: %s"%(uri, mode))
+    #         elif mode in ("", "in"):
+    #             import boing.extra.mtdev
+    #             node = boing.extra.mtdev.MtDevDevice(str(uri.path), **kwargs)
+    #     else:
+    #         raise ImportError(
+    #             "'libmtdev' is not available on this platform: %s"%sys.platform)
 
     # -------------------------------------------------------------------
     # DATA PROCESSING
     elif uri.scheme=="nop":
         assertUriQuery(uri, None)
         node = Identity()
-
-    # elif uri.scheme in ("dump", "stat"):
-    #     extended = copy.copy(uri)
-    #     extended.scheme += ".udp" if extended.site \
-    #         else ".file" if extended.path \
-    #         else ".stdout"
-    #     return createSingle(extended, mode, parent)
 
     elif uri.scheme.startswith("dump.") or uri.scheme=="dump":
         from boing.nodes import Dump
@@ -512,6 +513,10 @@ def createSingle(uri, mode="", parent=None):
         node = stat + encoder + device
 
     elif uri.scheme=="viz":
+        from boing import config
+        if "--no-gui" in config:
+            raise ValueError(
+                "Cannot use GUI widgets with --no-gui option: %s"%uri)
         from boing.nodes.multitouch.ContactViz import ContactViz
         assertUriModeIn(uri, mode, "", "out")
         if uri.opaque or uri.path or uri.site or uri.fragment:
@@ -539,16 +544,15 @@ def createSingle(uri, mode="", parent=None):
                          else Functor.MERGECOPY
         node = Editor(query, blender)
 
-        '''
-    elif uri.scheme=="filter":
-        from boing.nodes import Filter
-        uri = copy.copy(uri)
-        query = parseQuery(uri, "attr")
-        assertUriQuery(uri, query)
-        uri.opaque = QRequest(uri.opaque) if uri.opaque else QRequest.NONE
-        if "attr" in query:
-            uri.opaque += attrToRequest(query["attr"]) + QRequest("diff.removed")
-        node = Filter(uri.opaque)'''
+    # elif uri.scheme=="filter":
+    #     from boing.nodes import Filter
+    #     uri = copy.copy(uri)
+    #     query = parseQuery(uri, "attr")
+    #     assertUriQuery(uri, query)
+    #     uri.opaque = QRequest(uri.opaque) if uri.opaque else QRequest.NONE
+    #     if "attr" in query:
+    #         uri.opaque += attrToRequest(query["attr"]) + QRequest("diff.removed")
+    #     node = Filter(uri.opaque)
 
     elif uri.scheme=="calib":
         from boing.nodes.multitouch import Calibration

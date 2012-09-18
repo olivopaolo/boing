@@ -15,6 +15,12 @@ _MINOR = 3
 _MAINTENANCE = 0
 __version__ = "%d.%d.%d"%(_MAJOR, _MINOR, _MAINTENANCE)
 
+config = dict()
+""":class:`dict` object used to store any global configuration
+variable. |boing|'s own variables:
+
+* ``"--no-gui"``: set to ``True`` when GUI is disabled."""
+
 from boing.nodes.loader import create
 from boing.core.graph import Node
 
