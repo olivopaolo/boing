@@ -10,9 +10,10 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-MAJOR = 0
-MINOR = 3
-VERSION = "%d.%d"%(MAJOR,MINOR)
+_MAJOR = 0
+_MINOR = 3
+_MAINTENANCE = 0
+__version__ = "%d.%d.%d"%(_MAJOR, _MINOR, _MAINTENANCE)
 
 from boing.nodes.loader import create
 from boing.core.graph import Node
@@ -37,7 +38,7 @@ def activateConsole(url="", locals=None, banner=None):
     if banner is None:
         import sys
         banner="Boing %s Console\nPython %s on %s\n"%(
-            VERSION, sys.version, sys.platform)
+            __version__, sys.version, sys.platform)
     if not url:
         import sys
         from boing.utils.fileutils import CommunicationDevice, IODevice

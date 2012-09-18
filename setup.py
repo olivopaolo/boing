@@ -14,6 +14,7 @@ uic.compileUiDir(os.path.join(os.path.dirname(__file__), "boing"), True)
 # ---
 
 from setuptools import setup, find_packages
+import boing
 
 long_desc = """Boing is a toolkit designed to support the development
 of multi-touch and gesture enabled applications.
@@ -24,7 +25,7 @@ eventually process the data before being dispatched."""
 
 kwargs = dict(
     name = "boing",
-    version = "0.3.0",
+    version = boing.__version__,
     packages = find_packages(),
     entry_points = {"console_scripts": ["boing = boing.run"]},
     test_suite = "boing.test.run",
