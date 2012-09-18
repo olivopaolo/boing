@@ -5,8 +5,23 @@
 Download
 ========
 
-You can download the current release from `here
-<http://github.com/olivopaolo/boing/downloads>`_.
+The current version is |release|, released on |releasedate|. Read
+the :doc:`changelog`.
+
+Download one of the following depending on your platform:
+
++---------------+-----------------+-------+------+
+|File           |Type             |Py     |Size  |
+|               |                 |Version|      |
++===============+=================+=======+======+
+||tar|          |Source           |3.2    |1.3MB |
++---------------+-----------------+-------+------+
+||zip|          |Source           |3.2    |1.4MB |
++---------------+-----------------+-------+------+
+||msi|          |MS Windows MSI   |3.2    |528KB |
+|               |installer        |       |      |
+|               |                 |       |      |
++---------------+-----------------+-------+------+
 
 If you are interested to the development version, you can clone the
 source repository. Open a terminal and type::

@@ -96,7 +96,9 @@ in a terminal::
 |boing|
 =======
 
-In order to complete the installation, type in the terminal::
+If you downloaded the binary installer you just have to launch it,
+otherwise extract the source archive and type in the
+terminal::
 
   cd <BOING-DIRECTORY>
   python setup.py install

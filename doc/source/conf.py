@@ -250,7 +250,31 @@ texinfo_documents = [
 # of every source file that is read.
 rst_prolog = """
 .. |boing| replace:: Boing
-"""
+.. |releasedate| replace:: %s
+.. |tar| raw:: html
+
+   <a href="https://github.com/downloads/olivopaolo/boing/boing-%s.tar.gz">
+   boing-%s.tar.gz</a>
+
+.. |zip| raw:: html
+
+   <a href="https://github.com/downloads/olivopaolo/boing/boing-%s.zip">
+   boing-%s.zip</a>
+
+.. |msi| raw:: html
+
+   <a href="https://github.com/downloads/olivopaolo/boing/boing-%s.win32.msi">
+   boing-%s.win32.msi</a>
+
+"""%(
+    boing.__date__.strftime("%B %d, %Y"),
+    boing.__version__,
+    boing.__version__,
+    boing.__version__,
+    boing.__version__,
+    boing.__version__,
+    boing.__version__,
+    )
 
 # If this is True, todo and todolist produce output, else they produce
 # nothing. The default is False.
