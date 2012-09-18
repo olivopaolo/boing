@@ -10,10 +10,13 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import datetime as _datetime
+
 _MAJOR = 0
 _MINOR = 3
 _MAINTENANCE = 0
 __version__ = "%d.%d.%d"%(_MAJOR, _MINOR, _MAINTENANCE)
+__date__ = _datetime.date(2012, 9, 10)
 
 config = dict()
 """:class:`dict` object used to store any global configuration
