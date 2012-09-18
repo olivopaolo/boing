@@ -14,9 +14,9 @@ import datetime as _datetime
 
 _MAJOR = 0
 _MINOR = 3
-_MAINTENANCE = 0
+_MAINTENANCE = 1
 __version__ = "%d.%d.%d"%(_MAJOR, _MINOR, _MAINTENANCE)
-__date__ = _datetime.date(2012, 9, 10)
+__date__ = _datetime.date(2012, 9, 18)
 
 config = dict()
 """:class:`dict` object used to store any global configuration
