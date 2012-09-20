@@ -525,6 +525,8 @@ def createSingle(uri, mode="", parent=None):
             query  = parseQuery(uri, "antialiasing", "fps")
             assertUriQuery(uri, query)
             node = ContactViz(**query)
+            node.gui().show()
+            node.gui().raise_()
 
     elif uri.scheme=="lag":
         from boing.nodes import Lag
@@ -584,14 +586,14 @@ def createSingle(uri, mode="", parent=None):
     # elif uri.scheme=="rubine":
     #     from boing.gesture import rubine
     #     from boing.nodes.multitouch import GestureRecognizer
-    #     from boing.utils import QPath, quickdict
+    #     from boing.utils import querypath, quickdict
     #     query = parseQuery(uri, "merge", "copy", "result")
     #     log = File("/home/paolo/Documents/INRIA/workspace/boing/gestures/ipad-keyboard")
     #     decoder = slip.Decoder() + bytes.Decoder() + json.Decoder()
     #     data = decoder.decode(log.readAll())
     #     ql = lambda stroke: (quickdict(x=s["x"], y=s["y"], t=s["t"]) for s in stroke)
-    #     l = lambda g: (QPath.get(g, "gestures.*.cls")[0],
-    #                    tuple(ql(QPath.get(g, "gestures.*.stroke")[0])))
+    #     l = lambda g: (querypath.get(g, "gestures.*.cls")[0],
+    #                    tuple(ql(querypath.get(g, "gestures.*.stroke")[0])))
     #     data = tuple(map(l, data))
     #     recognizer = rubine.RubineRecognizer()
     #     recognizer.buildRecognizer(data)
@@ -609,7 +611,7 @@ def createSingle(uri, mode="", parent=None):
                                        "filtering:/moving/mean", 1))
             uri.query["winsize"] = "5"
         query = parseQuery(uri, "attr", "request", "merge", "copy", "result")
-        filteruri = URI(str(uri).replace(uri.scheme, "fltr", 1))
+        filteruri = URL(str(uri).replace(uri.scheme, "fltr", 1))
         query["functorfactory"] = getFunctorFactory(_lower(
                 filteruri, "",
                 ("attr", "request", "merge", "copy", "result")))
