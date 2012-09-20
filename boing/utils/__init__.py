@@ -154,7 +154,7 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
                         and value:
                     _deepDump(value, fd, level+1, maxdepth, indent, end, sort)
                 else:
-                    print(str(value), end="", file=fd)
+                    print(repr(value), end="", file=fd)
                 if len(obj)>1: print(",", end="", file=fd)
                 if i<len(obj)-1:
                     print(end=end, file=fd)
@@ -183,7 +183,7 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
                     print("%s: "%repr(key), end="", file=fd)
                     _deepDump(value, fd, level+1, maxdepth, indent, end, sort)
                 else:
-                    print("%s: %s"%(repr(key), str(value)), end="", file=fd)
+                    print("%s: %s"%(repr(key), repr(value)), end="", file=fd)
                 if len(obj)>1: print(",", end="", file=fd)
                 if i<len(obj)-1:
                     print(end=end, file=fd)
@@ -193,8 +193,9 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
         else:
             print("...}", end="", file=fd)
     else:
-        print(str(obj), end="", file=fd)
-    if level==0: print(end=end, file=fd)
+        # All other objects
+        print(repr(obj), end="", file=fd)
+    if level==1: print(end=end, file=fd)
 
 # -------------------------------------------------------------------
 

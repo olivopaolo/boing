@@ -56,7 +56,7 @@ class Dump(Functor, Functor.ConfigurableRequest):
     function.
 
     """
-    def __init__(self, request=Request.ANY, mode="items", separator="\n\n",
+    def __init__(self, request=Request.ANY, mode="items", separator="\n",
                  src=False, dest=False, depth=None, parent=None):
         super().__init__(request, Offer(quickdict(str=str())), Functor.RESULTONLY,
                          parent=parent)
