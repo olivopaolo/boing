@@ -93,11 +93,11 @@ for the indexing or the filtering of data messages. In order to
 understand the usefulness of such query language, stop the pipeline
 and type in the terminal::
 
-  boing "in.tuio://:3333 + (viz: | dump:?request=$..contacts)"
+  boing "in.tuio://:3333 + (viz: | dump:?request=..contacts)"
 
 Now, when you touch your multi-touch device, you can see that the
 terminal prints the subset of the data structures that refers only to
-the contact data. This is because the query :code:`$..contacts`
+the contact data. This is because the query :code:`..contacts`
 addresses to any data named as :code:`contacts`, searched at any level
 of the structure. Such query language can be very useful during
 development and testing phases for highlighting only the relevant

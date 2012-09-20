@@ -16,9 +16,9 @@ def additional_tests(modules=[]):
 
     tests = []
     if not modules or 'utils' in modules:
-        from boing.test.utils import test__init__, test_QPath, test_url
+        from boing.test.utils import test__init__, test_querypath, test_url
         tests += test__init__.suite()
-        tests += test_QPath.suite()
+        tests += test_querypath.suite()
         tests += test_url.suite()
     if not modules or 'core' in modules:
         from boing.test.core import test_observer, test_economy

@@ -19,7 +19,6 @@ import unittest
 from PyQt4 import QtGui
 
 import boing
-import boing.utils.QPath as QPath
 
 readable = os.path.abspath(__file__)
 target = os.path.abspath(os.path.normpath(

@@ -15,10 +15,49 @@ the infrastructure of |boing| pipelines.
 """
 
 # Facade pattern to make things easier.
-from boing.core.economy \
-    import Offer, Request, LambdaRequest, Producer, Consumer, Identity, Functor
+from boing.core.economy import \
+    Offer, Request, _CompositeRequest, LambdaRequest, \
+    Producer, Consumer, Identity, Functor
 
-from boing.core.querypath import QRequest
+from boing.utils.querypath import QPath as _QPath
+
+class QRequest(Request):
+    """The QRequest is a Request defined by a QPath.
+
+    """
+    def __init__(self, string):
+        self._query = _QPath(string)
+
+    def query(self):
+        """Return the :cls:`boing.utils.querypath.QPath` instance used
+        to filter items."""
+        return self._query
+
+    def test(self, product):
+        """Return whether *product* matches the request."""
+        return product is Offer.UNDEFINED or self.query().test(product)
+
+    def items(self, product):
+        """Return an iterator over the *product*'s items ((key, value)
+        pairs) that match the request, if *product* can be subdivided, otherwise
+        return the pair (None, *product)."""
+        return self.query().items(product)
+
+    def __eq__(self, other):
+        return isinstance(other, QRequest) and self.query()==other.query()
+
+    def __add__(self, other):
+        return NotImplemented if not isinstance(other, Request) \
+            else other if other is Request.ANY or self==other \
+            else self if other is Request.NONE \
+            else QRequest(self.query()+other.query()) if isinstance(other, QRequest) \
+            else _CompositeRequest(self, other)
+
+    def __hash__(self):
+        return hash(self.query())
+
+    def __repr__(self):
+        return "QRequest('%s')"%self.query()
 
 # -------------------------------------------------------------------
 # FIXME: Develop QPath.set
