@@ -20,7 +20,15 @@ QPath = querypath.QPath
 class Test_querypath(unittest.TestCase):
 
     def assertItemsEqual(self, iter1, iter2):
-        self.assertEqual(sorted(iter1), sorted(iter2))
+        """Assert that all the items in *iter1* are also in *iter2*
+        regardless of the order."""
+        lst = list(iter2)   # make a mutable copy
+        try:
+            for elem in iter1:
+                lst.remove(elem)
+        except ValueError:
+            self.fail()
+        self.assertFalse(lst)
 
     def setUp(self):
         self.maxDiff = None
@@ -73,18 +81,21 @@ class Test_querypath(unittest.TestCase):
 
     def test_empty_get(self):
         path = ""
-        self.assertItemsEqual(querypath.get(self.obj, path),
-                         [self.obj])
+        result = list(querypath.get(self.obj, path))
+        expected = [self.obj]
+        self.assertItemsEqual(result, expected)
 
     def test_empty_paths(self):
         path = ""
-        self.assertItemsEqual(querypath.paths(self.obj, path),
-                         ['$'])
+        result = list(querypath.paths(self.obj, path))
+        expected = ['$']
+        self.assertItemsEqual(result, expected)
 
     def test_empty_items(self):
         path = ""
-        self.assertItemsEqual(querypath.items(self.obj, path),
-                         [('$', self.obj)])
+        result = list(querypath.items(self.obj, path))
+        expected = [('$', self.obj)]
+        self.assertItemsEqual(result, expected)
 
     def test_empty_test(self):
         path = ""
@@ -92,392 +103,589 @@ class Test_querypath(unittest.TestCase):
 
 # -------------------------------------------------------------------
 
+    def test_root_get(self):
+        path = "$"
+        result = list(querypath.get(self.obj, path))
+        expected = [self.obj]
+        self.assertItemsEqual(result, expected)
+
+    def test_root_paths(self):
+        path = "$"
+        result = list(querypath.paths(self.obj, path))
+        expected = ['$']
+        self.assertItemsEqual(result, expected)
+
+    def test_root_items(self):
+        path = "$"
+        result = list(querypath.items(self.obj, path))
+        expected = [('$', self.obj)]
+        self.assertItemsEqual(result, expected)
+
+    def test_root_test(self):
+        path = "$"
+        self.assertTrue(querypath.test(self.obj, path))
+
+# -------------------------------------------------------------------
+
     def test_empty_result_get(self):
-        for path in ("folder",
-                     "$.folder",
-                     "$[folder]",
-                     "['folder']",
-                     "store.book.7"):
-            self.assertItemsEqual(querypath.get(self.obj, path),[])
+        for path in (
+            "folder",
+            "$.folder",
+            "$[folder]",
+            "['folder']",
+            "store.book.7",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = []
+            self.assertItemsEqual(result, expected)
 
 
     def test_empty_result_paths(self):
-        for path in ("folder",
-                     "$.folder",
-                     "$[folder]",
-                     "$[folder]",
-                     "['folder']",
-                     "store.book.7"):
-            self.assertItemsEqual(querypath.get(self.obj, path),[])
+        for path in (
+            "folder",
+            "$.folder",
+            "$[folder]",
+            "$[folder]",
+            "['folder']",
+            "store.book.7",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = []
+            self.assertItemsEqual(result, expected)
 
     def test_empty_result_items(self):
-        for path in ("folder",
-                     "$.folder",
-                     "$[folder]",
-                     "$[folder]",
-                     "['folder']",
-                     "store.book.7"):
-            self.assertItemsEqual(querypath.get(self.obj, path),[])
+        for path in (
+            "folder",
+            "$.folder",
+            "$[folder]",
+            "$[folder]",
+            "['folder']",
+            "store.book.7",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = []
+            self.assertItemsEqual(result, expected)
 
     def test_empty_result_test(self):
-        for path in ("folder",
-                     "$.folder",
-                     "$[folder]",
-                     "$[folder]",
-                     "['folder']",
-                     "store.book.7"):
+        for path in (
+            "folder",
+            "$.folder",
+            "$[folder]",
+            "$[folder]",
+            "['folder']",
+            "store.book.7",
+            ):
             self.assertFalse(querypath.test(self.obj, path))
 
 # -------------------------------------------------------------------
 
     def test_single_get(self):
-        for path in ("store.bicycle",
-                     "$.store.bicycle",
-                     "$['store']['bicycle']"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             [{'color': 'red', 'price': 19.95}])
+        for path in (
+            "store.bicycle",
+            "$.store.bicycle",
+            "$['store']['bicycle']",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [{'color': 'red', 'price': 19.95}]
+            self.assertItemsEqual(result, expected)
 
     def test_single_paths(self):
-        for path in ("store.bicycle",
-                     "$.store.bicycle",
-                     "$['store']['bicycle']"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.bicycle'])
+        for path in (
+            "store.bicycle",
+            "$.store.bicycle",
+            "$['store']['bicycle']",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = ['store.bicycle']
+            self.assertItemsEqual(result, expected)
 
     def test_single_items(self):
-        for path in ("store.bicycle",
-                     "$.store.bicycle",
-                     "$['store']['bicycle']"):
-            self.assertItemsEqual(querypath.items(self.obj, path),
-                             [('store.bicycle',{'color': 'red', 'price': 19.95})])
+        for path in (
+            "store.bicycle",
+            "$.store.bicycle",
+            "$['store']['bicycle']",
+            ):
+            result = list(querypath.items(self.obj, path))
+            expected = [('store.bicycle',{'color': 'red', 'price': 19.95})]
+            self.assertItemsEqual(result, expected)
 
     def test_single_test(self):
-        for path in ("store.bicycle",
-                     "$.store.bicycle",
-                     "$['store']['bicycle']"):
+        for path in (
+            "store.bicycle",
+            "$.store.bicycle",
+            "$['store']['bicycle']",
+            ):
             self.assertTrue(querypath.test(self.obj, path))
+
 
 # -------------------------------------------------------------------
 
     def test_numeric_get(self):
-        for path in ("store.book.0.author",
-                     "store.book[0].author"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             ['Nigel Rees'])
+        for path in (
+            "store.book.0.author",
+            "store.book[0].author",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = ['Nigel Rees']
+            self.assertItemsEqual(result, expected)
 
     def test_numeric_paths(self):
-        for path in ("store.book.0.author",
-                     "store.book[0].author"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.0.author'])
+        for path in (
+            "store.book.0.author",
+            "store.book[0].author",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = ['store.book.0.author']
+            self.assertItemsEqual(result, expected)
 
     def test_numeric_test(self):
-        for path in ("store.book.0.author",
-                     "store.book[0].author"):
+        for path in (
+            "store.book.0.author",
+            "store.book[0].author",
+            ):
             self.assertTrue(querypath.test(self.obj, path))
 
 # -------------------------------------------------------------------
 
     def test_wildcard_get(self):
-        for path in ("store.book.*.price",
-                     "['store']['book'][*]['price']",
-                     "['store']['book']['*']['price']"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             [8.95, 12.99, 8.99, 22.99])
+        for path in (
+            "store.book.*.price",
+            "['store']['book'][*]['price']",
+            "['store']['book']['*']['price']",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [8.95, 12.99, 8.99, 22.99]
+            self.assertItemsEqual(result, expected)
 
     def test_wildcard_paths(self):
-        for path in ("store.book.*.price",
-                     "['store']['book'][*]['price']",
-                     "['store']['book']['*']['price']"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.0.price',
-                              'store.book.1.price',
-                              'store.book.2.price',
-                              'store.book.3.price'])
+        for path in (
+            "store.book.*.price",
+            "['store']['book'][*]['price']",
+            "['store']['book']['*']['price']",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = [
+                'store.book.0.price',
+                'store.book.1.price',
+                'store.book.2.price',
+                'store.book.3.price',
+                ]
+            self.assertItemsEqual(result, expected)
 
     def test_wildcard_test(self):
-        for path in ("store.book.*.price",
-                     "['store']['book'][*]['price']",
-                     "['store']['book']['*']['price']"):
+        for path in (
+            "store.book.*.price",
+            "['store']['book'][*]['price']",
+            "['store']['book']['*']['price']",
+            ):
             self.assertTrue(querypath.get(self.obj, path))
 
 # -------------------------------------------------------------------
 
     def test_fullslice_get(self):
-        for path in ("store.book[:].price",
-                     "store.book.:.price",
-                     "['store']['book'][':']['price']",
-                     "['store']['book'][:]['price']"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             [8.95, 12.99, 8.99, 22.99])
+        for path in (
+            "store.book[:].price",
+            "store.book.:.price",
+            "['store']['book'][':']['price']",
+            "['store']['book'][:]['price']",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [8.95, 12.99, 8.99, 22.99]
+            self.assertItemsEqual(result, expected)
 
     def test_fullslice_paths(self):
-        for path in ("store.book[:].price",
-                     "store.book.:.price",
-                     "['store']['book'][':']['price']",
-                     "['store']['book'][:]['price']"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.0.price',
-                              'store.book.1.price',
-                              'store.book.2.price',
-                              'store.book.3.price'])
+        for path in (
+            "store.book[:].price",
+            "store.book.:.price",
+            "['store']['book'][':']['price']",
+            "['store']['book'][:]['price']",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = [
+                'store.book.0.price',
+                'store.book.1.price',
+                'store.book.2.price',
+                'store.book.3.price'
+                ]
+            self.assertItemsEqual(result, expected)
 
     def test_fullslice_test(self):
-        for path in ("store.book[:].price",
-                     "store.book.:.price",
-                     "['store']['book'][':']['price']",
-                     "['store']['book'][:]['price']"):
+        for path in (
+            "store.book[:].price",
+            "store.book.:.price",
+            "['store']['book'][':']['price']",
+            "['store']['book'][:]['price']",
+            ):
             self.assertTrue(querypath.test(self.obj, path))
 
 # -------------------------------------------------------------------
 
     def test_slice_begin_get(self):
-        for path in ("store.book[2:].price",
-                     "store.book.2:.price",
-                     "['store']['book']['2:']['price']",
-                     "['store']['book'][2:]['price']"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             [8.99, 22.99])
+        for path in (
+            "store.book[2:].price",
+            "store.book.2:.price",
+            "['store']['book']['2:']['price']",
+            "['store']['book'][2:]['price']",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [8.99, 22.99]
+            self.assertItemsEqual(result, expected)
 
     def test_slice_begin_paths(self):
-        for path in ("store.book[2:].price",
-                     "store.book.2:.price",
-                     "['store']['book']['2:']['price']",
-                     "['store']['book'][2:]['price']"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.2.price',
-                              'store.book.3.price'])
+        for path in (
+            "store.book[2:].price",
+            "store.book.2:.price",
+            "['store']['book']['2:']['price']",
+            "['store']['book'][2:]['price']",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = [
+                'store.book.2.price',
+                'store.book.3.price',
+                ]
+            self.assertItemsEqual(result, expected)
 
     def test_slice_begin_test(self):
-        for path in ("store.book[2:].price",
-                     "store.book.2:.price",
-                     "['store']['book']['2:']['price']",
-                     "['store']['book'][2:]['price']"):
+        for path in (
+            "store.book[2:].price",
+            "store.book.2:.price",
+            "['store']['book']['2:']['price']",
+            "['store']['book'][2:]['price']",
+            ):
             self.assertTrue(querypath.get(self.obj, path))
 
 # -------------------------------------------------------------------
 
     def test_slice_end_get(self):
-        for path in ("store.book[:-1].price",
-                     "store.book.:-1.price",
-                     "['store']['book'][':-1']['price']",
-                     "['store']['book'][:-1]['price']"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             [8.95, 12.99, 8.99])
+        for path in (
+            "store.book[:-1].price",
+            "store.book.:-1.price",
+            "['store']['book'][':-1']['price']",
+            "['store']['book'][:-1]['price']",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [8.95, 12.99, 8.99]
+            self.assertItemsEqual(result, expected)
 
     def test_slice_end_paths(self):
-        for path in ("store.book[:-1].price",
-                     "store.book.:-1.price",
-                     "['store']['book'][':-1']['price']",
-                     "['store']['book'][:-1]['price']"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.0.price',
-                              'store.book.1.price',
-                              'store.book.2.price'])
+        for path in (
+            "store.book[:-1].price",
+            "store.book.:-1.price",
+            "['store']['book'][':-1']['price']",
+            "['store']['book'][:-1]['price']",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = [
+                'store.book.0.price',
+                'store.book.1.price',
+                'store.book.2.price',
+                ]
+            self.assertItemsEqual(result, expected)
 
     def test_slice_end_test(self):
-        for path in ("store.book[:-1].price",
-                     "store.book.:-1.price",
-                     "['store']['book'][':-1']['price']",
-                     "['store']['book'][:-1]['price']"):
+        for path in (
+            "store.book[:-1].price",
+            "store.book.:-1.price",
+            "['store']['book'][':-1']['price']",
+            "['store']['book'][:-1]['price']",
+            ):
             self.assertTrue(querypath.test(self.obj, path))
 
 # -------------------------------------------------------------------
 
     def test_slice_step_get(self):
-        for path in ("store.book[::2].price",
-                     "store.book.::2.price",
-                     "['store']['book']['::2']['price']",
-                     "['store']['book'][::2]['price']"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             [8.95, 8.99])
+        for path in (
+            "store.book[::2].price",
+            "store.book.::2.price",
+            "['store']['book']['::2']['price']",
+            "['store']['book'][::2]['price']",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [8.95, 8.99]
+            self.assertItemsEqual(result, expected)
 
     def test_slice_step_paths(self):
-        for path in ("store.book[::2].price",
-                     "store.book.::2.price",
-                     "['store']['book']['::2']['price']",
-                     "['store']['book'][::2]['price']"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.0.price',
-                              'store.book.2.price'])
+        for path in (
+            "store.book[::2].price",
+            "store.book.::2.price",
+            "['store']['book']['::2']['price']",
+            "['store']['book'][::2]['price']",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = [
+                'store.book.0.price',
+                'store.book.2.price',
+                ]
+            self.assertItemsEqual(result, expected)
 
     def test_slice_step_test(self):
-        for path in ("store.book[::2].price",
-                     "store.book.:2.price",
-                     "['store']['book']['::2']['price']",
-                     "['store']['book'][::2]['price']"):
+        for path in (
+            "store.book[::2].price",
+            "store.book.:2.price",
+            "['store']['book']['::2']['price']",
+            "['store']['book'][::2]['price']",
+            ):
             self.assertTrue(querypath.test(self.obj, path))
 
 # -------------------------------------------------------------------
 
     def test_recursive_descent_get(self):
-        for path in ("store..price",
-                     "['store']..['price']",
-                     "$..price",
-                     "..price"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             [8.95, 12.99, 8.99, 22.99, 19.95])
+        for path in (
+            "store..price",
+            "['store']..['price']",
+            "$..price",
+            "..price",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [8.95, 12.99, 8.99, 22.99, 19.95]
+            self.assertItemsEqual(result, expected)
 
     def test_recursive_descent_paths(self):
-        for path in ("store..price",
-                     "['store']..['price']",
-                     "$..price",
-                     "..price"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.0.price',
-                              'store.book.1.price',
-                              'store.book.2.price',
-                              'store.book.3.price',
-                              'store.bicycle.price'])
+        for path in (
+            "store..price",
+            "['store']..['price']",
+            "$..price",
+            "..price",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = [
+                'store.book.0.price',
+                'store.book.1.price',
+                'store.book.2.price',
+                'store.book.3.price',
+                'store.bicycle.price',
+                ]
+            self.assertItemsEqual(result, expected)
 
     def test_recursive_descent_test(self):
-        for path in ("store..price",
-                     "$['store']..['price']",
-                     "$..price",
-                     "$..price"):
+        for path in (
+            "store..price",
+            "$['store']..['price']",
+            "$..price",
+            "$..price",
+            ):
             self.assertTrue(querypath.get(self.obj, path))
 
 # -------------------------------------------------------------------
 
     def test_comma_union_get(self):
-        for path in ("store.book,bicycle,car..price",
-                     "$['store']['book,bicycle']..['price']"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             [8.95, 12.99, 8.99, 22.99, 19.95])
+        for path in (
+            "store.book,bicycle,car..price",
+            "$['store']['book,bicycle']..['price']",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [8.95, 12.99, 8.99, 22.99, 19.95]
+            self.assertItemsEqual(result, expected)
 
     def test_comma_union_paths(self):
-        for path in ("store.book,bicycle,car..price",
-                     "$['store']['book,bicycle']..['price']"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.0.price',
-                              'store.book.1.price',
-                              'store.book.2.price',
-                              'store.book.3.price',
-                              'store.bicycle.price'])
+        for path in (
+            "store.book,bicycle,car..price",
+            "$['store']['book,bicycle']..['price']",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = [
+                'store.book.0.price',
+                'store.book.1.price',
+                'store.book.2.price',
+                'store.book.3.price',
+                'store.bicycle.price',
+                ]
+            self.assertItemsEqual(result, expected)
 
     def test_comma_union_test(self):
-        for path in ("store.book,bicycle,car..price",
-                     "$['store']['book,bicycle']..['price']"):
+        for path in (
+            "store.book,bicycle,car..price",
+            "$['store']['book,bicycle']..['price']",
+            ):
             self.assertTrue(querypath.get(self.obj, path))
 
 # -------------------------------------------------------------------
 
     def test_pipe_union_get(self):
-        for path in ("..book.*.category|..bicycle.color",
-                     "..book.*.category |..bicycle.color",
-                     "..book.*.category| ..bicycle.color",
-                     "..book.*.category | ..bicycle.color",
-                     "[store][book][:][category]|[store][bicycle][color]",
-                     "store.book.*.category|store.bicycle.color"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                                  ['reference', 'fiction', 'fiction', 'fiction',
-                                   'red'])
+        for path in (
+            "..book.*.category|..bicycle.color",
+            "..book.*.category |..bicycle.color",
+            "..book.*.category| ..bicycle.color",
+            "..book.*.category | ..bicycle.color",
+            "[store][book][:][category]|[store][bicycle][color]",
+            "store.book.*.category|store.bicycle.color",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [
+                'reference',
+                'fiction',
+                'fiction',
+                'fiction',
+                'red',
+                ]
+            self.assertItemsEqual(result, expected)
 
     def test_pipe_union_paths(self):
-        for path in ("..book.*.category|..bicycle.color",
-                     "..book.*.category |..bicycle.color",
-                     "..book.*.category| ..bicycle.color",
-                     "..book.*.category | ..bicycle.color",
-                     "[store][book][:][category]|[store][bicycle][color]",
-                     "store.book.*.category|store.bicycle.color"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.0.category',
-                              'store.book.1.category',
-                              'store.book.2.category',
-                              'store.book.3.category',
-                              'store.bicycle.color'])
+        for path in (
+            "..book.*.category|..bicycle.color",
+            "..book.*.category |..bicycle.color",
+            "..book.*.category| ..bicycle.color",
+            "..book.*.category | ..bicycle.color",
+            "[store][book][:][category]|[store][bicycle][color]",
+            "store.book.*.category|store.bicycle.color",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = [
+                'store.book.0.category',
+                'store.book.1.category',
+                'store.book.2.category',
+                'store.book.3.category',
+                'store.bicycle.color',
+                ]
+            self.assertItemsEqual(result, expected)
 
     def test_pipe_union_test(self):
-        for path in ("..book.*.category|..bicycle.color",
-                     "..book.*.category |..bicycle.color",
-                     "..book.*.category| ..bicycle.color",
-                     "..book.*.category | ..bicycle.color",
-                     "[store][book][:][category]|[store][bicycle][color]",
-                     "store.book.*.category|store.bicycle.color"):
+        for path in (
+            "..book.*.category|..bicycle.color",
+            "..book.*.category |..bicycle.color",
+            "..book.*.category| ..bicycle.color",
+            "..book.*.category | ..bicycle.color",
+            "[store][book][:][category]|[store][bicycle][color]",
+            "store.book.*.category|store.bicycle.color",
+            ):
             self.assertTrue(querypath.test(self.obj, path))
 
     def test_pipe_union_empty(self):
-        for path in ("|..bicycle.color",
-                     "..bicycle.color|",):
-            self.assertIn(querypath.get(self.obj, path),
-                          ([self.obj, 'red'],
-                           ['red', self.obj]))
+        for path in (
+            "|..bicycle.color",
+            "..bicycle.color|",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [self.obj, 'red']
+            self.assertItemsEqual(result, expected)
 
     def test_pipe_intersection_get(self):
-        self.assertItemsEqual(querypath.get(self.obj,
-                                            "..price|store.book[0].price"),
-                              [8.95, 12.99, 8.99, 22.99, 19.95])
+        result = querypath.get(self.obj, "..price|store.book[0].price")
+        expected = [8.95, 12.99, 8.99, 22.99, 19.95]
+        self.assertItemsEqual(result, expected)
 
     def test_pipe_intersection_paths(self):
-        self.assertItemsEqual(querypath.paths(self.obj,
-                                            "..price|store.book[0].price"),
-                             ['store.book.0.price',
-                              'store.book.1.price',
-                              'store.book.2.price',
-                              'store.book.3.price',
-                              'store.bicycle.price'])
+        result = querypath.paths(self.obj, "..price|store.book[0].price")
+        expected = [
+            'store.book.0.price',
+            'store.book.1.price',
+            'store.book.2.price',
+            'store.book.3.price',
+            'store.bicycle.price',
+            ]
+        self.assertItemsEqual(result, expected)
 
 # -------------------------------------------------------------------
 
     def test_script_index_get(self):
-        for path in ("..book[(@.__len__()-1)]",
-                     "..['book'][(@.__len__()-1)]"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             [{'category': 'fiction', 'price': 22.99,
-                               'title': 'The Lord of the Rings',
-                               'isbn': '0-395-19395-8',
-                               'author': 'J. R. R. Tolkien'}])
+        for path in (
+            "..book[(@.__len__()-1)]",
+            "..['book'][(@.__len__()-1)]",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [
+                {
+                    'category': 'fiction',
+                    'price': 22.99,
+                    'title': 'The Lord of the Rings',
+                    'isbn': '0-395-19395-8',
+                    'author': 'J. R. R. Tolkien',
+                    },
+                ]
+            self.assertItemsEqual(result, expected)
+
 
     def test_script_index_paths(self):
-        for path in ("..book[(@.__len__()-1)]",
-                     "..['book'][(@.__len__()-1)]"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.3'])
+        for path in (
+            "..book[(@.__len__()-1)]",
+            "..['book'][(@.__len__()-1)]",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = ['store.book.3']
+            self.assertItemsEqual(result, expected)
 
     def test_script_index_test(self):
-        for path in ("..book[(@.__len__()-1)]",
-                     "..['book'][(@.__len__()-1)]"):
+        for path in (
+            "..book[(@.__len__()-1)]",
+            "..['book'][(@.__len__()-1)]",
+            ):
             self.assertTrue(querypath.get(self.obj, path))
 
-# -------------------------------------------------------------------
+# # -------------------------------------------------------------------
 
     def test_script_query_get(self):
-        for path in ("..book[?(@['price']<10)].title",
-                     "..book[?(@['price']<10)].title"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             ['Sayings of the Century', 'Moby Dick'])
+        result = querypath.get(self.obj, "..book.*[?(@['price']<10)].title")
+        expected = ['Sayings of the Century', 'Moby Dick']
+        self.assertItemsEqual(result, expected)
 
     def test_script_query_paths(self):
-        for path in ("..book[?(@['price']<10)].title",
-                     "..book[?(@['price']<10)].title"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.0.title',
-                              'store.book.2.title'])
+        result = querypath.paths(self.obj, "..book.*[?(@['price']<10)].title")
+        expected = ['store.book.0.title', 'store.book.2.title']
+        self.assertItemsEqual(result, expected)
 
     def test_script_query_test(self):
-        for path in ("..book[?(@['price']<10)].title",
-                     "..book[?(@['price']<10)].title"):
-            self.assertTrue(querypath.test(self.obj, path))
+        self.assertTrue(
+            querypath.test(self.obj, "..book.*[?(@['price']<10)].title"))
+
+# # -------------------------------------------------------------------
+
+    def test_script_query2_get(self):
+        for path in (
+            "..book.*[?('isbn' in @)].title",
+            "..book.*[?(@['isbn'])].title",
+            ):
+            result = list(querypath.get(self.obj, path))
+            expected = [
+                'Moby Dick',
+                'The Lord of the Rings',
+                ]
+            self.assertItemsEqual(result, expected)
+
+    def test_script_query2_paths(self):
+        for path in (
+            "..book.*[?('isbn' in @)].title",
+            "..book.*[?(@['isbn'])].title",
+            ):
+            result = list(querypath.paths(self.obj, path))
+            expected = [
+                'store.book.2.title',
+                'store.book.3.title',
+                ]
+            self.assertItemsEqual(result, expected)
+
+    def test_script_query2_test(self):
+        for path in (
+            "..book.*[?('isbn' in @)].title",
+            "..book.*[?(@['isbn'])].title",
+            ):
+            self.assertTrue(querypath.get(self.obj, path))
 
 # -------------------------------------------------------------------
 
-    def test_script_query2_get(self):
-        for path in ("..book[?(@['isbn'])].title",
-                     "..book[?(@['isbn'])].title"):
-            self.assertItemsEqual(querypath.get(self.obj, path),
-                             ['Moby Dick', 'The Lord of the Rings'])
-
-    def test_script_query2_paths(self):
-        for path in ("..book[?(@['isbn'])].title",
-                     "..book[?(@['isbn'])].title"):
-            self.assertItemsEqual(querypath.paths(self.obj, path),
-                             ['store.book.2.title',
-                              'store.book.3.title'])
-
-    def test_script_query2_test(self):
-        for path in ("..book[?(@['isbn'])].title",
-                     "..book[?(@['isbn'])].title"):
-            self.assertTrue(querypath.get(self.obj, path))
+    def test_all(self):
+        obj = {
+            "i": 1,
+            "f": 0.1,
+            "s": "str",
+            "l": [1, 2, 3],
+            "d": {
+                "i": 1,
+                "f": 0.1,
+                "s": "str",
+                },
+            }
+        result = querypath.get(obj, "..*")
+        expected = [
+            1, 0.1, "str", "s","t","r", "s","t","r",
+            [1, 2, 3], 1, 2, 3,
+            {
+                "i": 1,
+                "f": 0.1,
+                 "s": "str",
+                },
+            1, 0.1, "str", "s","t","r", "s","t","r",
+            ]
+        self.assertItemsEqual(result, expected)
 
 # -------------------------------------------------------------------
 

@@ -16,7 +16,7 @@ import re
 from boing.utils import assertIsInstance
 
 def get(obj, path):
-    """Return a list containing the *obj*'s attributes or items
+    """Return an iterator over the *obj*'s attributes or items
     matched by *path*."""
     return QPath(path).get(obj)
 
@@ -24,12 +24,12 @@ def get(obj, path):
 #     return QPath(path).set(obj, value)
 
 def paths(obj, path):
-    """Return a list containing the paths that index the *obj*'s
+    """Return an iterator over the paths that index the *obj*'s
     attributes or items matched by *path*."""
     return QPath(path).paths(obj)
 
 def items(obj, path):
-    """Return a list containing the pairs (path, value) of the
+    """Return an iterator over the pairs (path, value) of the
     *obj*'s items that are matched by *path*."""
     return QPath(path).items(obj)
 
@@ -52,33 +52,33 @@ class QPath:
         self._norm = _normalize(self.__str)
 
     def get(self, obj):
-        """Return a list containing the *obj*'s attributes or items
+        """Return an iterator over the *obj*'s attributes or items
         matched by this QPath."""
         matches = dict(itertools.chain(*map(QPath._trace,
                                             self._norm,
                                             itertools.repeat(obj),
                                             itertools.repeat('$'),
                                             itertools.repeat(QPath._ITEMS))))
-        return list(matches.values())
+        return matches.values()
 
     def paths(self, obj):
-        """Return a list containing the paths that index the *obj*'s
+        """Return an iterator over the paths that index the *obj*'s
         attributes or items matched by this QPath."""
-        return set(itertools.chain(*map(QPath._trace,
+        return iter(set(itertools.chain(*map(QPath._trace,
                                         self._norm,
                                         itertools.repeat(obj),
                                         itertools.repeat('$'),
-                                        itertools.repeat(QPath._PATHS))))
+                                        itertools.repeat(QPath._PATHS)))))
 
     def items(self, obj):
-        """Return a list containing the pairs (path, value) of the
+        """Return an iterator over the pairs (path, value) of the
         *obj*'s items that are matched by this QPath."""
         matches = dict(itertools.chain(*map(QPath._trace,
                                             self._norm,
                                             itertools.repeat(obj),
                                             itertools.repeat('$'),
                                             itertools.repeat(QPath._ITEMS))))
-        return list(matches.items())
+        return matches.items()
 
     def test(self, obj):
         """Return whether this QPath matches at least one *obj*'s
@@ -159,19 +159,17 @@ class QPath:
                     for v in QPath._trace(key+";"+rest, obj, path, op):
                         yield v
                         if op is QPath._TEST: break
-            elif first[0]=="(" and first[-1]==")": # [(expr)]
+            elif first.startswith("(") and first.endswith(")"): # [(expr)]
                 key = QPath._eval(first, obj)
                 if key is not None:
                     for v in QPath._trace(str(key)+";"+rest, obj, path, op):
                         yield v
                         if op is QPath._TEST: break
-            elif first.startswith("?(") and first[-1]==")": # [?(expr)]
-                for key, value in QPath._iterprop(obj):
-                    if QPath._eval(first[1:], value):
-                        for v in QPath._trace(rest, value,
-                                             path+";"+str(key), op):
-                            yield v
-                            if op is QPath._TEST: break
+            elif first.startswith("?(") and first.endswith(")"): # [?(expr)]
+                if QPath._eval(first[1:], obj):
+                    for v in QPath._trace(rest, obj, path, op):
+                        yield v
+                        if op is QPath._TEST: break
             elif isinstance(obj, collections.Sequence) :
                 m = re.match("^(-?[0-9]*):(-?[0-9]*):?([0-9]*)$", first)
                 if m:
@@ -246,7 +244,7 @@ _re7 = re.compile("[ ]*\|[ ]*")
 
 def _normalize(path):
     assertIsInstance(path, str)
-    if not path: rvalue = (path, )
+    if not path or path=="$": rvalue = ("", )
     else:
         sub = []
         def encode(match):
@@ -302,29 +300,31 @@ if __name__=="__main__":
             }
            }
     testpaths = [
+        # "",
+        # "store.bicycle",
+        # "$.store.bicycle",
+        # "$['store']['bicycle']",
+        # "$.store.book[0].author",
+        # "$['store']['book'][0]['author']",
+        # "$.store.book[*].price",
+        # "$.store..price",
+        # "$.store.book.*.author,title",
+        # "$.store.book,bicycle,car..price",
+        # "$..book[(@.__len__()-1)]",
+        # #"$.store[(@.clear())]", FIXME!
+        # "$.store.book.*",
+        # "$..book[?(@['price']<10)].title",
+        # "$..book[?(@['isbn'])].title",
         "",
-        "store.bicycle",
-        "$.store.bicycle",
-        "$['store']['bicycle']",
-        "$.store.book[0].author",
-        "$['store']['book'][0]['author']",
-        "$.store.book[*].price",
-        "$.store..price",
-        "$.store.book.*.author,title",
-        "$.store.book,bicycle,car..price",
-        "$..book[(@.__len__()-1)]",
-        #"$.store[(@.clear())]", FIXME!
-        "$.store.book.*",
-        "$..book[?(@['price']<10)].title",
-        "$..book[?(@['isbn'])].title",
-        "",
-        "..price|store.book[0].price",
+        # "..price|store.book[0].price",
+        #"..*", # all members
         ] if len(sys.argv)<2 else sys.argv[1:]
     for path in testpaths:
         qpath = QPath(path)
         print("QPATH:", path)
-        print("VALUE:", qpath.get(obj))
-        print("PATHS:", qpath.paths(obj))
+        print("VALUE:", list(qpath.get(obj)))
+        print("PATHS:", list(qpath.paths(obj)))
+        print("ITEMS:", list(qpath.items(obj)))
         # print("FILTER:", qpath.filter(obj))
         print("TEST:", qpath.test(obj))
         print()
