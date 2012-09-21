@@ -39,8 +39,8 @@ class PlayerWidget(QtGui.QMainWindow, Ui_player):
         self._frame.layout().addWidget(self._playlistview)
         # Context menu
         menu = QtGui.QMenu()
-        menu.addAction("Play", self.playSelection)
-        menu.addAction("Delete", self.deleteSelection)
+        menu.addAction("Play", self.playSelection, QtCore.Qt.Key_Enter)
+        menu.addAction("Delete", self.deleteSelection, QtCore.Qt.Key_Delete)
         menu.addSeparator()
         menu.addAction('Add File...', self._openFilesDialog)
         menu.addAction('Add Directory...', self._openDirDialog)
@@ -79,12 +79,10 @@ class PlayerWidget(QtGui.QMainWindow, Ui_player):
         self._saveplaylist.triggered.connect(self._savePlaylistDialog)
         self._createfolder.triggered.connect(self._createFolder)
         self._clear.triggered.connect(self._playlistview.model().clear)
-        self._about.triggered.connect(self.aboutDialog)
-        # About Dialog
-        self._aboutDialog = QtGui.QDialog()
+        self._quit.triggered.connect(QtGui.QApplication.instance().quit)
+        self._faster.triggered.connect(self.incrementSpeed)
+        self._slower.triggered.connect(self.decrementSpeed)
         # Shortcuts
-        QtGui.QShortcut(QtCore.Qt.Key_Plus, self, self.incrementSpeed)
-        QtGui.QShortcut(QtCore.Qt.Key_Minus, self, self.decrementSpeed)
         QtGui.QShortcut(QtCore.Qt.Key_Escape, self,
                         self._playlistview.clearSelection)
         QtGui.QShortcut(QtCore.Qt.Key_Delete, self, self.deleteSelection)
@@ -153,69 +151,6 @@ class PlayerWidget(QtGui.QMainWindow, Ui_player):
     def _createFolder(self):
         """Add an empty folder."""
         self._playlistview.createFolder("New folder")
-
-    def aboutDialog(self, checked):
-        """Execute the about dialog."""
-        # FIXME: Implement this using QtDesigner
-        self._aboutDialog.setFixedSize(QtCore.QSize(340, 280))
-        self._aboutDialog.setWindowTitle("About Boing Player")
-        lApp =QtGui.QLabel("Boing player")
-        lAppFont = QtGui.QFont()
-        lAppFont.setBold(True)
-        lAppFont.setPointSize(20)
-        lApp.setFont(lAppFont)
-        lApp.setAlignment(QtCore.Qt.AlignHCenter)
-        # Set description label
-        lDesc =QtGui.QLabel("Play a tracklist of log files.")
-        lDesc.setAlignment(QtCore.Qt.AlignHCenter)
-        lKeyB =QtGui.QLabel("Key Bindings")
-        lKeyB.setAlignment(QtCore.Qt.AlignHCenter)
-        lKeyBFont = QtGui.QFont()
-        lKeyBFont.setItalic(True)
-        lKeyB.setFont(lKeyBFont)
-        # Set key bindings layout
-        kb_layout = QtGui.QFormLayout()
-        kb_layout.setContentsMargins(0, 5, 5, 5)
-        kb_layout.setSpacing(0)
-        kb_layout.addRow('Space',
-                         QtGui.QLabel('  - Start/Stop playback'))
-        kb_layout.addRow('Return',
-                         QtGui.QLabel('  - Play selected track'))
-        kb_layout.addRow('Ctrl+',
-                         QtGui.QLabel('  - Increment player speed'))
-        kb_layout.addRow('Ctrl-',
-                         QtGui.QLabel('  - Decrement player speed'))
-        kb_layout.addRow('Ctrl-l',
-                         QtGui.QLabel('  - Toggle playback cycle option'))
-        text_vert_layout = QtGui.QVBoxLayout()
-        text_vert_layout.addStretch(0)
-        text_vert_layout.addWidget(lApp)
-        text_vert_layout.addWidget(lDesc)
-        text_vert_layout.addStretch(0)
-        text_vert_layout.addWidget(lKeyB)
-        text_vert_layout.addLayout(kb_layout)
-        # Set horizontal layout
-        text_horiz_layout = QtGui.QHBoxLayout()
-        text_horiz_layout.addStretch(0)
-        text_horiz_layout.addLayout(text_vert_layout)
-        text_horiz_layout.addStretch(0)
-        # Set close button
-        close_button = QtGui.QPushButton('Close')
-        self.connect(close_button, QtCore.SIGNAL('clicked()'), self._aboutDone)
-        close_button_layout = QtGui.QHBoxLayout()
-        close_button_layout.addStretch(0)
-        close_button_layout.addWidget(close_button)
-        dialog_layout = QtGui.QVBoxLayout()
-        dialog_layout.addLayout(text_horiz_layout)
-        dialog_layout.addLayout(close_button_layout)
-        # Set the entire dialog layout.
-        self._aboutDialog.setLayout(dialog_layout)
-        # Execute the dialog
-        self._aboutDialog.exec_()
-
-    def _aboutDone(self):
-        self._aboutDialog.done(QtGui.QDialog.Accepted)
-        self.activateWindow()
 
     def playSelection(self):
         """Start playing the first element of the current
