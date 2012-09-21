@@ -9,7 +9,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-import copy
+import collections
 import datetime
 import math
 import weakref
@@ -24,74 +24,76 @@ from boing.utils import quickdict, deepDump
 
 class ContactViz(Consumer):
 
-    '''"""Gestures' position is fit to the widget size"""
-    WINSIZE = 1
-    """Input device ratio is respected (if possible)"""
-    RATIOSIZE = 2
-    """SI device size is respected (if possible)"""
-    SISIZE = 3'''
+    # WINSIZE = object()
+    # """Gestures' position is fit to the widget size"""
+    # RATIOSIZE = object()
+    # """Input device ratio is respected (if possible)"""
+    # SISIZE = object()
+    # """SI device size is respected (if possible)"""
 
     def __init__(self, antialiasing=False, fps=60, parent=None):
         super().__init__(request=QRequest("diff.*.contacts|source"),
-                       hz=fps, parent=parent)
+                         hz=fps, parent=parent)
         self._sources = {}
-        self.__gui = ContactWidget(weakref.proxy(self), antialiasing)
-        self.__gui.show()
-        self.__gui.raise_()
-        '''self.__display = DisplayDevice.create()
-        if self.__display.url.scheme=="dummy":
-            print("WARNING: using dummy DisplayDevice")
-            self.__display.debug()
-        self.drawmode = ContactViz.SISIZE'''
+        self._gui = ContactWidget(weakref.proxy(self), antialiasing)
+        # self.__display = DisplayDevice.create()
+        # if self.__display.url.scheme=="dummy":
+        #     print("WARNING: using dummy DisplayDevice")
+        #     self.__display.debug()
+        # self.drawmode = ContactViz.SISIZE
+
+    def gui(self):
+        """Return the Widget owned by this ContactViz node."""
+        return self._gui
 
     def _consume(self, products, producer):
         for product in products:
-            if "diff" in product:
-                source = product.get("source", id(producer))
+            diff = product.get("diff")
+            if isinstance(diff, collections.Mapping):
+                source = product.get("source")
                 record = self._sources.setdefault(
-                    source, quickdict({"state":StateMachine()}))
+                    source, quickdict({"state": StateMachine()}))
                 # Update state
-                record.state.applyDiff(product["diff"])
+                record.state.applyDiff(diff)
                 # Update history
                 history = record.history
-                for key, event in product["diff"].items():
+                for key, event in diff.items():
                     if key in ("added", "updated"):
                         for gid, value in event["contacts"].items():
                             track = history.setdefault(gid, [])
                             if track or "rel_pos" in value: track.append(value)
                     elif key=="removed":
-                        for key in event["contacts"]:
+                        for key in event.get("contacts", tuple()):
                             history.pop(key, None)
                     else:
-                        raise ValueError("Unexpected diff key: %s", key)
-                self.__gui.update()
+                        raise ValueError("Unexpected key for a diff: %s", key)
+                self.gui().update()
 
 
 class ContactWidget(QtGui.QWidget):
 
-    '''class ConfigPanel(QtGui.QDialog, uiVizConfig.Ui_ConfigPanel):
-        """Configuration panel for the ContactViz properties."""
-        def __init__(self, current):
-            QtGui.QDialog.__init__(self)
-            self.setupUi(self)
-            if current==ContactViz.WINSIZE:
-                self.winsize.setChecked(True)
-            elif current==ContactViz.RATIOSIZE:
-                self.ratiosize.setChecked(True)
-            elif current==ContactViz.SISIZE:
-                self.sisize.setChecked(True)
+    # class ConfigPanel(QtGui.QDialog, uiVizConfig.Ui_ConfigPanel):
+    #     """Configuration panel for the ContactViz properties."""
+    #     def __init__(self, current):
+    #         QtGui.QDialog.__init__(self)
+    #         self.setupUi(self)
+    #         if current==ContactViz.WINSIZE:
+    #             self.winsize.setChecked(True)
+    #         elif current==ContactViz.RATIOSIZE:
+    #             self.ratiosize.setChecked(True)
+    #         elif current==ContactViz.SISIZE:
+    #             self.sisize.setChecked(True)
 
-        def drawmode(self):
-            """Return the selected drawmode."""
-            if self.winsize.isChecked():
-                return ContactViz.WINSIZE
-            elif self.ratiosize.isChecked():
-                return ContactViz.RATIOSIZE
-            elif self.sisize.isChecked():
-                return ContactViz.SISIZE
-            else:
-                return ContactViz.SISIZE'''
-
+    #     def drawmode(self):
+    #         """Return the selected drawmode."""
+    #         if self.winsize.isChecked():
+    #             return ContactViz.WINSIZE
+    #         elif self.ratiosize.isChecked():
+    #             return ContactViz.RATIOSIZE
+    #         elif self.sisize.isChecked():
+    #             return ContactViz.SISIZE
+    #         else:
+    #             return ContactViz.SISIZE
 
     def __init__(self, node, antialiasing=False, parent=None):
         QtGui.QWidget.__init__(self, parent)
