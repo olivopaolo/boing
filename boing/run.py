@@ -50,9 +50,11 @@ parser.add_argument("-T", dest="traceback", nargs="?", type=int,
                     default=0, const=99, metavar="INTEGER",
                     help="set exceptions traceback depth")
 parser.add_argument("-f", dest="force", action='store_true',
-                    help="force execution (avoiding warnings)")
+                    help="force execution (force warnings and invalid URIs)")
 parser.add_argument("--no-gui", dest="nogui", action='store_true',
                     help="disable GUI (for running without a display server)")
+parser.add_argument("--no-raise", dest="noraise", action='store_true',
+                    help="Do not raise widgets (useful during unit tests)")
 parser.add_argument('--version', action='version', version=version)
 parser.add_argument("config", metavar="<expr>",
                     help="define the pipeline configuration")
@@ -61,6 +63,7 @@ parser.add_argument("config", metavar="<expr>",
 if len(sys.argv)==1: sys.argv.append("-h")
 args = parser.parse_args()
 logging.basicConfig(level=logging.getLevelName(args.logging_level))
+if args.noraise: boing.config["--no-raise"] = True
 
 # Init application
 if not args.nogui:
@@ -82,6 +85,7 @@ except Exception as exc:
     import traceback
     logging.error(exc)
     if args.traceback: traceback.print_exc(args.traceback)
+    if not args.force: sys.exit(1)
 
 # Handle common options
 if args.graph:

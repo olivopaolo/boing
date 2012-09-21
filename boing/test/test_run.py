@@ -30,10 +30,8 @@ timeoutsignal = signal.SIGTERM if sys.platform=="win32" else signal.SIGINT
 
 cmds = (
     # Command line arguments
-    (tuple(), 0), # empty
     (('-h', ), 0),
     (('--help',), 0),
-    (('--version', ), 0),
     (('nop:', '-G'), 0),
     (('nop:', '-G', 'grapher:stdout'), 0),
     (('nop:', '-G', 'wrong'), 1),
@@ -60,15 +58,13 @@ cmds = (
 
 class Test_returncode_only(unittest.TestCase):
 
-    def setUp(self):
-        self.out = tempfile.TemporaryFile('w+')
-        self.err = tempfile.TemporaryFile('w+')
-
     def test_no_exceptions(self):
         for cmd, expected in cmds:
-            self.proc = subprocess.Popen(("boing",)+cmd,
-                                         stdout=self.out,
-                                         stderr=self.err)
+            out = tempfile.TemporaryFile('w+')
+            err = tempfile.TemporaryFile('w+')
+            self.proc = subprocess.Popen(("boing", "--no-raise", "-L", "ERROR")+cmd,
+                                         stdout=out,
+                                         stderr=err)
             # Loop: poll and sleep
             for i in range(10):
                 returncode = self.proc.poll()
@@ -80,6 +76,10 @@ class Test_returncode_only(unittest.TestCase):
                 returncode = self.proc.wait()
             # Check return code
             if sys.platform!="win32": self.assertEqual(returncode, expected)
+            # Check stderr is empty
+            if expected==0:
+                err.seek(0)
+                self.assertFalse(err.read())
 
 # -------------------------------------------------------------------
 # Data Redirection tests
@@ -93,7 +93,8 @@ class Test_run_redirection(unittest.TestCase):
 
     def test_in_std_out_std(self):
         if sys.platform!="win32": # Windows do not support node ``in:``
-            self.proc = subprocess.Popen(("boing", "in: + out:"),
+            cmd = "boing in:+out: -L ERROR --no-raise"
+            self.proc = subprocess.Popen(cmd.split(),
                                          stdin=open(txtfilepath),
                                          stdout=self.out,
                                          stderr=self.err)
@@ -114,9 +115,13 @@ class Test_run_redirection(unittest.TestCase):
             with open(txtfilepath) as fd:
                 expected = fd.read()
             self.assertEqual(result, expected)
+            # Check stderr is empty
+            self.err.seek(0)
+            self.assertFalse(self.err.read())
 
     def test_in_file_out_std(self):
-        self.proc = subprocess.Popen(("boing", "in://%s%s + out:"%(sysprefix, txtfilepath)),
+        cmd = "boing in://%s%s+out: -L ERROR --no-raise"%(sysprefix, txtfilepath)
+        self.proc = subprocess.Popen(cmd.split(),
                                      stdout=self.out,
                                      stderr=self.err)
         # Loop: poll and sleep
@@ -136,11 +141,15 @@ class Test_run_redirection(unittest.TestCase):
         with open(txtfilepath) as fd:
             expected = fd.read()
         self.assertEqual(result, expected)
+        # Check stderr is empty
+        self.err.seek(0)
+        self.assertFalse(self.err.read())
 
     def test_in_std_out_file(self):
         if sys.platform!="win32": # Windows do not support node ``in:``
             tempout = tempfile.NamedTemporaryFile()
-            self.proc = subprocess.Popen(("boing", "in: + out://%s"%tempout.name),
+            cmd = "boing in:+out://%s -L ERROR --no-raise"%tempout.name
+            self.proc = subprocess.Popen(cmd.split(),
                                          stdin=open(txtfilepath),
                                          stdout=self.out,
                                          stderr=self.err)
@@ -161,6 +170,9 @@ class Test_run_redirection(unittest.TestCase):
             with open(txtfilepath, "rb") as fd:
                 expected = fd.read()
             self.assertEqual(result, expected)
+            # Check stderr is empty
+            self.err.seek(0)
+            self.assertFalse(self.err.read())
 
 # -------------------------------------------------------------------
 

@@ -214,7 +214,7 @@ def createSingle(uri, mode="", parent=None):
             node = Recorder(**query)
             node.start()
             node.gui.show()
-            node.gui.raise_()
+            if "--no-raise" not in config: node.gui.raise_()
 
     elif uri.scheme=="player":
         return createSingle(str(uri).replace("player:", "player.pickle:", 1),
@@ -239,14 +239,14 @@ def createSingle(uri, mode="", parent=None):
                     slip.Decoder()+pickle.Decoder()
                 node = Player(decoder, Player.ProductSender(), **query)
                 node.gui().show()
-                node.gui().raise_()
+                if "--no-raise" not in config: node.gui().raise_()
             elif scheme in ("json", "json.slip"):
                 from boing.nodes.logger import FilePlayer
                 decoder = \
                     slip.Decoder()+bytes.Decoder()+json.Decoder()
                 node = Player(decoder, Player.ProductSender(), **query)
                 node.gui().show()
-                node.gui().raise_()
+                if "--no-raise" not in config: node.gui().raise_()
             elif scheme in ("osc", "osc.slip",
                             "tuio", "tuio.slip",
                             "tuio.osc", "tuio.osc.slip"):
@@ -254,7 +254,7 @@ def createSingle(uri, mode="", parent=None):
                                 encoding.OscLogPlayer._Sender(),
                                 (".osc.bz2", ".osc"), **query)
                 player.gui().show()
-                player.gui().raise_()
+                if "--no-raise" not in config: player.gui().raise_()
                 encoder = encoding.OscEncoder(blender=Functor.MERGE)
                 oscdebug = encoding.OscDebug(blender=Functor.MERGE)
                 node = player + encoder + oscdebug
@@ -526,7 +526,7 @@ def createSingle(uri, mode="", parent=None):
             assertUriQuery(uri, query)
             node = ContactViz(**query)
             node.gui().show()
-            node.gui().raise_()
+            if "--no-raise" not in config: node.gui().raise_()
 
     elif uri.scheme=="lag":
         from boing.nodes import Lag
