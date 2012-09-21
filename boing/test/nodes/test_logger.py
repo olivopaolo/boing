@@ -86,7 +86,7 @@ class TestProductBuffer(unittest.TestCase):
 
 # -------------------------------------------------------------------
 
-def suite():    
+def suite():
     testcases = (
         TestProductBuffer,
         )

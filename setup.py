@@ -31,6 +31,7 @@ kwargs = dict(
     test_suite = "boing.test.run",
     package_data = {
         'boing.nodes.player': ['icons/*'],
+        'boing.test': ['data/*'],
         },
 
     author = "Paolo Olivo",

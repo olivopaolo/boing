@@ -10,11 +10,15 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import sys
 import unittest
 
 def additional_tests(modules=[]):
 
     tests = []
+    if not modules:
+        from boing.test import test_run
+        tests += test_run.suite()
     if not modules or 'utils' in modules:
         from boing.test.utils import test__init__, test_querypath, test_url
         tests += test__init__.suite()
