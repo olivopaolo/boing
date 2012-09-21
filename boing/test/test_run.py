@@ -14,16 +14,19 @@ import itertools
 import os.path
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
 
-txtfilepath = os.path.join(os.path.dirname(__file__),
+txtfilepath = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            "data", "file.txt")
-config_filtersfilepath = os.path.join(os.path.dirname(__file__),
+config_filtersfilepath = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                       "data", "config-filters.txt")
-my_mt_tablefilepath = os.path.join(os.path.dirname(__file__),
+my_mt_tablefilepath = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    "data", "my-mt-table.txt")
+sysprefix = "/" if sys.platform=="win32" else ""
+timeoutsignal = signal.SIGTERM if sys.platform=="win32" else signal.SIGINT
 
 cmds = (
     # Command line arguments
@@ -51,8 +54,8 @@ cmds = (
     (('(in.tuio://:3333 | in.tuio://:3334) + (viz: | out.tuio://127.0.0.1:3335)', ), 0),
     (('in.tuio://:3333 + (filtering: + calib:?screen=left + edit:?source=filtered | nop:) + viz:', ), 0),
     # Configurations tutorial
-    (('conf:%s'%config_filtersfilepath, ), 0),
-    (('conf:%s + (viz: | rec: | out.tuio://127.0.0.1:3334)'%my_mt_tablefilepath, ), 0),
+    (('conf:%s%s'%(sysprefix, config_filtersfilepath), ), 0),
+    (('conf:%s%s + (viz: | rec: | out.tuio://127.0.0.1:3334)'%(my_mt_tablefilepath, sysprefix), ), 0),
     )
 
 class Test_returncode_only(unittest.TestCase):
@@ -67,16 +70,16 @@ class Test_returncode_only(unittest.TestCase):
                                          stdout=self.out,
                                          stderr=self.err)
             # Loop: poll and sleep
-            for i in range(100):
+            for i in range(10):
                 returncode = self.proc.poll()
                 if returncode is not None : break
-                time.sleep(0.01)
+                time.sleep(0.10)
             else:
                 # Timeout: stop and wait
-                self.proc.send_signal(signal.SIGINT)
+                self.proc.send_signal(timeoutsignal)
                 returncode = self.proc.wait()
             # Check return code
-            self.assertEqual(returncode, expected)
+            if sys.platform!="win32": self.assertEqual(returncode, expected)
 
 # -------------------------------------------------------------------
 # Data Redirection tests
@@ -86,46 +89,47 @@ class Test_run_redirection(unittest.TestCase):
     def setUp(self):
         self.out = tempfile.TemporaryFile('w+')
         self.err = tempfile.TemporaryFile('w+')
+        self.maxDiff = None
 
     def test_in_std_out_std(self):
-        self.proc = subprocess.Popen(("boing", "in: + out:"),
-                                     stdin=open(txtfilepath),
-                                     stdout=self.out,
-                                     stderr=self.err)
-        # Loop: poll and sleep
-        for i in range(50):
-            returncode = self.proc.poll()
-            if returncode is not None : break
-            time.sleep(0.01)
-        else:
-            # Timeout: stop and wait
-            self.proc.send_signal(signal.SIGINT)
-            returncode = self.proc.wait()
-        self.assertFalse(returncode)
-        # Check return code
-        self.assertFalse(returncode)
-        # Compare output
-        self.out.seek(0)
-        result = self.out.read()
-        with open(txtfilepath) as fd:
-            expected = fd.read()
-        self.assertEqual(result, expected)
+        if sys.platform!="win32": # Windows do not support node ``in:``
+            self.proc = subprocess.Popen(("boing", "in: + out:"),
+                                         stdin=open(txtfilepath),
+                                         stdout=self.out,
+                                         stderr=self.err)
+            # Loop: poll and sleep
+            for i in range(10):
+                returncode = self.proc.poll()
+                if returncode is not None : break
+                time.sleep(0.1)
+            else:
+                # Timeout: stop and wait
+                self.proc.send_signal(timeoutsignal)
+                returncode = self.proc.wait()
+            # Check return code
+            if sys.platform!="win32": self.assertFalse(returncode)
+            # Compare output
+            self.out.seek(0)
+            result = self.out.read()
+            with open(txtfilepath) as fd:
+                expected = fd.read()
+            self.assertEqual(result, expected)
 
     def test_in_file_out_std(self):
-        self.proc = subprocess.Popen(("boing", "in:%s + out:"%txtfilepath),
+        self.proc = subprocess.Popen(("boing", "in://%s%s + out:"%(sysprefix, txtfilepath)),
                                      stdout=self.out,
                                      stderr=self.err)
         # Loop: poll and sleep
-        for i in range(50):
+        for i in range(10):
             returncode = self.proc.poll()
             if returncode is not None : break
-            time.sleep(0.01)
+            time.sleep(0.1)
         else:
             # Timeout: stop and wait
-            self.proc.send_signal(signal.SIGINT)
+            self.proc.send_signal(timeoutsignal)
             returncode = self.proc.wait()
         # Check return code
-        self.assertFalse(returncode)
+        if sys.platform!="win32": self.assertFalse(returncode)
         # Compare output
         self.out.seek(0)
         result = self.out.read()
@@ -134,28 +138,29 @@ class Test_run_redirection(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_in_std_out_file(self):
-        tempout = tempfile.NamedTemporaryFile()
-        self.proc = subprocess.Popen(("boing", "in: + out:%s"%tempout.name),
-                                     stdin=open(txtfilepath),
-                                     stdout=self.out,
-                                     stderr=self.err)
-        # Loop: poll and sleep
-        for i in range(50):
-            returncode = self.proc.poll()
-            if returncode is not None : break
-            time.sleep(0.01)
-        else:
-            # Timeout: stop and wait
-            self.proc.send_signal(signal.SIGINT)
-            returncode = self.proc.wait()
-        # Check return code
-        self.assertFalse(returncode)
-        # Compare output
-        tempout.seek(0)
-        result = tempout.read()
-        with open(txtfilepath, "rb") as fd:
-            expected = fd.read()
-        self.assertEqual(result, expected)
+        if sys.platform!="win32": # Windows do not support node ``in:``
+            tempout = tempfile.NamedTemporaryFile()
+            self.proc = subprocess.Popen(("boing", "in: + out://%s"%tempout.name),
+                                         stdin=open(txtfilepath),
+                                         stdout=self.out,
+                                         stderr=self.err)
+            # Loop: poll and sleep
+            for i in range(10):
+                returncode = self.proc.poll()
+                if returncode is not None : break
+                time.sleep(0.1)
+            else:
+                # Timeout: stop and wait
+                self.proc.send_signal(timeoutsignal)
+                returncode = self.proc.wait()
+            # Check return code
+            if sys.platform!="win32": self.assertFalse(returncode)
+            # Compare output
+            tempout.seek(0)
+            result = tempout.read()
+            with open(txtfilepath, "rb") as fd:
+                expected = fd.read()
+            self.assertEqual(result, expected)
 
 # -------------------------------------------------------------------
 
