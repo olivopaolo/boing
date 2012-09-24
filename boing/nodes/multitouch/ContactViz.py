@@ -20,6 +20,24 @@ from boing.core import QRequest, Consumer
 from boing.core.StateMachine import StateMachine
 from boing.utils import quickdict, deepDump
 
+from boing.nodes.multitouch.uiContactViz import Ui_VizWindow
+
+colors = (
+    # 12-class qualitative Set3
+    (141,211,199),
+    (255,255,179),
+    (190,186,218),
+    (251,128,114),
+    (128,177,211),
+    (253,180,98),
+    (179,222,105),
+    (252,205,229),
+    (217,217,217),
+    (188,128,189),
+    (204,235,197),
+    (255,237,111)
+    )
+
 #import uiVizConfig
 
 class ContactViz(Consumer):
@@ -35,7 +53,12 @@ class ContactViz(Consumer):
         super().__init__(request=QRequest("diff.*.contacts|source"),
                          hz=fps, parent=parent)
         self._sources = {}
-        self._gui = ContactWidget(weakref.proxy(self), antialiasing)
+        self._gui = VizWindow()
+        contactwidget = ContactWidget(weakref.proxy(self), antialiasing)
+        self._gui.setCentralWidget(contactwidget)
+        self._gui._clear.triggered.connect(self.clearTracks)
+        self._gui._toggleDebug.triggered.connect(contactwidget.toggleDebug)
+        self._gui.closed.connect(self.clear)
         # self.__display = DisplayDevice.create()
         # if self.__display.url.scheme=="dummy":
         #     print("WARNING: using dummy DisplayDevice")
@@ -52,7 +75,10 @@ class ContactViz(Consumer):
             if isinstance(diff, collections.Mapping):
                 source = product.get("source")
                 record = self._sources.setdefault(
-                    source, quickdict({"state": StateMachine()}))
+                    source,
+                    quickdict({"state": StateMachine(),
+                               "color": (QtGui.QColor(*colors[len(self._sources)%12]),
+                                         QtGui.QColor(QtCore.Qt.black))}))
                 # Update state
                 record.state.applyDiff(diff)
                 # Update history
@@ -68,6 +94,39 @@ class ContactViz(Consumer):
                     else:
                         raise ValueError("Unexpected key for a diff: %s", key)
                 self.gui().update()
+
+    def clearTracks(self):
+        self._sources = {}
+        self.gui().update()
+
+
+class VizWindow(QtGui.QMainWindow, Ui_VizWindow):
+
+    closed = QtCore.pyqtSignal()
+    """Emitted when the Widget is closed."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+        self._quit.triggered.connect(QtGui.QApplication.instance().quit)
+        self._hidemenubar.triggered.connect(self.menubar.hide)
+
+    def closeEvent(self, event):
+        self.closed.emit()
+        super().closeEvent(event)
+
+    def keyPressEvent(self, event):
+        handled = False
+        if event.key()==QtCore.Qt.Key_M and event.modifiers()&QtCore.Qt.CTRL:
+            self.menubar.show()
+            handled = True
+        elif event.key()==QtCore.Qt.Key_W and event.modifiers()&QtCore.Qt.CTRL:
+            self.close()
+            handled = True
+        elif event.key()==QtCore.Qt.Key_Q and event.modifiers()&QtCore.Qt.CTRL:
+            QtGui.QApplication.instance().quit()
+            handled = True
+        if not handled: super().keyPressEvent(event)
 
 
 class ContactWidget(QtGui.QWidget):
@@ -105,11 +164,14 @@ class ContactWidget(QtGui.QWidget):
         self.setWhatsThis("Event &Viz")
         self.sizehint = QtCore.QSize(320,240)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        # Context menu
+        self.menu = QtGui.QMenu()
+        self.menu.addAction("Toggle debug level", self.toggleDebug, QtCore.Qt.Key_Space)
+        self.menu.addAction("Clear tracks", self.node.clearTracks, 'Ctrl+C')
+
         '''self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.connect(self, QtCore.SIGNAL("customContextMenuRequested(const QPoint &)"), self.__contextmenu)
         self.connect(QtGui.QShortcut('Alt+C', self), QtCore.SIGNAL("activated()"), self.__configpanel)'''
-        ctrlQ = QtGui.QShortcut('Ctrl+Q', self)
-        ctrlQ.activated.connect(QtGui.QApplication.instance().quit)
         """position circle size"""
         self.phi = 4
         self.__fps_count = 0
@@ -136,8 +198,7 @@ class ContactWidget(QtGui.QWidget):
             painter.drawLine(x, 0, x, height)
         # Draw contacts
         for source, record in self.node._sources.items():
-            fill, outline = record.get("color",
-                                       (QtCore.Qt.gray, QtCore.Qt.black))
+            fill, outline = record["color"]
             deviceratio = None
             """contactstate = source.contacts.get("contacts", {})
             pos_si_range = contactstate.get("pos_si_range")
@@ -161,10 +222,12 @@ class ContactWidget(QtGui.QWidget):
                 painter.setBrush(QtCore.Qt.NoBrush)
                 painter.drawRect(0, 0, pixel_pos_range[0], pixel_pos_range[1])
                 painter.restore()"""
-            painter.setPen(outline)
-            painter.setBrush(fill)
             # Draw tracks
             for gid, stateN in record.state.state().contacts.items():
+                pen = QtGui.QPen(fill)
+                pen.setWidth(3)
+                painter.setPen(pen)
+                painter.setBrush(fill)
                 #gid, history in record.history.items():
                 #stateN = record.contacts.history[gid]
                 if "rel_pos" not in stateN: continue
@@ -172,12 +235,7 @@ class ContactWidget(QtGui.QWidget):
                 x, y = posN
                 history = record.history.setdefault(gid, [])
                 if len(history)>1:
-                    # Draw first point
                     pos0 = self.__tovizpos(history[0]["rel_pos"], deviceratio)
-                    painter.save()
-                    painter.setBrush(outline)
-                    painter.drawEllipse(pos0[0]-3, pos0[1]-3, 6, 6)
-                    painter.restore()
                     # Draw path
                     path = QtGui.QPainterPath()
                     path.moveTo(*pos0);
@@ -189,6 +247,12 @@ class ContactWidget(QtGui.QWidget):
                             path.lineTo(*posI)
                             count += 1
                     painter.strokePath(path, painter.pen())
+                    # Draw first point
+                    painter.save()
+                    painter.setPen(outline)
+                    painter.setBrush(outline)
+                    painter.drawEllipse(pos0[0]-2, pos0[1]-2, 4, 4)
+                    painter.restore()
                 # Draw boundingbox if defined
                 if "boundingbox" in stateN \
                         and "rel_size" in stateN["boundingbox"]:
@@ -211,7 +275,11 @@ class ContactWidget(QtGui.QWidget):
                     painter.restore()
                 # Draw objclass if defined
                 if "objclass" in stateN:
-                    painter.drawText(x+1.5*o, y-2*o, "obj: %d"%stateN["objclass"])
+                    painter.save()
+                    painter.setPen(outline)
+                    painter.drawText(x+1.5*self.phi, y-2*self.phi,
+                                     "obj: %d"%stateN["objclass"])
+                    painter.restore()
                 # Draw orientation if defined
                 if "si_angle" in stateN:
                     painter.save()
@@ -237,6 +305,8 @@ class ContactWidget(QtGui.QWidget):
                     painter.drawLine(x, y, x+X*0.5, y+Y*0.5)
                     painter.restore()
                 # Draw current position
+                painter.setPen(outline)
+                painter.setBrush(fill)
                 count += 1
                 painter.drawEllipse(x-self.phi, y-self.phi,
                                     2*self.phi, 2*self.phi)
@@ -274,6 +344,23 @@ class ContactWidget(QtGui.QWidget):
                             xx = x+1.5*self.phi
                             yy = y+self.phi+i*10
                             painter.drawText(xx, yy, "%s (source)"%source)
+        if self.debuglevel>0:
+            for i, (source, record) in enumerate(self.node._sources.items()):
+                fill, outline = record["color"]
+                if not record.history:
+                    fill = QtGui.QColor(fill)
+                    outline = QtGui.QColor(outline)
+                    fill.setAlpha(50)
+                    outline.setAlpha(100)
+                painter.setPen(outline)
+                painter.setBrush(fill)
+                count += 1
+                x = width*0.7
+                y = height-15*(i+1)
+                painter.drawText(x+10, y-6, width-20-x, 10, 0, source)
+                painter.setPen(QtCore.Qt.NoPen)
+                painter.drawEllipse(x-self.phi, y-self.phi,
+                                    2*self.phi, 2*self.phi)
         if self.debuglevel>3:
             painter.setPen(QtCore.Qt.black)
             ntracks = nsources = 0
@@ -291,17 +378,14 @@ class ContactWidget(QtGui.QWidget):
             painter.drawText(5, height-5, "fps: %d Hz"%self.__fps_previous)
         self.oldest = None
 
-    def keyPressEvent(self, event):
-        key = event.key()
-        if key==QtCore.Qt.Key_Space:
-            self.debuglevel = (self.debuglevel + 1) % 5
-            if self.debuglevel>3:
-                self.__fps_count = 0
-                self.__fps_timer.start(1000)
-            else:
-                self.__fps_timer.stop()
-            self.update()
-        else: QtGui.QWidget.keyPressEvent(self, event)
+    def toggleDebug(self):
+        self.debuglevel = (self.debuglevel + 1) % 5
+        if self.debuglevel>3:
+            self.__fps_count = 0
+            self.__fps_timer.start(1000)
+        else:
+            self.__fps_timer.stop()
+        self.update()
 
     def sizeHint(self):
         return self.sizehint
@@ -335,6 +419,20 @@ class ContactWidget(QtGui.QWidget):
         self.__fps_previous = self.__fps_count
         self.__fps_count = 0
         self.update()
+
+    def contextMenuEvent(self, event):
+        """Display the context menu."""
+        self.menu.exec_(event.globalPos())
+
+    def keyPressEvent(self, event):
+        handled = False
+        if event.key()==QtCore.Qt.Key_C and event.modifiers()&QtCore.Qt.CTRL:
+            self.node.clearTracks()
+            handled = True
+        elif event.key()==QtCore.Qt.Key_Space:
+            self.toggleDebug()
+            handled = True
+        if not handled: super().keyPressEvent(event)
 
     '''
     def __contextmenu(self, pos):

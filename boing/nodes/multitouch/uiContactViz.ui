@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>VizWindow</class>
+ <widget class="QMainWindow" name="VizWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>320</width>
+    <height>260</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Boing Visualizer</string>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>320</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="_menuAction">
+    <property name="title">
+     <string>&amp;Action</string>
+    </property>
+    <addaction name="_toggleDebug"/>
+    <addaction name="_clear"/>
+    <addaction name="separator"/>
+    <addaction name="_hidemenubar"/>
+    <addaction name="separator"/>
+    <addaction name="_close"/>
+    <addaction name="_quit"/>
+   </widget>
+   <addaction name="_menuAction"/>
+  </widget>
+  <action name="_close">
+   <property name="text">
+    <string>Close &amp;Widget</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="_quit">
+   <property name="text">
+    <string>&amp;Quit Boing</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="_clear">
+   <property name="text">
+    <string>&amp;Clear tracks</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="_toggleDebug">
+   <property name="text">
+    <string>&amp;Toggle debug level</string>
+   </property>
+   <property name="shortcut">
+    <string>Space</string>
+   </property>
+  </action>
+  <action name="_hidemenubar">
+   <property name="text">
+    <string>Hide &amp;Menubar</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>_close</sender>
+   <signal>triggered()</signal>
+   <receiver>VizWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>184</x>
+     <y>139</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
