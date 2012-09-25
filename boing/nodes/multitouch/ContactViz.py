@@ -18,7 +18,7 @@ from PyQt4 import QtCore, QtGui
 
 from boing.core import QRequest, Consumer
 from boing.core.StateMachine import StateMachine
-from boing.utils import quickdict, deepDump
+from boing.utils import assertIsInstance, quickdict, deepDump
 
 from boing.nodes.multitouch.uiContactViz import Ui_VizWindow
 
@@ -158,10 +158,7 @@ class ContactWidget(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         self.node = node
         # Setup GUI
-        if not isinstance(antialiasing, bool): raise TypeError(
-            "antialiasing must be boolean, not '%s'"%antialiasing.__class__.__name__)
-        self.antialiasing = antialiasing
-        self.setWhatsThis("Event &Viz")
+        self.antialiasing = assertIsInstance(antialiasing, bool)
         self.sizehint = QtCore.QSize(320,240)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         # Context menu

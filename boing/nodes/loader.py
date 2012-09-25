@@ -212,9 +212,9 @@ def createSingle(uri, mode="", parent=None):
                                "request")
             assertUriQuery(uri, query)
             node = Recorder(**query)
+            node.gui().show()
+            if "--no-raise" not in config: node.gui().raise_()
             node.start()
-            node.gui.show()
-            if "--no-raise" not in config: node.gui.raise_()
 
     elif uri.scheme=="player":
         return createSingle(str(uri).replace("player:", "player.pickle:", 1),
@@ -383,7 +383,9 @@ def createSingle(uri, mode="", parent=None):
             if loweruri.scheme=="tcp":
                 loweruri = URL("slip."+loweruri)
                 logger.info("PICKLE over TCP is SLIP encoded by default (set noslip to disable)")
-            elif loweruri.kind!=URL.OPAQUE and loweruri.path:
+            elif loweruri.kind!=URL.OPAQUE \
+                    and loweruri.path \
+                    and "slip" not in loweruri.scheme:
                 loweruri = URL("slip."+loweruri) if loweruri.scheme \
                     else URL("slip"+loweruri)
                 logger.info("PICKLE over FILE is SLIP encoded by default (set noslip to disable)")
@@ -413,7 +415,9 @@ def createSingle(uri, mode="", parent=None):
             if loweruri.scheme=="tcp":
                 loweruri = URL("slip."+loweruri)
                 logger.info("JSON over TCP is SLIP encoded by default (set noslip to disable)")
-            elif loweruri.kind!=URL.OPAQUE and loweruri.path:
+            elif loweruri.kind!=URL.OPAQUE \
+                    and loweruri.path \
+                    and "slip" not in loweruri.scheme:
                 loweruri = URL("slip."+loweruri) if loweruri.scheme \
                     else URL("slip"+loweruri)
                 logger.info("JSON over FILE is SLIP encoded by default (set noslip to disable)")
@@ -439,7 +443,9 @@ def createSingle(uri, mode="", parent=None):
             if loweruri.scheme=="tcp":
                 loweruri = URL("slip."+loweruri)
                 logger.info("OSC over TCP is SLIP encoded by default (set noslip to disable)")
-            elif loweruri.kind!=URL.OPAQUE and loweruri.path:
+            elif loweruri.kind!=URL.OPAQUE \
+                    and loweruri.path \
+                    and "slip" not in loweruri.scheme:
                 loweruri = URL("slip."+loweruri) if loweruri.scheme \
                     else URL("slip"+loweruri)
                 logger.info("OSC over FILE is SLIP encoded by default (set noslip to disable)")

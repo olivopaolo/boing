@@ -14,6 +14,7 @@ import collections
 import datetime
 import math
 import os
+import sys
 import weakref
 
 from PyQt4 import QtCore, QtGui, uic
@@ -22,7 +23,7 @@ from boing.core import Offer, Request, Producer, Consumer
 from boing.net import Decoder
 from boing.utils import fileutils, quickdict, assertIsInstance
 
-from boing.nodes.uiRecorder import Ui_recorder
+from boing.nodes.uiRecorder import Ui_RecWindow
 #from boing.nodes.uiUrlDialog import Ui_UrlDialog
 
 
@@ -241,7 +242,7 @@ class BufferGraph(QtGui.QWidget):
             else datetime.datetime.min
         self._endtime = endtime if endtime is not None \
             else datetime.datetime.max
-        self._interval = self._endtime-self._starttime
+        self._interval = None ; self._updateInterval()
         self._refresher = QtCore.QTimer(timeout=self._refresherTimeout)
         if fps is not None and fps!=0:
             self._toupdate = False
@@ -256,7 +257,7 @@ class BufferGraph(QtGui.QWidget):
         """Set the lower time limit of the graph to *starttime*."""
         self._starttime = starttime if starttime is not None \
             else datetime.datetime.min
-        self._interval = self._endtime-self._starttime
+        self._updateInterval()
         self.update()
 
     def endTime(self):
@@ -267,7 +268,16 @@ class BufferGraph(QtGui.QWidget):
         """Set the higher time limit of the graph to *endtime*."""
         self._endtime = endtime if endtime is not None \
             else datetime.datetime.max
-        self._interval = self._endtime-self._starttime
+        self._updateInterval()
+        self.update()
+
+    def setInterval(self, starttime, endtime):
+        """Set both the start time and the end time."""
+        self._starttime = starttime if starttime is not None \
+            else datetime.datetime.min
+        self._endtime = endtime if endtime is not None \
+            else datetime.datetime.max
+        self._updateInterval()
         self.update()
 
     def fps(self):
@@ -295,6 +305,18 @@ class BufferGraph(QtGui.QWidget):
             self._toupdate = False
             self.update()
 
+    def _updateInterval(self):
+        old = self._interval
+        self._interval = self._endtime-self._starttime
+        if old!=self._interval: self._updateTimePrecision()
+
+    def _updateTimePrecision(self):
+        self._timeprecision = self._interval/self.width()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._updateTimePrecision()
+
     def paintEvent(self, event):
         width, height = self.width(), self.height()
         painter = QtGui.QPainter(self)
@@ -309,9 +331,22 @@ class BufferGraph(QtGui.QWidget):
         painter.drawText(5,10, "# products: %d"%(self._buffer.sum()))
         # Draw products
         if self._buffer and self._interval!=datetime.timedelta():
-            for record in self._buffer.islice(self._starttime, self._endtime):
-                dx = (self._endtime-record.timetag)/self._interval*width
-                painter.drawLine(width-dx, height, width-dx, height-30)
+            # Instead of printing all the records, jump directly to the record
+            recorditer = self._buffer.islice(self._starttime, self._endtime)
+            currtime = self._starttime
+            while currtime<self._endtime:
+                record = None
+                while record is None:
+                    candidate = next(recorditer, None)
+                    if candidate is None: break
+                    elif candidate.timetag>currtime:
+                        record = candidate
+                if record is None: break
+                else:
+                    dx = (self._endtime-record.timetag)/self._interval*width
+                    painter.drawLine(width-dx, height, width-dx, height-30)
+                    currtime += self._timeprecision
+
 
 # -------------------------------------------------------------------
 
@@ -546,28 +581,47 @@ class Recorder(Consumer):
     class _InternalQObject(Consumer._InternalQObject):
         started = QtCore.pyqtSignal()
         stopped = QtCore.pyqtSignal()
+        toggled = QtCore.pyqtSignal(bool)
+        _writerToggled = QtCore.pyqtSignal(bool)
 
     @property
     def started(self):
+        """Signal emitted when the recorder is started."""
         return self._internal.started
 
     @property
     def stopped(self):
+        """Signal emitted when the recorder is stopped."""
         return self._internal.stopped
+
+    @property
+    def toggled(self):
+        return self._internal.toggled
+
+    @property
+    def _writerToggled(self):
+        return self._internal._writerToggled
+
+    class Model:
+
+        def __init__(self, buffer, active=False):
+            self.buffer = buffer
+            self.active = active
+            self.writerActive = False
 
     def __init__(self, request=Request.ANY,
                  timelimit=30000, sizelimit=10000, timewarping=True,
-                 oversizecut=100, fps=60, guiparent=None, parent=None):
+                 oversizecut=100, fps=20, guiparent=None, parent=None):
         super().__init__(request, parent=parent)
         if fps<=0: raise ValueError(
             "fps must be a value greater than zero, not %s"%str(fps))
         self.fps = fps
-        self._active = False
-        self._buffer = TimedProductBuffer(timelimit, sizelimit,
-                                          oversizecut=oversizecut)
+        buffer= TimedProductBuffer(timelimit, sizelimit,
+                                   oversizecut=oversizecut)
         # Deactivate the timed buffer eraser and use the refresher
         # timer instead.
-        self._buffer.setEraserActive(False)
+        buffer.setEraserActive(False)
+        self._model = Recorder.Model(buffer)
         """Determines whether the time when the buffer is stopped does not
         reduce the products timelife."""
         self.timewarping = assertIsInstance(timewarping, bool)
@@ -575,238 +629,211 @@ class Recorder(Consumer):
         is running."""
         self._stoptime = None
         self._refresher = QtCore.QTimer(timeout=self._refreshtime)
-        self.gui = Recorder._Ui(self, guiparent)
-        # Writer size
+        # Writer
         self._writer = BufferPlayer(sender=Player.PostSender())
-        self._writer.started.connect(self.gui.writerStarted)
-        self._writer.stopped.connect(self._writerStopped)
-        self._writerwaiter = QtCore.QTimer(timeout=self._checkWriter)
+        self._writer.stopped.connect(self._writerStopped,
+                                     QtCore.Qt.QueuedConnection)
+        self._writer.setSpeed(float("inf"))
+        self._writer.setSender(Player.PostSender())
+        self._target = None
+        # Setup GUI
+        self._gui = Recorder.RecorderWindow(self._model, guiparent)
+        self._gui.toggleActive.connect(self._toggleActive)
+        self._gui.clearBuffer.connect(self.clearBuffer)
+        self._gui.writeTo.connect(self.writeTo)
+        self._gui.closed.connect(self.clear)
+        self.toggled.connect(self._gui._recorderToggled)
+        self._writerToggled.connect(self._gui._writerToggled)
+
+    def gui(self): return self._gui
 
     def isActive(self):
         """Return whether the recorder is active."""
-        return self._active
-
-    def setActive(self, active):
-        """Activate or deactivate the recorder."""
-        self.start() if active else self.stop()
+        return self._model.active
 
     def start(self):
         """Start product recording and product lifetime check."""
-        if not self._active:
-            self._active = True
-            if super().request()!=Request.NONE: self.requestChanged.emit()
-            if self.timewarping and self._buffer:
-                # FIXME: this operation should be a ProductBuffer method
-                delta = datetime.datetime.now()-self._stoptime
-                for record in self._buffer:
-                    record.timetag += delta
-            self._stoptime = None
-            self._refresher.start(1000/self.fps)
-            self.gui.recorderStarted()
-            self.started.emit()
+        self._setActive(True)
 
     def stop(self):
-        """Stop product recording, so that it will not store any other product
-        and it will not loose any stored product."""
-        if self._active:
-            self._active = False
-            if super().request()!=Request.NONE: self.requestChanged.emit()
-            self._stoptime = datetime.datetime.now()
-            self._refresher.stop()
-            self.gui.recorderStopped()
-            self.stopped.emit()
+        """Stop product recording."""
+        self._setActive(False)
 
-    def request(self):
-        """Return the recorder's request."""
-        return super().request() if self.isActive() else Request.NONE
-
-    def _consume(self, products, source):
-        if self._active: self._buffer.append(products)
+    def clearBuffer(self):
+        """Clear the recorder's buffer."""
+        self._model.buffer.clear()
 
     def writeTo(self, uri):
         if not self._writer.isRunning():
             from boing import create
-            self._writer.addObserver(create(uri, mode="out"), child=True)
-            self._writer.setSpeed(float("inf"))
-            self._writer.setSender(Player.PostSender())
-            self._writer.play(self._buffer)
+            self._target = create(uri)
+            self._writer.addObserver(self._target)
+            self._writer.play(self._model.buffer)
+            self._model.writeActive = True
+            self._writerToggled.emit(True)
         else:
             raise Exception("Recorder's writer is already running.")
 
-    def playTo(self, uri):
-        if not self._writer.isRunning():
-            from boing import create
-            self._writer.addObserver(create(uri, mode="out"), child=True)
-            self._writer.setSpeed(1)
-            self._writer.setSender(Player.ProductSender())
-            self._writer.play(self._buffer)
-        else:
-            raise Exception("Recorder's writer is already running.")
+    def _setActive(self, active):
+        """Activate or deactivate the recorder."""
+        if active!=self.isActive():
+            self._model.active = active
+            if super().request()!=Request.NONE: self.requestChanged.emit()
+            if active:
+                if self.timewarping and self._model.buffer:
+                    # FIXME: this operation should be a ProductBuffer method
+                    delta = datetime.datetime.now()-self._stoptime
+                    for record in self._model.buffer:
+                        record.timetag += delta
+                self._stoptime = None
+                self._refreshtime()
+                self._refresher.start(1000/self.fps)
+                self.started.emit()
+            else:
+                self._stoptime = datetime.datetime.now()
+                self._refresher.stop()
+                self.stopped.emit()
+            self.toggled.emit(self.isActive())
+
+    def _toggleActive(self):
+        """Start the recorder if it is stopped or stop it, if it is running."""
+        self._setActive(not self.isActive())
+
+    def request(self):
+        """Return the recorder's request if it is active."""
+        return super().request() if self.isActive() else Request.NONE
+
+    def _consume(self, products, source):
+        """If active, it appends into the buffer the received products."""
+        if self.isActive():
+            self._model.buffer.append(products)
 
     def _refreshtime(self):
-        self._buffer.erasingTime()
+        self._model.buffer.erasingTime()
         now = datetime.datetime.now()
-        timelimit = self._buffer.timeLimit()
-        if timelimit is not None: self.gui.graph.setStartTime(now-timelimit)
-        self.gui.graph.setEndTime(now)
+        timelimit = self._model.buffer.timeLimit()
+        if timelimit is None:
+            # Set only the end time
+            self.gui().graph.setEndTime(now)
+        else:
+            # Set both starttime and endtime
+            self.gui().graph.setInterval(now-timelimit, now)
 
     def _writerStopped(self):
-        self._writerwaiter.start(20)
+        self._writer.clear()
+        # Let the write operation end.
+        QtCore.QTimer.singleShot(50, self._clearTarget)
 
-    def _checkWriter(self):
-        # FIXME: This actually is not enough to avoid
-        # SegmentationFault. The fact of waiting 20ms actually helps.
-        if not self._writer.hasPendingProducts():
-            self._writerwaiter.stop()
-            self._writer.clear()
-            self.gui.writerStopped()
+    def _clearTarget(self):
+        self._target = None
+        self._model.writeActive = False
+        self._writerToggled.emit(False)
 
-    class _Ui(QtGui.QWidget, Ui_recorder):
 
-        class RecorderGraph(BufferGraph):
+    class RecorderWindow(QtGui.QMainWindow, Ui_RecWindow):
+        """MainWindow of the recorder tool."""
 
-            def __init__(self, buffer, starttime=None, endtime=None,
-                         fps=None, parent=None):
-                super().__init__(buffer, starttime, endtime, fps, parent)
-                self._recording = False
+        toggleActive = QtCore.pyqtSignal()
+        """Signal emitted when the user requires to toggle the
+        recorder status."""
 
-            def recorderStarted(self):
-                self._recording = True
-                self.update()
+        clearBuffer = QtCore.pyqtSignal()
+        """Signal emitted when the user requires to clear the
+        buffer."""
 
-            def recorderStopped(self):
-                self._recording = False
-                self.update()
+        writeTo = QtCore.pyqtSignal(str)
+        """Signal emitted when the user requires to write the content
+        of the buffer to a target destination."""
 
-            def paintEvent(self, event):
-                super().paintEvent(event)
-                # Draw rec point
-                if self._recording:
-                    painter = QtGui.QPainter(self)
-                    painter.setFont(QtGui.QFont( "courier", 9))
-                    painter.setPen(QtGui.QColor(100,100,100))
-                    painter.drawText(self.width()-25,10, "REC")
-                    painter.setPen(QtCore.Qt.red)
-                    painter.setBrush(QtCore.Qt.red)
-                    painter.drawEllipse(self.width()-34, 3, 6, 6)
+        closed = QtCore.pyqtSignal()
+        """Signal emitted when the Widget is closed."""
 
-        def __init__(self, recorder, parent=None):
+        def __init__(self, model, parent=None):
             super().__init__(parent)
-            self.writeslot = recorder.writeTo
-            self.playslot = recorder.playTo
-            now = datetime.datetime.now()
-            # Setup ui
             self.setupUi(self)
-            self.graph = Recorder._Ui.RecorderGraph(recorder._buffer,
-                                                    now, now, fps=0)
-            self.graph.setFocus(QtCore.Qt.OtherFocusReason)
-            self.graph.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+            self.recordstop.triggered.connect(self.toggleActive)
+            self.startstop.clicked.connect(self.toggleActive)
+            self.clear.triggered.connect(self.clearBuffer)
+            self.saveas.triggered.connect(self._selectFileDialog)
+            self.quit.triggered.connect(QtGui.QApplication.instance().quit)
+            # Graph widget
+            self.graph = Recorder.RecorderGraph(model, fps=0)
+            self.graph.toggleActive.connect(self.toggleActive)
+            self.graph.clearBuffer.connect(self.clearBuffer)
+            self.graph.saveAs.connect(self._selectFileDialog)
             self.framelayout.addWidget(self.graph)
-            self.startstop.toggled.connect(recorder.setActive)
-            QtGui.QShortcut('Ctrl+Q', self,
-                            activated=QtGui.QApplication.instance().quit)
-            # Init context menu
-            self.contextmenu = QtGui.QMenu(self)
-            self.contextmenu.addAction("Start", recorder.start)
-            self.contextmenu.addAction("Stop", recorder.stop)
-            # self.contextmenu.addSeparator()
-            # self.contextmenu.addAction("Play to dump:",
-            #                            lambda: self.playslot("dump:"))
-            self.contextmenu.addSeparator()
-            self.contextmenu.addAction(
-                "Write to file...", self._selectFileDialog)
-            self.contextmenu.addSeparator()
-            self.contextmenu.addAction("Clear buffer", recorder._buffer.clear)
-            self.graph.customContextMenuRequested.connect(self._contextMenuRequested)
-            # self.menu.addAction("To URL...", self._showUrlDialog)
-            # self.urldialog = GestureBuffer.UrlDialog()
-            # Add default actions
-            # self.addUrlAction("viz:")
-            # self.addUrlAction("dump:")
-            # self.addUrlAction(os.path.join(os.path.expanduser("~"), "log.osc"))
-            # self.addUrlAction("buffer:")
 
-        def _contextMenuRequested(self, pos):
-            self.contextmenu.exec_(self.graph.mapToGlobal(pos))
+        def _recorderToggled(self, active):
+            self.startstop.setChecked(active)
+            self.saveas.setEnabled(not active)
+            self.graph._recorderToggled(active)
 
-        def recorderStarted(self):
-            self.startstop.setChecked(True)
-            self.graph.recorderStarted()
-            for action in self.contextmenu.actions():
-                if action.text()=="Stop":
-                    action.setEnabled(True)
-                elif not action.isSeparator():
-                    action.setEnabled(False)
-
-        def recorderStopped(self):
-            self.startstop.setChecked(False)
-            self.graph.recorderStopped()
-            for action in self.contextmenu.actions():
-                if action.text()=="Stop":
-                    action.setEnabled(False)
-                elif not action.isSeparator():
-                    action.setEnabled(True)
-
-        def writerStarted(self):
-            self.startstop.setEnabled(False)
-            self.graph.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
-
-        def writerStopped(self):
-            self.startstop.setEnabled(True)
-            self.graph.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        def _writerToggled(self, active):
+            self.startstop.setEnabled(not active)
+            self.saveas.setEnabled(not active)
 
         def _selectFileDialog(self):
             """Execute a QFileDialog for selecting a target file."""
             dialog = QtGui.QFileDialog(self)
-            # Select that only existing files can be opened
-            dialog.setFileMode(QtGui.QFileDialog.AnyFile)
-            dialog.setViewMode(QtGui.QFileDialog.List) # or Detail
+            dialog.setFileMode(QtGui.QFileDialog.AnyFile) # Existing files
+            dialog.setViewMode(QtGui.QFileDialog.List)
             dialog.setAcceptMode(QtGui.QFileDialog.AcceptSave)
             if dialog.exec_():
                 filepath, *useless = dialog.selectedFiles()
-                self.writeslot("json.slip.file://%s"%filepath)
+                sysprefix = "/" if sys.platform=="win32" else ""
+                self.writeTo.emit("out.pickle.slip.file://%s%s"%(sysprefix,
+                                                                 filepath))
 
-            '''DelayedReactive.__init__(self)
-            QtGui.QWidget.__init__(self, parent)
-            self.setFocusPolicy(QtCore.Qt.StrongFocus)
-            self.buffer = buffer_
-            self.subscribeTo(self.buffer)
+        def closeEvent(self, event):
+            self.closed.emit()
+            super().closeEvent(event)
+
+    class RecorderGraph(BufferGraph):
+        """Widget showing the content of the buffer."""
+
+        toggleActive = QtCore.pyqtSignal()
+        """Signal emitted when the user requires to toggle the
+        recorder status."""
+
+        clearBuffer = QtCore.pyqtSignal()
+        """Signal emitted when the user requires to clear the
+        buffer."""
+
+        saveAs = QtCore.pyqtSignal()
+        """Signal emitted when the user requires to save the buffer."""
+
+        def __init__(self, model, fps=None, parent=None):
+            now = datetime.datetime.now()
+            super().__init__(model.buffer, now, now, fps, parent)
+            self._model = model
+            self.setFocus(QtCore.Qt.OtherFocusReason)
             # Init context menu
-            self.actionurls = set()
             self.menu = QtGui.QMenu(self)
-            self.separator = QtGui.QAction(self.menu)
-            self.separator.setSeparator(True)
-            self.menu.addAction(self.separator)
-            action = QtGui.QAction("To URL...", self.menu)
-            action.triggered.connect(self._showUrlDialog)
-            self.menu.addAction(action)
-            action = QtGui.QAction('Clear', self.menu)
-            action.triggered.connect(self.buffer.clear)
-            self.menu.addAction(action)
-            self.urldialog = GestureBuffer.UrlDialog()
-            self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-            self.customContextMenuRequested.connect(self._showMenu)
-            # Add default actions
-            self.addUrlAction("viz:")
-            self.addUrlAction("dump:")
-            self.addUrlAction(os.path.join(os.path.expanduser("~"), "log.osc"))
-            self.addUrlAction("buffer:")
-            self.refreshtimer = QtCore.QTimer()
-            self.refreshtimer.timeout.connect(self.update)
-            self.refreshtimer.start(self.buffer.innovationInterval())
+            self.menu.addAction("Record/Stop", self.toggleActive, "Space")
+            self.menu.addSeparator()
+            self.saveas = QtGui.QAction("Save as...", self.menu)
+            self.saveas.triggered.connect(self.saveAs)
+            self.saveas.setShortcut("Ctrl+S")
+            self.menu.addAction(self.saveas)
+            self.menu.addSeparator()
+            self.menu.addAction("Clear buffer", self.clearBuffer, "Ctrl+C")
 
-        def addUrlAction(self, url):
-            action = QtGui.QAction(url, self.menu)
-            action.triggered.connect(self._urlAction)
-            self.menu.insertAction(self.separator, action)
-            self.actionurls.add(url)
+        def _recorderToggled(self, active):
+            self.saveas.setEnabled(not active)
+            self.update()
 
-        def _urlAction(self):
-            sender = self.sender()
-            if sender is not None: self.buffer.forwardTo(sender.text())
+        def contextMenuEvent(self, event):
+            """Display the context menu if the recorder is not writing to file."""
+            if not self._model.writerActive: self.menu.exec_(event.globalPos())
 
-        def _showUrlDialog(self):
-            self.urldialog.url.setText("")
-            self.urldialog.url.setFocus(QtCore.Qt.OtherFocusReason)
-            if self.urldialog.exec_():
-                self.buffer.forwardTo(self.urldialog.url.text())'''
+        def paintEvent(self, event):
+            super().paintEvent(event)
+            # Draw rec point
+            if self._model.active:
+                painter = QtGui.QPainter(self)
+                painter.setFont(QtGui.QFont( "courier", 9))
+                painter.setPen(QtGui.QColor(100,100,100))
+                painter.drawText(self.width()-25,10, "REC")
+                painter.setPen(QtCore.Qt.red)
+                painter.setBrush(QtCore.Qt.red)
+                painter.drawEllipse(self.width()-34, 3, 6, 6)
