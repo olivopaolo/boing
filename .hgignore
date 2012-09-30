@@ -6,8 +6,12 @@ syntax: glob
 *.pyc
 
 boing/nodes/uiRecorder.py
+boing/nodes/multitouch/uiContactViz.py
+boing/nodes/player/uiPlayer.py
+
 boing.egg-info
 dist
+
 doc/API
 
 xtra*
