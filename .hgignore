@@ -1,0 +1,15 @@
+syntax: glob
+
+.DS_Store
+
+*~
+*.pyc
+
+boing/nodes/uiRecorder.py
+boing.egg-info
+dist
+doc/API
+
+xtra*
+
+#syntax: regexp
