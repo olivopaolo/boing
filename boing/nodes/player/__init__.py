@@ -11,8 +11,6 @@
 
 import os.path
 
-TEXTUREPATH = os.path.join(os.path.dirname(__file__), 'icons')
-
 EXTENSION = 'bpl'
 """File extension used when saving playlists to file."""
 

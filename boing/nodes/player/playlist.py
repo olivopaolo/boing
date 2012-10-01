@@ -15,7 +15,8 @@ import weakref
 from PyQt4 import QtGui, QtCore
 import xml.etree.ElementTree as xmlET
 
-from boing.nodes.player import TEXTUREPATH, EXTENSION
+from boing import config as _config
+from boing.nodes.player import EXTENSION
 
 # -------------------------------------------------------------------
 # Tree structure
@@ -506,17 +507,17 @@ class Playlist(QtCore.QAbstractItemModel):
         elif role==QtCore.Qt.DecorationRole:
             item = index.internalPointer()
             if isinstance(item, ListFolder) and index.column()==0:
-                rvalue = QtGui.QIcon(os.path.join(TEXTUREPATH, 'folder.png'))
+                rvalue = QtGui.QIcon(os.path.join(_config["icons"], 'folder.png'))
             elif isinstance(item, File) and index.column()==0:
                 if isinstance(item, Track):
                     if item.valid():
-                        rvalue = QtGui.QIcon(os.path.join(TEXTUREPATH,
+                        rvalue = QtGui.QIcon(os.path.join(_config["icons"],
                                                           'file.png'))
                     else:
-                        rvalue = QtGui.QIcon(os.path.join(TEXTUREPATH,
+                        rvalue = QtGui.QIcon(os.path.join(_config["icons"],
                                                           'file-not_valid.png'))
                 else:
-                    rvalue = QtGui.QIcon(os.path.join(TEXTUREPATH,
+                    rvalue = QtGui.QIcon(os.path.join(_config["icons"],
                                                       'file-not_valid.png'))
             else:
                 rvalue = None

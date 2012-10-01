@@ -10,6 +10,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import os.path as _ospath
 import datetime as _datetime
 
 _MAJOR = 0
@@ -21,7 +22,12 @@ config = dict()
 """:class:`dict` object used to store any global configuration
 variable. |boing|'s own variables:
 
-* ``"--no-gui"``: set to ``True`` when GUI is disabled."""
+* ``"--no-gui"``: set to ``True`` when GUI is disabled;
+* ``"--no-raise"``: if set to ``True`` widgets should not be automatically raised;
+* ``"icons"``: path to the directory containing all available icons.
+"""
+
+config['icons'] = _ospath.join(_ospath.dirname(__file__), "data", "icons")
 
 from boing.nodes.loader import create
 from boing.core.graph import Node

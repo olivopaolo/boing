@@ -13,9 +13,9 @@ import os.path
 
 from PyQt4 import QtCore, QtGui, uic
 
+from boing import config as _config
 from boing.nodes.player import \
-    TEXTUREPATH, EXTENSION, \
-    PLAYONE, LOOPONE, PLAYALL, LOOPALL
+    EXTENSION, PLAYONE, LOOPONE, PLAYALL, LOOPALL
 from boing.nodes.player.playlist import Track, ListFolder
 
 from boing.nodes.player.uiPlayer import Ui_player
@@ -51,7 +51,8 @@ class PlayerWidget(QtGui.QMainWindow, Ui_player):
         self._playlistview.menu = menu
         # playstop button
         self._playstop.clicked.connect(self.togglePlayStop)
-        self._playstop.setIcon(QtGui.QIcon(os.path.join(TEXTUREPATH, "play.png")))
+        self._playstop.setIcon(QtGui.QIcon(os.path.join(_config["icons"],
+                                                        "play.png")))
         self._playstop.setIconSize(QtCore.QSize(32,32))
         self._togglemode.clicked.connect(self.nextMode)
         # Speed slider
@@ -186,7 +187,7 @@ class PlayerWidget(QtGui.QMainWindow, Ui_player):
     def started(self):
         """Update GUI since the player has been started."""
         self._playstop.setIcon(
-            QtGui.QIcon(os.path.join(TEXTUREPATH, 'stop.png')))
+            QtGui.QIcon(os.path.join(_config["icons"], 'stop.png')))
         self._playstop.setToolTip('Stop playback')
         track = self._playlistview.model().currentTrack()
         self._playlistview.scrollTo(
@@ -196,7 +197,7 @@ class PlayerWidget(QtGui.QMainWindow, Ui_player):
     def stopped(self):
         """Update GUI since the player has been stopped."""
         self._playstop.setIcon(
-            QtGui.QIcon(os.path.join(TEXTUREPATH, 'play.png')))
+            QtGui.QIcon(os.path.join(_config["icons"], 'play.png')))
         self._playstop.setToolTip('Start playback')
         track = self._playlistview.model().currentTrack()
         self._playlistview.scrollTo(

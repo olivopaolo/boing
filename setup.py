@@ -30,7 +30,7 @@ kwargs = dict(
     entry_points = {"console_scripts": ["boing = boing.run"]},
     test_suite = "boing.test.run",
     package_data = {
-        'boing.nodes.player': ['icons/*'],
+        'boing': ['data/icons/*'],
         'boing.test': ['data/*'],
         },
 
