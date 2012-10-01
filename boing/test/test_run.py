@@ -66,7 +66,7 @@ class Test_returncode_only(unittest.TestCase):
                                          stdout=out,
                                          stderr=err)
             # Loop: poll and sleep
-            for i in range(10):
+            for i in range(20):
                 returncode = self.proc.poll()
                 if returncode is not None : break
                 time.sleep(0.10)
