@@ -30,38 +30,40 @@ timeoutsignal = signal.SIGTERM if sys.platform=="win32" else signal.SIGINT
 
 cmds = (
     # Command line arguments
-    (('-h', ), 0),
-    (('--help',), 0),
-    (('nop:', '-G'), 0),
-    (('nop:', '-G', 'grapher:stdout'), 0),
-    (('nop:', '-G', 'wrong'), 1),
-    (('nop:', '-C'), 0),
-    (('nop:', '-C', '127.0.0.1:8888'), 0),
-    (('nop:', '-C', 'wrong'), 1),
-    (('nop:', '-T'), 0),
-    (('nop:', '-T', '10'), 0),
-    (('nop:', '-T', 'wrong'), 2),
-    (('nop:', '-L', 'INFO'), 0),
-    (('nop:', '-L', 'wrong'), 1),
-    (('nop:', '-f'), 0),
-    (('nop:', '--no-gui'), 0),
+    (("-h", ), 0),
+    (("--help",), 0),
+    (("nop:", "-G"), 0),
+    (("nop:", "-G", "grapher:stdout"), 0),
+    (("nop:", "-G", "grapher.udp://[::1]:8888"), 0),
+    (("nop:", "-G", "grapher:?request=id,active&hz=0"), 0),
+    (("nop:", "-G", "wrong"), 1),
+    (("nop:", "-C"), 0),
+    (("nop:", "-C", "127.0.0.1:8888"), 0),
+    (("nop:", "-C", "wrong"), 1),
+    (("nop:", "-T"), 0),
+    (("nop:", "-T", "10"), 0),
+    (("nop:", "-T", "wrong"), 2),
+    (("nop:", "-L", "INFO"), 0),
+    (("nop:", "-L", "wrong"), 1),
+    (("nop:", "-f"), 0),
+    (("nop:", "--no-gui"), 0),
     # First steps tutorial
-    (('in.tuio://:3333 + viz:', ), 0),
-    (('in.tuio://:3333 + (viz: | dump:)', ), 0),
-    (('in.tuio://:3333 + (viz: | dump:?request=..contacts)', ), 0),
-    (('(in.tuio://:3333 | in.tuio://:3334) + (viz: | out.tuio://127.0.0.1:3335)', ), 0),
-    (('in.tuio://:3333 + (filtering: + calib:?screen=left + edit:?source=filtered | nop:) + viz:', ), 0),
+    (("in.tuio://:3333 + viz:", ), 0),
+    (("in.tuio://:3333 + (viz: | dump:)", ), 0),
+    (("in.tuio://:3333 + (viz: | dump:?request=..contacts)", ), 0),
+    (("(in.tuio://:3333 | in.tuio://:3334) + (viz: | out.tuio://127.0.0.1:3335)", ), 0),
+    (("in.tuio://:3333 + (filtering: + calib:?screen=left + edit:?source=filtered | nop:) + viz:", ), 0),
     # Configurations tutorial
-    (('conf:%s%s'%(sysprefix, config_filtersfilepath), ), 0),
-    (('conf:%s%s + (viz: | rec: | out.tuio://127.0.0.1:3334)'%(my_mt_tablefilepath, sysprefix), ), 0),
+    (("conf:%s%s"%(sysprefix, config_filtersfilepath), ), 0),
+    (("conf:%s%s + (viz: | rec: | out.tuio://127.0.0.1:3334)"%(my_mt_tablefilepath, sysprefix), ), 0),
     )
 
 class Test_returncode_only(unittest.TestCase):
 
     def test_no_exceptions(self):
         for cmd, expected in cmds:
-            out = tempfile.TemporaryFile('w+')
-            err = tempfile.TemporaryFile('w+')
+            out = tempfile.TemporaryFile("w+")
+            err = tempfile.TemporaryFile("w+")
             self.proc = subprocess.Popen(("boing", "--no-raise", "-L", "ERROR")+cmd,
                                          stdout=out,
                                          stderr=err)
@@ -87,8 +89,8 @@ class Test_returncode_only(unittest.TestCase):
 class Test_run_redirection(unittest.TestCase):
 
     def setUp(self):
-        self.out = tempfile.TemporaryFile('w+')
-        self.err = tempfile.TemporaryFile('w+')
+        self.out = tempfile.TemporaryFile("w+")
+        self.err = tempfile.TemporaryFile("w+")
         self.maxDiff = None
 
     def test_in_std_out_std(self):
@@ -187,5 +189,5 @@ def suite():
 
 # -------------------------------------------------------------------
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.TextTestRunner().run(suite())

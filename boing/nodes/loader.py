@@ -630,7 +630,7 @@ def createSingle(uri, mode="", parent=None):
 
     # -------------------------------------------------------------------
     # GRAPHERS
-    elif uri.scheme=="grapher":
+    elif uri.scheme=="grapher" or uri.scheme.startswith("grapher."):
         assertUriModeIn(uri, mode, "")
         # if ".pydot" in uri.scheme:
         #     from boing.extra.pydot import DotGrapherProducer
