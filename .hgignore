@@ -1,0 +1,22 @@
+syntax: glob
+
+.DS_Store
+
+*~
+*.pyc
+.git*
+
+boing/nodes/uiRecorder.py
+boing/nodes/multitouch/uiContactViz.py
+boing/nodes/player/uiPlayer.py
+
+boing.egg-info
+dist
+gestures
+
+doc/API
+
+xtra*
+
+syntax: regexp
+^doc/build
