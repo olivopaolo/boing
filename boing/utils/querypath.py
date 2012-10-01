@@ -15,6 +15,8 @@ import re
 
 from boing.utils import assertIsInstance
 
+_NOWILDCARD = object()
+
 def get(obj, path):
     """Return an iterator over the *obj*'s attributes or items
     matched by *path*."""
@@ -33,10 +35,11 @@ def items(obj, path):
     *obj*'s items that are matched by *path*."""
     return QPath(path).items(obj)
 
-def test(obj, path):
+def test(obj, path, wildcard=_NOWILDCARD):
     """Return whether at least one *obj*'s attributes or items is
-    matched by *path*."""
-    return QPath(path).test(obj)
+    matched by *path*. The object *wildcard* matches even if *path* does
+    not completely match an item in obj."""
+    return QPath(path).test(obj, wildcard)
 
 # -------------------------------------------------------------------
 
@@ -80,14 +83,14 @@ class QPath:
                                             itertools.repeat(QPath._ITEMS))))
         return matches.items()
 
-    def test(self, obj):
+    def test(self, obj, wildcard=_NOWILDCARD):
         """Return whether this QPath matches at least one *obj*'s
-        attributes or items."""
+        attributes or items. The object *wildcard* matches even if
+        *path* does not completely match an item in obj."""
         for singlepath in self._norm:
-            for i in self._trace(singlepath, obj, "$", QPath._TEST):
+            for i in QPath._trace(singlepath, obj, "$", QPath._TEST, wildcard):
                 return True
         return False
-
 
     def __hash__(self):
         return hash(self.__str)
@@ -121,53 +124,57 @@ class QPath:
     # ---------------------------------------------------------------
 
     @staticmethod
-    def _trace(expr, obj, path, op):
+    def _trace(expr, obj, path, op, wildcard=_NOWILDCARD):
         """Yield all the results matched be *expr* on *obj*. *path*
         defines the path from the original obj to the current
         considered *obj*. *op* defines the result to be yielded:
         *(path, value)* if *op* is QPath._ITEMS, *path* otherwise."""
-        if not expr:
+        if not expr or obj is wildcard:
             path = path[path.find(";")+1:].replace(";", ".")
             yield (path, obj) if op is QPath._ITEMS else path
         else:
             first, sep, rest = expr.partition(";")
             if QPath._hasprop(obj, first):
                 for v in QPath._trace(rest, QPath._getprop(obj, first),
-                                      path+";"+first, op):
+                                      path+";"+first, op, wildcard):
                     yield v
                     if op is QPath._TEST: break
             elif first=="*" \
                     or (first==":" and isinstance(obj, collections.Sequence)):
                 for key, value in QPath._iterprop(obj):
-                    for v in QPath._trace(rest, value, path+";"+str(key), op):
+                    for v in QPath._trace(rest, value,
+                                          path+";"+str(key), op, wildcard):
                         yield v
                         if op is QPath._TEST: break
             elif first=="..":
                 stop = False
-                for v in QPath._trace(rest, obj, path, op):
+                for v in QPath._trace(rest, obj, path, op, wildcard):
                     yield v
                     if op is QPath._TEST: stop = True ; break
                 if not stop:
                     for key, value in QPath._iterprop(obj):
-                        if value!=obj:
+                        if not value is obj:
                             for v in QPath._trace(expr, value,
-                                                  path+";"+str(key), op):
+                                                  path+";"+str(key), op, wildcard):
                                 yield v
                                 if op is QPath._TEST: break
             elif "," in first: # [name1,name2,...]
                 for key in first.split(","):
-                    for v in QPath._trace(key+";"+rest, obj, path, op):
+                    for v in QPath._trace(key+";"+rest, obj,
+                                          path, op, wildcard):
                         yield v
                         if op is QPath._TEST: break
             elif first.startswith("(") and first.endswith(")"): # [(expr)]
                 key = QPath._eval(first, obj)
                 if key is not None:
-                    for v in QPath._trace(str(key)+";"+rest, obj, path, op):
+                    for v in QPath._trace(str(key)+";"+rest, obj,
+                                          path, op, wildcard):
                         yield v
                         if op is QPath._TEST: break
             elif first.startswith("?(") and first.endswith(")"): # [?(expr)]
                 if QPath._eval(first[1:], obj):
-                    for v in QPath._trace(rest, obj, path, op):
+                    for v in QPath._trace(rest, obj,
+                                          path, op, wildcard):
                         yield v
                         if op is QPath._TEST: break
             elif isinstance(obj, collections.Sequence) :
@@ -182,7 +189,7 @@ class QPath:
                     step = int(step) if step else 1
                     for i in range(start, end, step):
                         for v in QPath._trace(rest, obj[i],
-                                             path+";"+str(i), op):
+                                             path+";"+str(i), op, wildcard):
                             yield v
                             if op is QPath._TEST: break
 
@@ -192,8 +199,11 @@ class QPath:
             rvalue = key in obj
         elif isinstance(obj, collections.Sequence) and key.isdecimal():
             rvalue = len(obj)>int(key)
+        elif hasattr(obj, "__dict__"):
+            l = lambda k: not k.startswith("_")
+            rvalue = key in filter(l, dir(obj))
         else:
-            rvalue = False # hasattr(obj, key)
+            rvalue = False
         return rvalue
 
     @staticmethod
@@ -203,10 +213,12 @@ class QPath:
             rvalue = tuple(obj.items())
         elif isinstance(obj, collections.Sequence):
             rvalue = enumerate(obj)
-        #elif hasattr(obj, "__dict__"):
-        #    rvalue = obj.__dict__.items()
+        elif hasattr(obj, "__dict__"):
+            f = lambda k: not k.startswith("_")
+            l = lambda k: (k, getattr(obj, k))
+            rvalue = map(l, filter(f, dir(obj)))
         else:
-            rvalue = []
+            rvalue = iter(tuple())
         return rvalue
 
     @staticmethod
@@ -215,8 +227,10 @@ class QPath:
             rvalue = obj[key]
         elif isinstance(obj, collections.Sequence):
             rvalue = obj[int(key)]
+        elif hasattr(obj, "__dict__") and not key.startswith("_"):
+            rvalue = getattr(obj, key)
         else:
-            rvalue = None # getattr(obj, key)
+            rvalue = None
         return rvalue
 
     @staticmethod
@@ -299,25 +313,26 @@ if __name__=="__main__":
                 }
             }
            }
+
     testpaths = [
-        # "",
-        # "store.bicycle",
-        # "$.store.bicycle",
-        # "$['store']['bicycle']",
-        # "$.store.book[0].author",
-        # "$['store']['book'][0]['author']",
-        # "$.store.book[*].price",
-        # "$.store..price",
-        # "$.store.book.*.author,title",
-        # "$.store.book,bicycle,car..price",
-        # "$..book[(@.__len__()-1)]",
-        # #"$.store[(@.clear())]", FIXME!
-        # "$.store.book.*",
-        # "$..book[?(@['price']<10)].title",
-        # "$..book[?(@['isbn'])].title",
         "",
-        # "..price|store.book[0].price",
-        #"..*", # all members
+        "store.bicycle",
+        "$.store.bicycle",
+        "$['store']['bicycle']",
+        "$.store.book[0].author",
+        "$['store']['book'][0]['author']",
+        "$.store.book[*].price",
+        "$.store..price",
+        "$.store.book.*.author,title",
+        "$.store.book,bicycle,car..price",
+        "$..book[(@.__len__()-1)]",
+        #"$.store[(@.clear())]", FIXME!
+        "$.store.book.*",
+        "$..book[?(@['price']<10)].title",
+        "$..book[?(@['isbn'])].title",
+        "",
+        "..price|store.book[0].price",
+        "..*", # all members
         ] if len(sys.argv)<2 else sys.argv[1:]
     for path in testpaths:
         qpath = QPath(path)
