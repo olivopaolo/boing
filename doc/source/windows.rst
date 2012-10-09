@@ -83,6 +83,10 @@ numpy
 
 Download the numpy_ binary installer and run it.
 
+If you are running a Windows 7 64 bit, you may also use the unofficial
+numpy Windows binary installer that you can find at
+http://www.lfd.uci.edu/~gohlke/pythonlibs
+
 pyparsing
 =========
 
