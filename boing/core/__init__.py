@@ -35,7 +35,7 @@ class QRequest(Request):
 
     def test(self, product):
         """Return whether *product* matches the request."""
-        return product is Offer.UNDEFINED or self.query().test(product)
+        return self.query().test(product, wildcard=Offer.UNDEFINED)
 
     def items(self, product):
         """Return an iterator over the *product*'s items ((key, value)

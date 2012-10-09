@@ -183,10 +183,16 @@ class OscEncoder(Functor):
 class OscDecoder(Functor):
 
     def __init__(self, rt=False, blender=Functor.MERGECOPY, parent=None):
-        super().__init__(QRequest("data"),
-                         Offer(quickdict(osc=osc.Packet(),
-                                       timetag=datetime.datetime.now())),
-                         blender, parent=parent)
+        timetag = datetime.datetime.now()
+        super().__init__(
+            QRequest("data"),
+            Offer(quickdict(
+                    osc=osc.Bundle(timetag,
+                                   (osc.Bundle(timetag, (Offer.UNDEFINED, )),
+                                    osc.Message(str(), str(), Offer.UNDEFINED),
+                                    Offer.UNDEFINED)),
+                    timetag=timetag)),
+            blender, parent=parent)
         self._receipttime = assertIsInstance(rt, bool)
 
     def _process(self, sequence, producer):
@@ -215,11 +221,17 @@ class OscDebug(Functor):
 class OscLogPlayer(FilePlayer):
 
     def __init__(self, filename, **kwargs):
-        super().__init__(filename,
-                         OscLogPlayer._Decoder(),
-                         OscLogPlayer._Sender(),
-                         offer=Offer(quickdict(osc=osc.Packet(),
-                                             timetag=datetime.datetime.now())),
+        timetag = datetime.datetime.now()
+        super().__init__(
+            filename,
+            OscLogPlayer._Decoder(),
+            OscLogPlayer._Sender(),
+            offer=Offer(quickdict(
+                    osc=osc.Bundle(timetag,
+                                   (osc.Bundle(timetag, (Offer.UNDEFINED, )),
+                                    osc.Message(str(), str(), Offer.UNDEFINED),
+                                    Offer.UNDEFINED)),
+                    timetag=timetag)),
                          **kwargs)
 
     class _Decoder(Decoder):
