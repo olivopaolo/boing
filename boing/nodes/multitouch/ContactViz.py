@@ -17,8 +17,7 @@ import weakref
 from PyQt4 import QtCore, QtGui
 
 from boing.core import QRequest, Consumer
-from boing.core.statemachine import StateMachine
-from boing.utils import assertIsInstance, quickdict, deepDump
+from boing.utils import assertIsInstance, quickdict, deepDump, StateMachine
 
 from boing.nodes.multitouch.uiContactViz import Ui_VizWindow
 
