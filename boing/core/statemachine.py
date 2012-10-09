@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# boing/core/StateMachine.py -
+# boing/core/statemachine.py -
 #
 # Author: Paolo Olivo (paolo.olivo@inria.fr)
 #
@@ -9,22 +9,33 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+"""The module :mod:`boing.core.statemachine` defines the class
+:class:`StateMachine`.
+
+"""
+
 import collections
-import copy
 
 from boing import utils
 
-class StateMachine(object):
-    """It has a dictionary as state."""
+class StateMachine:
+
     def __init__(self, initial=None):
+        """The :class:`StateMachine` class defines an object that owns
+        a state defined by a :class:`collections.Mapping` type
+        object. The argument *initial* can be used to define the
+        initial state."""
         self._state = utils.quickdict(initial) \
             if isinstance(initial, collections.Mapping) \
             else utils.quickdict()
 
     def state(self):
+        """Return the current state."""
         return self._state
 
     def setState(self, update=None, add=None, remove=None):
+        """Change the current state by applying *update*, *add* and
+        *remove*."""
         diff = utils.quickdict()
         if add is not None: diff.added = add
         if update is not None: diff.updated = update
@@ -32,6 +43,16 @@ class StateMachine(object):
         self.applyDiff(diff)
 
     def applyDiff(self, diff, feedback=False):
+        """Apply the provided *diff* to the current state. *diff* must
+        be a :class:`collections.Mapping` type containing any of the following keys:
+
+        * 'add': items that will be added to the current state;
+        * 'update' : items that will be update or added to the current state;
+        * 'remove' : items that will be removed from the current state.
+
+        If feedback is ``True`` the diff structure between the
+        previous state and the current state is provided as result of
+        the method."""
         rvalue = None
         if feedback:
             rvalue = utils.quickdict()
