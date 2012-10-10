@@ -8,6 +8,30 @@
 The module :mod:`boing.utils.url` mainly provides the class
 :class:`URL`, which is used to represent a Uniform Resource Locator.
 
+*Examples*::
+
+   >>> from boing.utils.url import URL
+   >>> url = URL("ftp://paolo:pwd@localhost:8888/temp?key=value#frag")
+   >>> url.scheme
+   'ftp'
+   >>> url.site.user
+   'paolo'
+   >>> url.site.password
+   'pwd'
+   >>> url.site.host
+   'localhost'
+   >>> url.site.port
+   8888
+   >>> str(url.path)
+   '/temp'
+   >>> url.query['key']
+   'value'
+   >>> url.fragment
+   'frag'
+
+The class :class:`URL`
+======================
+
 .. class:: URL(string)
 
    An instance of the class :class:`URL` represents an Uniform
@@ -17,26 +41,11 @@ The module :mod:`boing.utils.url` mainly provides the class
    of URL and to separate it into the specific components: *schema*,
    *site*, *path*, *query*, *fragment*.
 
-   Usage example::
+   .. warning:: To address a Windows drive it is **necessary** to put
+      an additional ``/`` (slash punctuation) before the drive
+      letter. Example::
 
-      >>> from boing.utils.url import URL
-      >>> url = URL("ftp://paolo:pwd@localhost:8888/temp?key=value#frag")
-      >>> url.scheme
-      'ftp'
-      >>> url.site.user
-      'paolo'
-      >>> url.site.password
-      'pwd'
-      >>> url.site.host
-      'localhost'
-      >>> url.site.port
-      8888
-      >>> str(url.path)
-      '/temp'
-      >>> url.query['key']
-      'value'
-      >>> url.fragment
-      'frag'
+         >>> URL("file:///C:/Users/")
 
    Each instance owns the following read-only attributes:
 
@@ -88,7 +97,8 @@ The module :mod:`boing.utils.url` mainly provides the class
       >>> str(URL("file:/tmp/log"))
       'file:///tmp/log'
 
-   :class:`URL` instances are equal if their string representation is the same::
+   :class:`URL` instances are equal if their string representation is
+   the same::
 
       >>> URL("udp://:3333")==URL("udp://:3333")
       True
@@ -112,7 +122,7 @@ The module :mod:`boing.utils.url` mainly provides the class
    Note that the result is a :class:`str`, not an :class:`URL` instance.
 
 URL internal classes
-====================
+--------------------
 
 .. class:: URL_site(string)
 
@@ -164,7 +174,6 @@ URL internal classes
       True
       >>> bool(URL("udp://").site)
       False
-
 
    .. warning::
 
@@ -227,7 +236,7 @@ URL internal classes
    :class:`collections.MutableMapping` *ABC*. It is also able to encode the
    URL's *query* into a “percent-encoded” string.
 
-   Usage examples::
+   *Examples*::
 
       >>> url = URL("udp://:8888?name=Jérémie&connect")
       >>> url

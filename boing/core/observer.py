@@ -9,13 +9,16 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-"""
-The observer module provides an implementation of the Observer design
-pattern.
+"""The module :mod:`boing.core.observer` provides an implementation of
+the Observer design pattern.
 
-Beyond the standard behaviour, this implementation enables the
-Observable objects to trigger only a subset of all the current
-registered Observer objects.
+Rather than the standard behaviour, this implementation enables the
+:class:`Observable` objects to trigger only a subset of all the
+current registered :class:`Observer` objects.
+
+.. note:: The notification mechanism relies on the SIGNAL-SLOT
+   mechanism of the Qt eventloop, thus a QApplication must be running
+   in order to ensure that notifications are processed.
 """
 
 import collections
@@ -29,14 +32,6 @@ from boing.core.graph import Node
 from boing.utils import assertIsInstance
 
 class Observable(QtCore.QObject, Node):
-    """
-    An Observable can be subscribed by a list of Observer objects;
-    then the observable can trigger all or a subset of the subscribed
-    observers by invoking its method named *trigger*.
-
-    An Observable does not own the subscribed observers, since weak
-    references are used.
-    """
 
     # FIXME: Add unittest for these signals
     observerAdded = QtCore.pyqtSignal(QtCore.QObject)
@@ -52,10 +47,16 @@ class Observable(QtCore.QObject, Node):
             self.trigger.connect(observer._reactSlot, mode)
 
     def __init__(self, parent=None):
-        """
-        Constructor.
+        """:class:`Observable` objects can be subscribed by a list of
+        :class:`Observer` instances. An Observable can trigger all or only
+        a subset of the subscribed observers by invoking the method
+        :meth:`trigger`. The attribute *parent* defines the parent object
+        of the observable.
 
-        *parent* defines the observable's parent.
+        .. note:: The list of the subscribed observers is composed by weak
+           references, so it is necessary to keep both observables and
+           observers alive.
+
         """
         QtCore.QObject.__init__(self, parent)
         Node.__init__(self)
@@ -200,20 +201,25 @@ class Observer(QtCore.QObject, Node):
         return self._internal.observableRemoved
 
     def __init__(self, react=None, hz=None, parent=None):
-        """
-        Constructor.
+        """:class:`Observer` objects can be subscribed to many
+        :class:`Observable` instances in order to listen to their
+        notifications. The argument *react* can be set to the handler
+        function (it must accept one argument) that will be called as
+        consequence of an observable notification. If *react* is None,
+        the member method :meth:`_react` will be called. *hz* defines
+        the rate at which the observer will react to
+        notifications. Available values are:
 
-        *react* can be a callable object to be used as a handler to the
-         observer notifications (see *_react* for the handler arguments)
-         or None.
+        * None    --- immediately;
+        * 0       --- never;
+        * <float> --- at the selected frequency (in hz).
 
-        *hz* defines when the observer should react to the observervables'
-         notifications. Accepted values:
-          - None   : immediately ;
-          - 0      : never ;
-          - float  : at the selected frequency (in hz).
+        *parent* defines the observers parent.
 
-        *parent* defines the observer's parent.
+        .. note:: The list of the subscribed observables is composed
+           by weak references, so it is necessary to keep both
+           observables and observers alive.
+
         """
         if not sip.ispycreated(self):
             QtCore.QObject.__init__(self, parent)

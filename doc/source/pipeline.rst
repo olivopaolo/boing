@@ -139,7 +139,7 @@ the products *C*.
    such products. The offer is only used to describe the node standard
    behavior. *It's easier said than done!*
 
-.. seealso:: classes :mod:`boing.core.Offer` and :mod:`boing.core.Request`
+.. seealso:: classes :class:`boing.core.Offer` and :class:`boing.core.Request`
 
 As previously seen, it is possible to create long pipelines by
 serializing worker nodes. In order to spread the supply and demand

@@ -45,7 +45,7 @@ platforms:
    :maxdepth: 1
 
    Ubuntu <ubuntu-precise>
-   OS X 10.7 <osx-lion>
+   OS X <osx-lion>
    Windows 7 <windows>
 
 Tests

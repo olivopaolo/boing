@@ -58,19 +58,26 @@ custom |boing| pipelines::
    # Run
    sys.exit(app.exec_())
 
-.. rubric:: Global configuration
+Global configuration
+====================
 
-The attribute :attr:`boing.config` is a :class:`dict` object used to
-store any global configuration variable.
+Any global configuration variable can be stored in the attribute
+:attr:`boing.config`.
 
 .. attribute:: config
 
    :class:`dict` object used to store any global configuration
    variable. |boing|'s own variables:
 
-   * ``"--no-gui"``: set to ``True`` when GUI is disabled.
+   * ``"--no-gui"``: defines whether the GUI widgets are enabled. If
+     set to ``True``, nodes likes ``viz:``, ``rec:``, ``player:``,
+     etc., cannot be created.
+   * ``"--no-raise"``: defines whether the GUI widgets should be
+     automatically raised as they are initialized (see method
+     :meth:`QtGui.QWidget.raise_`).
 
-.. rubric:: Dynamic configuration
+Dynamic configuration
+=====================
 
 .. todo:: Describe how to configure the pipeline dinamically
 

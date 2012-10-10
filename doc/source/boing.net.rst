@@ -22,22 +22,3 @@ SLIP, etc.
    The Decoder class implements the composite pattern. Many decoders
    can be put in sequence into a single composed decoder using the
    sum operator.
-
-
-Each encoding has been implemented in a different submodule:
-
-.. toctree::
-   boing.net.bytes
-   boing.net.slip
-   boing.net.json
-   boing.net.osc
-   boing.net.pickle
-
-
-Common networking utilities:
-
-.. toctree::
-   boing.net.ip
-   boing.net.tcp
-   boing.net.udp
-   boing.net.ntp
