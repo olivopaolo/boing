@@ -24,7 +24,7 @@ txtfile = os.path.abspath(os.path.join(os.path.dirname(__file__),
 configtestfile = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                               "data", "config-filters.txt"))
 sysprefix = "/" if sys.platform=="win32" else ""
-timeoutsignal = signal.SIGTERM if sys.platform=="win32" else signal.SIGINT
+timeoutsignal = signal.SIGINT if sys.platform=="linux2" else signal.SIGTERM
 
 cmds = (
     # Command line arguments
@@ -91,7 +91,7 @@ class Test_run_redirection(unittest.TestCase):
         self.maxDiff = None
 
     def test_in_std_out_std(self):
-        if sys.platform!="win32": # Windows do not support node ``in:``
+        if sys.platform=="linux2": # Windows do not support node ``in:``
             cmd = "boing in:+out: -L ERROR --no-raise"
             self.proc = subprocess.Popen(cmd.split(),
                                          stdin=open(txtfile),
@@ -106,8 +106,6 @@ class Test_run_redirection(unittest.TestCase):
                 # Timeout: stop and wait
                 self.proc.send_signal(timeoutsignal)
                 returncode = self.proc.wait()
-            # Check return code
-            if sys.platform!="win32": self.assertFalse(returncode)
             # Compare output
             self.out.seek(0)
             result = self.out.read()
@@ -124,7 +122,7 @@ class Test_run_redirection(unittest.TestCase):
                                      stdout=self.out,
                                      stderr=self.err)
         # Loop: poll and sleep
-        for i in range(10):
+        for i in range(30):
             returncode = self.proc.poll()
             if returncode is not None : break
             time.sleep(0.1)
@@ -132,8 +130,6 @@ class Test_run_redirection(unittest.TestCase):
             # Timeout: stop and wait
             self.proc.send_signal(timeoutsignal)
             returncode = self.proc.wait()
-        # Check return code
-        if sys.platform!="win32": self.assertFalse(returncode)
         # Compare output
         self.out.seek(0)
         result = self.out.read()
@@ -145,7 +141,7 @@ class Test_run_redirection(unittest.TestCase):
         self.assertFalse(self.err.read())
 
     def test_in_std_out_file(self):
-        if sys.platform!="win32": # Windows do not support node ``in:``
+        if sys.platform=="linux2": # Windows do not support node ``in:``
             tempout = tempfile.NamedTemporaryFile()
             cmd = "boing in:+out://%s -L ERROR --no-raise"%tempout.name
             self.proc = subprocess.Popen(cmd.split(),
@@ -153,7 +149,7 @@ class Test_run_redirection(unittest.TestCase):
                                          stdout=self.out,
                                          stderr=self.err)
             # Loop: poll and sleep
-            for i in range(10):
+            for i in range(15):
                 returncode = self.proc.poll()
                 if returncode is not None : break
                 time.sleep(0.1)
@@ -161,8 +157,6 @@ class Test_run_redirection(unittest.TestCase):
                 # Timeout: stop and wait
                 self.proc.send_signal(timeoutsignal)
                 returncode = self.proc.wait()
-            # Check return code
-            if sys.platform!="win32": self.assertFalse(returncode)
             # Compare output
             tempout.seek(0)
             result = tempout.read()

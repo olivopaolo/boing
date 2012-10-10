@@ -530,23 +530,25 @@ class BufferView(QtGui.QWidget):
             lightpen = QtGui.QPen(QtGui.QColor(200,200,200))
             darkpen = QtGui.QPen(QtGui.QColor(150,150,150))
             i = 0
-            reftime = self._bufferview._graphreftime
-            while reftime>self._bufferview._viewbegin:
+            temp = self._bufferview._viewend-self._bufferview._graphreftime
+            refx = width \
+                - temp.total_seconds()/self._bufferview._timeprecision
+            dx = self._bufferview._graphlineinterval.total_seconds() \
+                / self._bufferview._timeprecision
+            reft = self._bufferview.end()-self._bufferview._graphreftime
+            while refx>0:
                 i += 1
-                reftime -= self._bufferview._graphlineinterval
-                dt = self._bufferview._viewend-reftime
-                dx = \
-                    width \
-                    - dt.total_seconds()/self._bufferview._timeprecision \
-                    +1
-                if i%10==0:
-                    painter.setPen(darkpen)
-                    painter.drawText(
-                        dx-self.width()*0.5, height, self.width(), 12, QtCore.Qt.AlignHCenter,
-                        str(self._bufferview.end()-reftime))
-                else:
-                    painter.setPen(lightpen)
-                painter.drawLine(dx, 2, dx, height)
+                refx -= dx
+                reft += self._bufferview._graphlineinterval
+                if refx<width and refx>0:
+                    if i%10==0:
+                        painter.setPen(darkpen)
+                        painter.drawText(
+                            refx-self.width()*0.5, height, self.width(), 12, QtCore.Qt.AlignHCenter,
+                            str(reft))
+                    else:
+                        painter.setPen(lightpen)
+                    painter.drawLine(refx, 2, refx, height)
             painter.setPen(QtCore.Qt.black)
             painter.drawText(5,10, "# products: %d"%(self._bufferview._buffer.sum()))
             # Draw products
@@ -576,6 +578,7 @@ class BufferView(QtGui.QWidget):
                 painter.setPen(QtCore.Qt.NoPen)
                 painter.setBrush(QtGui.QColor(33, 170, 255, 100))
                 painter.drawRect(begin, 1, end-begin, height)
+
 
 # -------------------------------------------------------------------
 
@@ -1234,7 +1237,6 @@ class Recorder(Consumer):
 
         def paintEvent(self, event):
             super().paintEvent(event)
-            # Draw rec point
             if self._recorder.isBusy():
                 painter = QtGui.QPainter(self)
                 painter.setPen(QtCore.Qt.NoPen)
