@@ -19,9 +19,7 @@ The pipeline architecture:
    :maxdepth: 1
 
    boing.core
-   boing.core.graph
    boing.core.observer
-   boing.core.statemachine
 
 Preconfigured nodes:
 
@@ -29,7 +27,6 @@ Preconfigured nodes:
    :maxdepth: 1
 
    boing.nodes
-   boing.nodes.multitouch
 
 Filtering algorithms:
 

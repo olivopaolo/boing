@@ -20,8 +20,8 @@ import weakref
 
 from PyQt4 import QtCore
 
-from boing.core.economy import WiseWorker
-from boing.core import Offer, Request, Producer, Consumer, Functor, Identity
+from boing.core import \
+    Offer, Request, Producer, Consumer, WiseWorker, BaseWorker, Functor
 from boing.core.graph import SimpleGrapher
 from boing.net import Encoder as BaseEncoder
 from boing.net import Decoder as BaseDecoder
@@ -222,7 +222,7 @@ class SimpleGrapherProducer(Producer):
 
 # -------------------------------------------------------------------
 
-class Lag(Identity):
+class Lag(BaseWorker):
     """Instances of the :class:`Lag` class forward the received
     products after a delay.
 
@@ -232,7 +232,7 @@ class Lag(Identity):
 
     """
     def __init__(self, msec, parent=None):
-        super().__init__(parent=parent)
+        super().__init__(request=Request.NONE, offer=Offer(), parent=parent)
         self.lag = msec
         self.__buffer = collections.deque()
 

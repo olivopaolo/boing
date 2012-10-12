@@ -376,7 +376,7 @@ Concrete workers using the tunneling feature are the
 
 .. seealso::
 
-   classes :class:`boing.core.economy.WiseWorker` and
+   classes :class:`boing.core.WiseWorker` and
    :class:`boing.core.Functor`
 
 .. _node-composition:

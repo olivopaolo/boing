@@ -17,7 +17,7 @@ import logging
 from PyQt4 import QtCore
 import pyparsing
 
-from boing.core import QRequest, Functor, Identity
+from boing.core import QRequest, Functor, NopWorker
 from boing.net import bytes, pickle, json, slip, tcp, udp
 from boing.nodes import encoding, ioport
 from boing.nodes.multitouch import attrToRequest
@@ -347,7 +347,7 @@ def createSingle(uri, mode="", parent=None):
             raise ValueError("Invalid URI: %s"%uri)
         elif mode=="in":
             encoder = encoding.TextDecoder(blender=Functor.MERGE)
-            tunnel = Identity()
+            tunnel = NopWorker()
             server = NodeServer(uri.site.host, uri.site.port, parent=tunnel)
             if uri.site.port==0: logger.info("Listening at %s"%server.url())
             node = tunnel + encoder
@@ -496,7 +496,7 @@ def createSingle(uri, mode="", parent=None):
     # DATA PROCESSING
     elif uri.scheme=="nop":
         assertUriQuery(uri, None)
-        node = Identity()
+        node = NopWorker()
 
     elif uri.scheme.startswith("dump.") or uri.scheme=="dump":
         from boing.nodes import Dump

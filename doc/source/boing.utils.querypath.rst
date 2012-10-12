@@ -139,7 +139,7 @@ Usage examples
    >>> querypath.test(table, "props.width.mm")
    False
    >>> querypath.test(table, "props.width.mm", wildcard=800)
-   true
+   True
 
 The :class:`QPath` class
 ========================

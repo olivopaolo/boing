@@ -17,7 +17,8 @@ the infrastructure of |boing| pipelines.
 # Facade pattern to make things easier.
 from boing.core.economy import \
     Offer, Request, _CompositeRequest, LambdaRequest, \
-    Producer, Consumer, Identity, Functor
+    Producer, Consumer, Worker, BaseWorker, NopWorker, WiseWorker, Functor, \
+    Composite, CompositeProducer, CompositeConsumer, CompositeWorker
 
 from boing.utils.querypath import QPath as _QPath
 

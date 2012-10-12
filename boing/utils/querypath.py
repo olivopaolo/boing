@@ -70,6 +70,55 @@ using the path ``..*``.
 The module :mod:`boing.utils.querypath` provides a set of static
 functions for executing *Querypath* expression on user data
 structures. The query expression must be provided as standard strings.
+
+Usage examples
+==============
+
+   >>>   class Contact:
+   ...      def __init__(self, x, y):
+   ...         self.x = x
+   ...         self.y = y
+   ...      def polar(self):
+   ...         return math.sqrt(x*x, y*y), math.atan2(y,x)
+   ...      def __repr__(self):
+   ...         return "Contact(%s,%s)"%(self.x, self.y)
+   ...
+   >>>   class Surface:
+   ...      def __init__(self):
+   ...         self.contacts = []
+   ...         self.props = {}
+   ...
+   >>> table = Surface()
+   >>> table.props['width'] = 800
+   >>> table.props['height'] = 600
+   >>> table.props['id'] = "mytable"
+   >>> table.contacts.append(Contact(100,200))
+   >>> table.contacts.append(Contact(500,600))
+   >>> tuple(querypath.get(table, "contacts.0.x"))
+   (100,)
+   >>> tuple(querypath.get(table, "contacts.*.x"))
+   (100, 500)
+   >>> tuple(querypath.get(table, "props.width,height"))
+   (600, 800)
+   >>> tuple(querypath.get(table, "..y"))
+   (200, 600)
+   >>> tuple(querypath.get(table, "contacts.*[?(@.x<=100)]"))
+   (Contact(100,200),)
+   >>> tuple(querypath.get(table, "contacts.*.x,y|props.*"))
+   (600, 500, 800, 200, 100, 600, "mytable")
+   >>> tuple(querypath.paths(table, "props.*"))
+   ('props.height', 'props.width')
+   >>> tuple(querypath.items(table, "contacts.*"))
+   (('contacts.1', Contact(100,200)), ('contacts.2', Contact(500,600)))
+   >>> querypath.test(table, "props.dpi")
+   False
+   >>> querypath.test(table, "contacts.*[?(@.x>100)]")
+   True
+   >>> querypath.test(table, "props.width.mm")
+   False
+   >>> querypath.test(table, "props.width.mm", wildcard=800)
+   True
+
 """
 
 import collections
@@ -139,10 +188,6 @@ class QPath:
        >>> querypath.QPath("contacts[0]")+querypath.QPath("contacts.*")
        QPath('contacts[0]|contatcs.*')
     """
-
-    _ITEMS = object()
-    _PATHS = object()
-    _TEST = object()
 
     def __init__(self, path):
         assertIsInstance(path, str, QPath)
@@ -215,6 +260,10 @@ class QPath:
             return other if self==other or self.__str in othersplit \
                 else self if str(other) in selfsplit \
                 else QPath("|".join(set(selfsplit).union(othersplit)))
+
+    _ITEMS = object()
+    _PATHS = object()
+    _TEST = object()
 
     # ---------------------------------------------------------------
 
@@ -290,6 +339,7 @@ class QPath:
 
     @staticmethod
     def _hasprop(obj, key):
+        """Return whether *obj* as the property *key*."""
         if isinstance(obj, collections.Mapping):
             rvalue = key in obj
         elif isinstance(obj, collections.Sequence) and key.isdecimal():
@@ -303,6 +353,8 @@ class QPath:
 
     @staticmethod
     def _iteritems(obj):
+        """Return an iterator of the pairs (key, value) obtained from
+        *obj*."""
         if isinstance(obj, collections.Mapping):
             # FIXME: should be an iterator not tuple
             rvalue = tuple(obj.items())
@@ -318,6 +370,7 @@ class QPath:
 
     @staticmethod
     def _getprop(obj, key):
+        """Return the value of *obj* associated to *key*."""
         if isinstance(obj, collections.Mapping):
             rvalue = obj[key]
         elif isinstance(obj, collections.Sequence):
@@ -330,6 +383,8 @@ class QPath:
 
     @staticmethod
     def _eval(expr, obj):
+        """Evaluate the *expr* where the characted ``@`` must be
+        replaced with *obj*."""
         rvalue = None
         try:
             expr = expr.replace("@", "obj")
@@ -377,64 +432,43 @@ def _normalize(path):
 
 if __name__=="__main__":
     import sys
-    obj = {"store": {
-            "book": [
-                { "category": "reference",
-                  "author": "Nigel Rees",
-                  "title": "Sayings of the Century",
-                  "price": 8.95
-                  },
-                { "category": "fiction",
-                  "author": "Evelyn Waugh",
-                  "title": "Sword of Honour",
-                  "price": 12.99
-                  },
-                { "category": "fiction",
-                  "author": "Herman Melville",
-                  "title": "Moby Dick",
-                  "isbn": "0-553-21311-3",
-                  "price": 8.99
-                  },
-                { "category": "fiction",
-                  "author": "J. R. R. Tolkien",
-                  "title": "The Lord of the Rings",
-                  "isbn": "0-395-19395-8",
-                  "price": 22.99
-                  }
-                ],
-            "bicycle": {
-                "color": "red",
-                "price": 19.95
-                }
-            }
-           }
+    class Contact:
+          def __init__(self, x, y):
+             self.x = x
+             self.y = y
+          def polar(self):
+             return math.sqrt(x*x, y*y), math.atan2(y,x)
+          def __repr__(self):
+             return "Contact(%s,%s)"%(self.x, self.y)
+
+    class Surface:
+          def __init__(self):
+             self.contacts = []
+             self.props = {}
+
+    table = Surface()
+    table.props['width'] = 800
+    table.props['height'] = 600
+    table.props['id'] = "mytable"
+    table.contacts.append(Contact(100,200))
+    table.contacts.append(Contact(500,600))
 
     testpaths = [
         "",
-        "store.bicycle",
-        "$.store.bicycle",
-        "$['store']['bicycle']",
-        "$.store.book[0].author",
-        "$['store']['book'][0]['author']",
-        "$.store.book[*].price",
-        "$.store..price",
-        "$.store.book.*.author,title",
-        "$.store.book,bicycle,car..price",
-        "$..book[(@.__len__()-1)]",
-        #"$.store[(@.clear())]", FIXME!
-        "$.store.book.*",
-        "$..book[?(@['price']<10)].title",
-        "$..book[?(@['isbn'])].title",
-        "",
-        "..price|store.book[0].price",
+        "$",
+        "contacts.0.x",
+        "contacts.*.x",
+        "props.width,height",
+        "..y",
+        "contacts.*[?(@.x<=100)]",
+        "contacts.*.x,y|props.*",
         "..*", # all members
         ] if len(sys.argv)<2 else sys.argv[1:]
     for path in testpaths:
         qpath = QPath(path)
         print("QPATH:", path)
-        print("VALUE:", list(qpath.get(obj)))
-        print("PATHS:", list(qpath.paths(obj)))
-        print("ITEMS:", list(qpath.items(obj)))
-        # print("FILTER:", qpath.filter(obj))
-        print("TEST:", qpath.test(obj))
+        print("VALUE:", tuple(qpath.get(table)))
+        print("PATHS:", tuple(qpath.paths(table)))
+        print("ITEMS:", tuple(qpath.items(table)))
+        print("TEST:", qpath.test(table))
         print()
