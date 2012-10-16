@@ -76,8 +76,12 @@ Toolkit todo
 * *Docs*:
 
   - Check which Ubuntu packages are really necessary.
-  - Improve docs for modules :mod:`boing.utils.QPath`
-    and :mod:`boing.utils.fileutils`.
+  - Improve docs for modules :mod:`boing.net.tcp` and
+    :mod:`boing.net.udp`.
+
+* *Other*:
+
+  - Module :mod:`boing.utils.fileutils` should be reengineered.
 
 Docs todo
 =========

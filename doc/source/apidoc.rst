@@ -65,6 +65,7 @@ Generic utilitities:
    :maxdepth: 1
 
    boing.utils
+   boing.utils.fileutils
    boing.utils.querypath
    boing.utils.url
 
