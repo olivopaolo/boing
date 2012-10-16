@@ -9,22 +9,16 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-import copy
-import os
 import sys
 import logging
 
 from PyQt4 import QtCore
 import pyparsing
 
-from boing.core import QRequest, Functor, NopWorker
-from boing.net import bytes, pickle, json, slip, tcp, udp
-from boing.nodes import encoding, ioport
-from boing.nodes.multitouch import attrToRequest
-from boing.net import tcp, udp
+from boing.core import QRequest, Functor
+from boing.net import tcp
+from boing.nodes import ioport
 from boing.utils import assertIsInstance
-from boing.utils.fileutils \
-    import File, CommunicationFile, FileReader, IODevice, CommunicationDevice
 from boing.utils.url import URL
 
 # -----------------------------------------------------------------------
@@ -99,6 +93,7 @@ def createSingle(uri, mode="", parent=None):
         filepath = uri.opaque if uri.kind==URL.OPAQUE else str(uri.path)
         if not filepath: raise ValueError("filepath must be defined: %s"%uri)
         import re
+        from boing.utils.fileutils import File
         node = create(re.sub(re.compile("#.*?\n" ), "\n",
                              File(filepath).readAll().decode()))
 
@@ -135,22 +130,22 @@ def createSingle(uri, mode="", parent=None):
                 query = parseQuery(uri, "request", "wrap", "protocol")
                 assertUriQuery(uri, query)
                 query.setdefault("wrap", True)
-                encoder = encoding.PickleEncoder(blender=Functor.RESULTONLY,
-                                                 **query)
+                from boing.nodes.encoding import PickleEncoder
+                encoder = PickleEncoder(blender=Functor.RESULTONLY, **query)
             elif scheme in ("json", "json.slip"):
                 query = parseQuery(uri, "request", "wrap")
                 assertUriQuery(uri, query)
                 query.setdefault("wrap", True)
-                encoder = encoding.JsonEncoder(blender=Functor.RESULTONLY,
-                                               **query)
-                encoder += encoding.TextEncoder()
+                from boing.nodes.encoding import JsonEncoder, TextEncoder
+                encoder = JsonEncoder(blender=Functor.RESULTONLY, **query)
+                encoder += TextEncoder()
             elif scheme in ("osc", "osc.slip",
                             "tuio", "tuio.osc", "tuio.osc.slip"):
                 assertUriQuery(uri, None)
-                encoder = encoding.TuioEncoder(blender=Functor.RESULTONLY) \
+                from boing.nodes.encoding import TuioEncoder, OscEncoder
+                encoder = TuioEncoder(blender=Functor.RESULTONLY) \
                     if "tuio" in uri.scheme else None
-                encoder += encoding.OscEncoder(blender=Functor.RESULTONLY,
-                                               wrap=True)
+                encoder += OscEncoder(blender=Functor.RESULTONLY, wrap=True)
             else:
                 raise ValueError("Unknown log encoding: %s"%uri)
             device = createSingle("slip:%s"%uri.path, "out")
@@ -171,26 +166,31 @@ def createSingle(uri, mode="", parent=None):
             query = parseQuery(uri, "loop", "speed", "interval", "noslip")
             assertUriQuery(uri, query)
             if scheme in ("pickle", "pickle.slip"):
+                from boing.net import pickle, slip
                 from boing.nodes.logger import FilePlayer
+                from boing.nodes.encoding import TextEncoder
                 decoder = slip.Decoder()+pickle.Decoder()
                 player = FilePlayer(uri.path, decoder,
                                     FilePlayer.ProductSender(), **query)
-                node = player + encoding.TextEncoder()
+                node = player + TextEncoder()
             elif scheme in ("json", "json.slip"):
+                from boing.net import bytes, json, slip
                 from boing.nodes.logger import FilePlayer
-                decoder = \
-                    slip.Decoder()+bytes.Decoder()+json.Decoder()
+                from boing.nodes.encoding import TextEncoder
+                decoder = slip.Decoder()+bytes.Decoder()+json.Decoder()
                 player = FilePlayer(uri.path, decoder,
                                     FilePlayer.ProductSender(), **query)
-                node = player + encoding.TextEncoder()
+                node = player + TextEncoder()
             elif scheme in ("osc", "osc.slip",
                             "tuio", "tuio.slip", "tuio.osc", "tuio.osc.slip"):
-                player = encoding.OscLogPlayer(uri.path, **query)
-                encoder = encoding.OscEncoder(blender=Functor.MERGE)
-                oscdebug = encoding.OscDebug(blender=Functor.MERGE)
+                from boing.nodes.encoding \
+                    import OscLogPlayer, OscEncoder, OscDebug, TuioDecoder
+                player = OscLogPlayer(uri.path, **query)
+                encoder = OscEncoder(blender=Functor.MERGE)
+                oscdebug = OscDebug(blender=Functor.MERGE)
                 node = player + encoder + oscdebug
                 if "tuio" in uri.scheme:
-                    node += encoding.TuioDecoder(blender=Functor.MERGE)
+                    node += TuioDecoder(blender=Functor.MERGE)
             else:
                 raise ValueError("Unexpected encoding: %s"%uri)
             # FIXME: start should be triggered at outputs ready
@@ -234,6 +234,7 @@ def createSingle(uri, mode="", parent=None):
             assertUriQuery(uri, query)
             scheme = uri.scheme.replace("player.", "", 1)
             if scheme in ("pickle", "pickle.slip"):
+                from boing.net import pickle, slip
                 from boing.nodes.logger import FilePlayer
                 decoder = \
                     slip.Decoder()+pickle.Decoder()
@@ -241,6 +242,7 @@ def createSingle(uri, mode="", parent=None):
                 node.gui().show()
                 if "--no-raise" not in config: node.gui().raise_()
             elif scheme in ("json", "json.slip"):
+                from boing.net import bytes, json, slip
                 from boing.nodes.logger import FilePlayer
                 decoder = \
                     slip.Decoder()+bytes.Decoder()+json.Decoder()
@@ -250,16 +252,18 @@ def createSingle(uri, mode="", parent=None):
             elif scheme in ("osc", "osc.slip",
                             "tuio", "tuio.slip",
                             "tuio.osc", "tuio.osc.slip"):
-                player = Player(encoding.OscLogPlayer._Decoder(),
-                                encoding.OscLogPlayer._Sender(),
+                from boing.nodes.encoding \
+                    import OscLogPlayer, OscEncoder, OscDebug, TuioDecoder
+                player = Player(OscLogPlayer._Decoder(),
+                                OscLogPlayer._Sender(),
                                 (".osc.bz2", ".osc"), **query)
                 player.gui().show()
                 if "--no-raise" not in config: player.gui().raise_()
-                encoder = encoding.OscEncoder(blender=Functor.MERGE)
-                oscdebug = encoding.OscDebug(blender=Functor.MERGE)
+                encoder = OscEncoder(blender=Functor.MERGE)
+                oscdebug = OscDebug(blender=Functor.MERGE)
                 node = player + encoder + oscdebug
                 if "tuio" in scheme:
-                    node += encoding.TuioDecoder(blender=Functor.MERGE)
+                    node += TuioDecoder(blender=Functor.MERGE)
             else:
                 raise ValueError("Unknown log encoding: %s"%uri)
 
@@ -281,7 +285,9 @@ def createSingle(uri, mode="", parent=None):
         elif uri.opaque=="stdin" or not uri.opaque and mode=="in":
             assertUriModeIn(uri, mode, "in")
             assertUriQuery(uri, None)
-            encoder = encoding.TextEncoder(blender=Functor.MERGE)
+            from boing.nodes.encoding import TextEncoder
+            from boing.utils.fileutils import CommunicationDevice
+            encoder = TextEncoder(blender=Functor.MERGE)
             if not uri.opaque: logger.info(
                 "URI has incomplete IO device, assuming: :stdin")
             reader = ioport.DataReader(CommunicationDevice(sys.stdin))
@@ -289,6 +295,7 @@ def createSingle(uri, mode="", parent=None):
         elif uri.opaque=="stdout" or not uri.opaque and mode=="out":
             assertUriModeIn(uri, mode, "out")
             assertUriQuery(uri, None)
+            from boing.utils.fileutils import IODevice
             if not uri.opaque: logger.info(
                 "URI has incomplete IO device, assuming: :stdout")
             node = ioport.DataWriter(IODevice(sys.stdout))
@@ -302,6 +309,8 @@ def createSingle(uri, mode="", parent=None):
             raise ValueError("URI's path cannot be empty: %s"%uri)
         assertUriModeIn(uri, mode, "in", "out")
         if mode=="in":
+            import os.path
+            from boing.nodes.encoding import TextEncoder, TextDecoder
             filequery = parseQuery(uri, "uncompress")
             readerquery = parseQuery(uri, "postend")
             assertUriQuery(uri, tuple(filequery)+tuple(readerquery))
@@ -310,27 +319,32 @@ def createSingle(uri, mode="", parent=None):
             if sys.platform=="win32" and uri.path.isAbsolute():
                 path = path[1:]
             if os.path.isfile(path):
+                from boing.utils.fileutils import FileReader
                 inputfile = FileReader(uri, **filequery)
                 # FIXME: start should be triggered at outputs ready
                 QtCore.QTimer.singleShot(300, inputfile.start)
             else:
+                from boing.utils.fileutils import CommunicationFile
                 inputfile = CommunicationFile(uri)
-            encoder = encoding.TextEncoder(blender=Functor.MERGE) \
+            encoder = TextEncoder(blender=Functor.MERGE) \
                 if inputfile.isTextModeEnabled() \
-                else encoding.TextDecoder(blender=Functor.MERGE)
+                else TextDecoder(blender=Functor.MERGE)
             reader = ioport.DataReader(inputfile, **readerquery)
             node = reader + encoder
         elif mode=="out":
+            from boing.utils.fileutils import File
             assertUriQuery(uri, None)
             node = ioport.DataWriter(File(uri, File.WriteOnly))
 
     elif uri.scheme=="udp":
+        from boing.net import udp
         assertUriModeIn(uri, mode, "in", "out")
         if uri.kind==URL.OPAQUE or uri.path or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
         elif mode=="in":
             assertUriQuery(uri, None)
-            encoder = encoding.TextDecoder(blender=Functor.MERGE)
+            from boing.nodes.encoding import TextDecoder
+            encoder = TextDecoder(blender=Functor.MERGE)
             reader = ioport.DataReader(udp.UdpListener(uri))
             node = reader + encoder
             if uri.site.port==0: logger.info(
@@ -346,7 +360,9 @@ def createSingle(uri, mode="", parent=None):
         if uri.kind==URL.OPAQUE or uri.path or uri.fragment:
             raise ValueError("Invalid URI: %s"%uri)
         elif mode=="in":
-            encoder = encoding.TextDecoder(blender=Functor.MERGE)
+            from boing.core import NopWorker
+            from boing.nodes.encoding import TextDecoder
+            encoder = TextDecoder(blender=Functor.MERGE)
             tunnel = NopWorker()
             server = NodeServer(uri.site.host, uri.site.port, parent=tunnel)
             if uri.site.port==0: logger.info("Listening at %s"%server.url())
@@ -361,15 +377,17 @@ def createSingle(uri, mode="", parent=None):
         assertUriModeIn(uri, mode, "in", "out")
         loweruri = _lower(uri, "slip")
         if mode=="in":
+            from boing.nodes.encoding import SlipDecoder, TextDecoder
             if not uri.site and uri.site:
                 loweruri.query.setdefault("uncompress", "")
             device = createSingle(loweruri, "in")
-            decoder = encoding.SlipDecoder() # blender is fixed to  RESULTONLY
-            textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
+            decoder = SlipDecoder() # blender is fixed to  RESULTONLY
+            textdecoder = TextDecoder(blender=Functor.MERGE)
             node = device + decoder + textdecoder
         elif mode=="out":
-            encoder = encoding.SlipEncoder(blender=Functor.RESULTONLY)
-            textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
+            from boing.nodes.encoding import SlipEncoder, TextDecoder
+            encoder = SlipEncoder(blender=Functor.RESULTONLY)
+            textdecoder = TextDecoder(blender=Functor.MERGE)
             device = createSingle(loweruri, "out")
             node = encoder + textdecoder + device
 
@@ -390,18 +408,20 @@ def createSingle(uri, mode="", parent=None):
                     else URL("slip"+loweruri)
                 logger.info("PICKLE over FILE is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
+            from boing.nodes.encoding import PickleDecoder
             if "request" in query: raise ValueError(
                 "Unexpected query keys: 'request'")
             if "protocol" in query: raise ValueError(
                 "Unexpected query keys: 'protocol'")
             device = createSingle(loweruri, "in")
-            decoder = encoding.PickleDecoder(blender=Functor.RESULTONLY,
+            decoder = PickleDecoder(blender=Functor.RESULTONLY,
                                              **query)
             node = device + decoder
         elif mode=="out":
-            encoder = encoding.PickleEncoder(blender=Functor.RESULTONLY,
+            from boing.nodes.encoding import PickleEncoder, TextDecoder
+            encoder = PickleEncoder(blender=Functor.RESULTONLY,
                                              **query)
-            textdecoder = encoding.TextDecoder(blender=Functor.MERGE)
+            textdecoder = TextDecoder(blender=Functor.MERGE)
             device = createSingle(loweruri, "out")
             node = encoder + textdecoder + device
 
@@ -422,14 +442,16 @@ def createSingle(uri, mode="", parent=None):
                     else URL("slip"+loweruri)
                 logger.info("JSON over FILE is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
+            from boing.nodes.encoding import JsonDecoder
             if "request" in query: raise ValueError(
                 "Unexpected query keys: 'request'")
             device = createSingle(loweruri, "in")
-            decoder = encoding.JsonDecoder(blender=Functor.RESULTONLY)
+            decoder = JsonDecoder(blender=Functor.RESULTONLY)
             node = device + decoder
         elif mode=="out":
-            encoder = encoding.JsonEncoder(blender=Functor.RESULTONLY, **query)
-            textencoder = encoding.TextEncoder(blender=Functor.MERGE)
+            from boing.nodes.encoding import JsonEncoder, TextEncoder
+            encoder = JsonEncoder(blender=Functor.RESULTONLY, **query)
+            textencoder = TextEncoder(blender=Functor.MERGE)
             device = createSingle(loweruri, "out")
             node = encoder + textencoder + device
 
@@ -450,15 +472,17 @@ def createSingle(uri, mode="", parent=None):
                     else URL("slip"+loweruri)
                 logger.info("OSC over FILE is SLIP encoded by default (set noslip to disable)")
         if mode=="in":
+            from boing.nodes.encoding import OscDecoder, OscDebug
             device = createSingle(loweruri, "in")
-            decoder = encoding.OscDecoder(blender=Functor.MERGE, **query)
-            oscdebug = encoding.OscDebug(blender=Functor.MERGE)
+            decoder = OscDecoder(blender=Functor.MERGE, **query)
+            oscdebug = OscDebug(blender=Functor.MERGE)
             node = device + decoder + oscdebug
 
         elif mode=="out":
-            encoder = encoding.OscEncoder(blender=Functor.RESULTONLY, **query)
-            decoder = encoding.OscDecoder(blender=Functor.MERGE)
-            oscdebug = encoding.OscDebug(blender=Functor.MERGE)
+            from boing.nodes.encoding import OscEncoder, OscDecoder, OscDebug
+            encoder = OscEncoder(blender=Functor.RESULTONLY, **query)
+            decoder = OscDecoder(blender=Functor.MERGE)
+            oscdebug = OscDebug(blender=Functor.MERGE)
             device = createSingle(loweruri, "out")
             node = encoder + decoder + oscdebug + device
 
@@ -470,13 +494,15 @@ def createSingle(uri, mode="", parent=None):
         if not loweruri.scheme.startswith("osc."):
             loweruri = URL("osc."+loweruri)
         if mode=="in":
+            from boing.nodes.encoding import TuioDecoder
             device = createSingle(loweruri, "in")
-            encoder = encoding.TuioDecoder(blender=Functor.MERGE, **query)
+            encoder = TuioDecoder(blender=Functor.MERGE, **query)
             node = device + encoder
         elif mode=="out":
+            from boing.nodes.encoding import TuioEncoder
             if loweruri.site.host and loweruri.site.port==0:
                 loweruri.site.port = 3333
-            encoder = encoding.TuioEncoder(blender=Functor.RESULTONLY, **query)
+            encoder = TuioEncoder(blender=Functor.RESULTONLY, **query)
             device = createSingle(loweruri, "out")
             node = encoder + device
 
@@ -496,6 +522,7 @@ def createSingle(uri, mode="", parent=None):
     # DATA PROCESSING
     elif uri.scheme=="nop":
         assertUriQuery(uri, None)
+        from boing.core import NopWorker
         node = NopWorker()
 
     elif uri.scheme.startswith("dump.") or uri.scheme=="dump":
@@ -505,16 +532,18 @@ def createSingle(uri, mode="", parent=None):
                            "request", "src", "dest", "depth",
                            "separator", "mode")
         dump = Dump(**query) # blender is fixed to  RESULTONLY
-        encoder = encoding.TextEncoder(blender=Functor.MERGE)
+        from boing.nodes.encoding import TextEncoder
+        encoder = TextEncoder(blender=Functor.MERGE)
         device = createSingle(_lower(uri, "dump", query.keys()), "out")
         node = dump + encoder + device
 
     elif uri.scheme=="stat" or uri.scheme.startswith("stat."):
         from boing.nodes import StatProducer
+        from boing.nodes.encoding import TextEncoder
         assertUriModeIn(uri, mode, "", "out")
         query = parseQuery(uri, "request", "filter", "fps")
         stat = StatProducer(**query) # blender is fixed to  RESULTONLY
-        encoder = encoding.TextEncoder(blender=Functor.MERGE)
+        encoder = TextEncoder(blender=Functor.MERGE)
         device = createSingle(_lower(uri, "stat", query.keys()), "out")
         node = stat + encoder + device
 
@@ -563,7 +592,7 @@ def createSingle(uri, mode="", parent=None):
     #     node = Filter(uri.opaque)
 
     elif uri.scheme=="calib":
-        from boing.nodes.multitouch import Calibration
+        from boing.nodes.multitouch import attrToRequest, Calibration
         matrix = None
         query = parseQuery(uri, "matrix", "screen", "request",
                            "merge", "copy", "result", "attr")
@@ -610,6 +639,7 @@ def createSingle(uri, mode="", parent=None):
     # FILTERING
     elif uri.scheme=="filtering" and uri.kind==URL.GENERIC:
         from boing.nodes import DiffArgumentFunctor
+        from boing.nodes.multitouch import attrToRequest
         from boing.nodes.filtering import getFunctorFactory
         # Default filter is /moving/mean?winsize=5
         if not uri.path:
@@ -643,10 +673,11 @@ def createSingle(uri, mode="", parent=None):
         #     node.grapher = grapher
         # else:
         from boing.nodes import SimpleGrapherProducer
+        from boing.nodes.encoding import TextEncoder
         query = parseQuery(uri, "hz", "request", "maxdepth")
         assertUriQuery(uri, query)
         grapher = SimpleGrapherProducer(**query)
-        encoder = encoding.TextEncoder(blender=Functor.MERGE)
+        encoder = TextEncoder(blender=Functor.MERGE)
         device = createSingle(_lower(uri, "grapher", query), mode="out")
         node = grapher + encoder + device
         node.grapher = grapher
