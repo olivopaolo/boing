@@ -7,6 +7,8 @@ Toolkit todo
 
 * *Bugs and unittest*:
 
+  - Class :class:`DataWriter` should signal an error when it is
+    demanded to write to a closed device.
   - Add :mod:`boing.test.nodes.test_loader` cases for the data
     processing nodes.
   - Add docs and unit test for class :class:`boing.utils.url.URL` on

@@ -7,8 +7,44 @@
 
 The module :mod:`boing.nodes` contains a set of generic utility nodes.
 
-.. rubric:: Products debugging
+Device input/output
+===================
 
+.. class:: DataReader(inputdevice, postend=True, parent=None)
+
+   :class:`Producer <boing.core.Producer>` node that anytime the
+   device *inputdevice* send the signal :attr:`readyRead
+   <boing.utils.fileutils.CommunicationDevice.readyRead>` it reads the
+   device and it produces a message containing the data. The provided
+   products is a dictionary ``{"str": data}`` if ``data`` is a string,
+   otherwise the product will be a dictionary like ``{"data": data}``.
+   If the argument *postend* is set to ``True``, the
+   :class:`DataReader` will never produce an empty product, like
+   ``{"str": ""}`` or ``{"data": b""}``. *parent* defines the parent
+   of the node.
+
+   .. method:: inputDevice()
+
+      Return the considered input device.
+
+.. class:: DataWriter(outputdevice, writeend=True, hz=None, parent=None)
+
+   :class:`Consumer <boing.core.Consumer>` node that anytime it
+   receives some data, it writes the data to the device *outputdevice*. The
+   :class:`DataWriter` requires the products ``str`` if the output
+   device is text enabled (see method :meth:`isTextModeEnabled
+   <boing.utils.fileutils.IODevice.isTextModeEnabled>`) otherwise it
+   requires the product ``data``. If the argument *writeend* is set to
+   ``True``, the :class:`DataWriter` will never write an empty string;
+   this can be useful in order to prevent a socket to close. *parent*
+   defines the parent of the node.
+
+   .. method:: outputDevice()
+
+      Return the considered output device.
+
+Products debugging
+==================
 
 .. class:: Dump(request=Request.ANY, mode='items', separator='\\n\\n', src=False, dest=False, depth=None, parent=None)
 
@@ -44,8 +80,8 @@ The module :mod:`boing.nodes` contains a set of generic utility nodes.
 
       Set the node's dump *mode*.
 
-.. rubric:: Products editing
-
+Products editing
+================
 
 .. class:: Editor(dict, blender, parent=None)
 
@@ -78,7 +114,8 @@ The module :mod:`boing.nodes` contains a set of generic utility nodes.
    value. The args must be a diff-based path so that functor can be
    removed depending on 'diff.removed' instances.
 
-.. rubric:: Timing utilities
+Timing utilities
+================
 
 .. class:: Timekeeper(blender=Functor.MERGECOPY, parent=None)
 

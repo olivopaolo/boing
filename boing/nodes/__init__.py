@@ -16,6 +16,7 @@
 import collections
 import datetime
 import io
+import logging
 import weakref
 
 from PyQt4 import QtCore
@@ -32,9 +33,20 @@ from boing.utils import assertIsInstance, deepDump, quickdict
 # Input/Output
 
 class DataReader(Producer):
-    """It takes an input device and anytime it receives the readyRead
-    signal, it reads the device and it produces the obtained data."""
+
     def __init__(self, inputdevice, postend=True, parent=None):
+        """:class:`Producer <boing.core.Producer>` node that anytime
+        the device *inputdevice* send the signal :attr:`readyRead
+        <boing.utils.fileutils.CommunicationDevice.readyRead>` it
+        reads the device and it produces a message containing the
+        data. The provided products is a dictionary ``{"str": data}``
+        if ``data`` is a string, otherwise the product will be a
+        dictionary like ``{"data": data}``.  If the argument *postend*
+        is set to ``True``, the :class:`DataReader` will never produce
+        an empty product, like ``{"str": ""}`` or ``{"data":
+        b""}``. *parent* defines the parent of the node.
+
+        """
         self._textmode = inputdevice.isTextModeEnabled()
         if self._textmode:
             offer = Offer(quickdict(str=str()))
@@ -47,6 +59,7 @@ class DataReader(Producer):
         self.__input.readyRead.connect(self._postData)
         self.postend = assertIsInstance(postend, bool)
 
+    @QtCore.pyqtSlot()
     def _postData(self):
         data = self.__input.read()
         attr = "str" if self._textmode else "data"
@@ -56,13 +69,25 @@ class DataReader(Producer):
             self.postProduct(product)
 
     def inputDevice(self):
+        """Return the considered input device."""
         return self.__input
 
 
 class DataWriter(Consumer):
-    """It takes an output device and anytime it receives some data from
-    a Producer, it writes that data into the output device."""
+
     def __init__(self, outputdevice, writeend=True, hz=None, parent=None):
+        """:class:`Consumer <boing.core.Consumer>` node that anytime
+        it receives some data, it writes the data to the device
+        *outputdevice*. The :class:`DataWriter` requires the products
+        ``str`` if the output device is text enabled (see method
+        :meth:`isTextModeEnabled
+        <boing.utils.fileutils.IODevice.isTextModeEnabled>`) otherwise
+        it requires the product ``data``. If the argument *writeend*
+        is set to ``True``, the :class:`DataWriter` will never write
+        an empty string; this can be useful in order to prevent a
+        socket to close. *parent* defines the parent of the node.
+
+        """
         self._textmode = outputdevice.isTextModeEnabled()
         super().__init__(request=QRequest("str" if self._textmode else "data"),
                          hz=hz, parent=parent)
@@ -80,8 +105,8 @@ class DataWriter(Consumer):
         if flush: self.__output.flush()
 
     def outputDevice(self):
+        """Return the considered output device."""
         return self.__output
-
 
 '''class DataIO(DataReader, _BaseDataWriter):
 
