@@ -17,7 +17,6 @@ import pyparsing
 
 from boing.core import QRequest, Functor
 from boing.net import tcp
-from boing.nodes import ioport
 from boing.utils import assertIsInstance
 from boing.utils.url import URL
 
@@ -285,20 +284,22 @@ def createSingle(uri, mode="", parent=None):
         elif uri.opaque=="stdin" or not uri.opaque and mode=="in":
             assertUriModeIn(uri, mode, "in")
             assertUriQuery(uri, None)
+            from boing.nodes import DataReader
             from boing.nodes.encoding import TextEncoder
             from boing.utils.fileutils import CommunicationDevice
             encoder = TextEncoder(blender=Functor.MERGE)
             if not uri.opaque: logger.info(
                 "URI has incomplete IO device, assuming: :stdin")
-            reader = ioport.DataReader(CommunicationDevice(sys.stdin))
+            reader = DataReader(CommunicationDevice(sys.stdin))
             node = reader + encoder
         elif uri.opaque=="stdout" or not uri.opaque and mode=="out":
             assertUriModeIn(uri, mode, "out")
             assertUriQuery(uri, None)
+            from boing.nodes import DataWriter
             from boing.utils.fileutils import IODevice
             if not uri.opaque: logger.info(
                 "URI has incomplete IO device, assuming: :stdout")
-            node = ioport.DataWriter(IODevice(sys.stdout))
+            node = DataWriter(IODevice(sys.stdout))
         else:
             raise ValueError("Invalid URI: %s"%uri)
 
@@ -310,6 +311,7 @@ def createSingle(uri, mode="", parent=None):
         assertUriModeIn(uri, mode, "in", "out")
         if mode=="in":
             import os.path
+            from boing.nodes import DataReader
             from boing.nodes.encoding import TextEncoder, TextDecoder
             filequery = parseQuery(uri, "uncompress")
             readerquery = parseQuery(uri, "postend")
@@ -329,12 +331,13 @@ def createSingle(uri, mode="", parent=None):
             encoder = TextEncoder(blender=Functor.MERGE) \
                 if inputfile.isTextModeEnabled() \
                 else TextDecoder(blender=Functor.MERGE)
-            reader = ioport.DataReader(inputfile, **readerquery)
+            reader = DataReader(inputfile, **readerquery)
             node = reader + encoder
         elif mode=="out":
+            from boing.nodes import DataWriter
             from boing.utils.fileutils import File
             assertUriQuery(uri, None)
-            node = ioport.DataWriter(File(uri, File.WriteOnly))
+            node = DataWriter(File(uri, File.WriteOnly))
 
     elif uri.scheme=="udp":
         from boing.net import udp
@@ -343,16 +346,18 @@ def createSingle(uri, mode="", parent=None):
             raise ValueError("Invalid URI: %s"%uri)
         elif mode=="in":
             assertUriQuery(uri, None)
+            from boing.nodes import DataReader
             from boing.nodes.encoding import TextDecoder
             encoder = TextDecoder(blender=Functor.MERGE)
-            reader = ioport.DataReader(udp.UdpListener(uri))
+            reader = DataReader(udp.UdpListener(uri))
             node = reader + encoder
             if uri.site.port==0: logger.info(
                 "Listening at %s"%reader.inputDevice().url())
         elif mode=="out":
+            from boing.nodes import DataWriter
             query = parseQuery(uri, "writeend")
             assertUriQuery(uri, query)
-            node = ioport.DataWriter(udp.UdpSender(uri), **query)
+            node = DataWriter(udp.UdpSender(uri), **query)
 
     elif uri.scheme=="tcp":
         assertUriModeIn(uri, mode, "in", "out")
@@ -368,7 +373,8 @@ def createSingle(uri, mode="", parent=None):
             if uri.site.port==0: logger.info("Listening at %s"%server.url())
             node = tunnel + encoder
         elif mode=="out":
-            node = ioport.DataWriter(tcp.TcpConnection(uri))
+            from boing.nodes import DataWriter
+            node = DataWriter(tcp.TcpConnection(uri))
 
     # -------------------------------------------------------------------
     # ENCODINGS
@@ -694,8 +700,9 @@ class NodeServer(tcp.TcpServer):
         tcp.TcpServer.__init__(self, *args, **kwargs)
         self.newConnection.connect(self.__newConnection)
     def __newConnection(self):
+        from boing.nodes import DataReader
         conn = self.nextPendingConnection()
-        reader = ioport.DataReader(conn, parent=conn)
+        reader = DataReader(conn, parent=conn)
         reader.addObserver(self.parent())
 
 # -------------------------------------------------------------------
