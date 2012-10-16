@@ -11,14 +11,38 @@ SLIP, etc.
 
 .. class:: boing.net.Encoder
 
-   The Encoder class is the abstract base class for implementing
-   the encoders of all the different encodings.
+   Abstract base class for implementing the encoders of all the
+   different encodings.
+
+   .. method:: encode(obj)
+
+      .. decorator:: @abc.abstractmethod
+
+      Return the result obtained from encoding *obj*.
+
+   .. method:: reset()
+
+      .. decorator:: @abc.abstractmethod
+
+      Reset the encoder.
 
 .. class:: boing.net.Decoder
 
-   The Decoder class is the abstract base class for implementing
-   the decoders of all the different encodings.
+   Abstract base class for implementing the decoders of all the
+   different encodings.
 
    The Decoder class implements the composite pattern. Many decoders
    can be put in sequence into a single composed decoder using the
    sum operator.
+
+   .. method:: decode(obj)
+
+      .. decorator:: @abc.abstractmethod
+
+      Return the list of objects obtained from decoding *obj*.
+
+   .. method:: reset()
+
+      .. decorator:: @abc.abstractmethod
+
+      Reset the decoder.
