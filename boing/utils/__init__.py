@@ -241,7 +241,7 @@ class StateMachine:
 
 def deepDump(obj, fd=sys.stdout, maxdepth=None, indent=2, end="\n", sort=True):
     """Write to *fd* a textual representation of *obj*."""
-    return _deepDump(obj, fd, 1, maxdepth, indent, end, sort)
+    _deepDump(obj, fd, 1, maxdepth, indent, end, sort)
 
 def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
     b = " "*(level*indent)
@@ -249,13 +249,13 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
         print("[", end="", file=fd)
         if not obj:
             print("]", end=end, file=fd)
-        elif maxdepth is None or level<maxdepth:
+        elif maxdepth is None or level<=maxdepth:
             if len(obj)>1: print(end=end, file=fd)
             for i, value in enumerate(obj):
                 if len(obj)>1: print(b, end="", file=fd)
                 if (isinstance(value, list) or isinstance(value, tuple) \
                         or isinstance(value, collections.Mapping)) \
-                        and value:
+                        and value or hasattr(value, "__dict__"):
                     _deepDump(value, fd, level+1, maxdepth, indent, end, sort)
                 else:
                     print(repr(value), end="", file=fd)
@@ -276,14 +276,14 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
             keys = obj.keys()
         if not obj:
             print("}", end=end, file=fd)
-        if maxdepth is None or level<maxdepth:
+        if maxdepth is None or level<=maxdepth:
             if len(obj)>1: print(end=end, file=fd)
             for i, key in enumerate(keys):
                 if len(obj)>1: print(b, end="", file=fd)
                 value = obj[key]
                 if (isinstance(value, list) or isinstance(value, tuple) \
                         or isinstance(value, collections.Mapping)) \
-                        and value:
+                        and value or hasattr(value, "__dict__"):
                     print("%s: "%repr(key), end="", file=fd)
                     _deepDump(value, fd, level+1, maxdepth, indent, end, sort)
                 else:
@@ -296,6 +296,9 @@ def _deepDump(obj, fd, level, maxdepth, indent, end, sort):
             print("}", end="", file=fd)
         else:
             print("...}", end="", file=fd)
+    elif hasattr(obj, "__dict__"):
+        print("%s -> "%type(obj).__name__, end="", file=fd)
+        _deepDump(getattr(obj, "__dict__"), fd, level, maxdepth, indent, end, sort)
     else:
         # All other objects
         print(repr(obj), end="", file=fd)

@@ -185,7 +185,8 @@ class Dump(Functor, Functor.ConfigurableRequest):
         for operands in sequence:
             data = quickdict(operands)
             if self.mode()=="items":
-                deepDump(data, stream, self.depth)
+                deepDump(data, stream,
+                         None if self.depth is None else self.depth+1)
                 stream.write(self.separator)
             elif self.mode()=="values":
                 values = tuple(data.values())
