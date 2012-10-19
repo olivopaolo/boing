@@ -1042,16 +1042,17 @@ class Functor(WiseWorker):
         implementing the classic :meth:`Consumer._consume` method, the
         :class:`Functor` proposes the more powerfull method
         :meth:`_process`. This handler method receives as argument
-        *operands*, an iterator over the couples (key, value) obtained
-        from applying the method :meth:`Request.items` of *args*, the
-        request of the functor, on the received products. This enables
-        to access directly to the name and values of the required data
-        without the need of reimplementing the code to get them. The
-        method :meth:`_process` is a generator method and it it
-        supposed to yield the the couples (key, value) representing
-        the result of the node processing. The yielded results are
-        automatically considered by the functor to create a new
-        product that will be automatically posted.
+        *sequence*, an iterator over the operands, which are iterators
+        over the couples (key, value) obtained from applying the
+        method :meth:`Request.items` of the request of the functor on
+        the list of received products. This enables to access directly
+        to the name and values of the required data without the need
+        of reimplementing the code to get them. The method
+        :meth:`_process` is a generator method and it it supposed to
+        yield the the couples (key, value) representing the result of
+        the node processing. The yielded results are automatically
+        considered by the functor to create a new product that will be
+        automatically posted.
 
         The functor uses a :class:`Functor.Blender` object to create
         the new product. A set of predefined blenders are used to set
@@ -1090,17 +1091,18 @@ class Functor(WiseWorker):
         for product in filter(None, products):
             self.postProduct(product)
 
-    def _process(self, operands, producer):
-        """This handler method receives as argument *operands*, an
-        iterator over the couples (key, value) obtained from applying
-        the method :meth:`Request.items` of the request of the functor
-        on the received products. This enables to access directly to
+    def _process(self, sequence, producer):
+        """This handler method receives as argument *sequence*, an
+        iterator over the operands, which are iterators over the couples
+        (key, value) obtained from applying the method
+        :meth:`Request.items` of the request of the functor on the
+        list of received products. This enables to access directly to
         the name and values of the required data without the need of
         reimplementing the code to get them. This is a generator
         method and it it supposed to yield the the couples (key,
         value) representing the result of the node processing."""
         if self.__process is not None:
-            return self.__process(operands, producer)
+            return self.__process(sequence, producer)
         else:
             raise NotImplementedError()
 
