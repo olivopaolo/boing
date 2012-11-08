@@ -65,12 +65,38 @@ using the path ``..*``.
 
 The module :mod:`boing.utils.querypath` provides a set of static
 functions for executing *Querypath* expression on user data
-structures. The query expression must be provided as standard strings.
+structures. The query expression must be provided as a standard string.
 
 .. function:: get(obj, path)
 
    Return an iterator over the *obj*'s attributes or items matched by
    *path*.
+
+.. function:: set_(obj, path, value, tocopy=False)
+
+   Set the value of *obj* indexed by *path* to *value*. Return *obj*
+   if *tocopy* is ``False``, otherwise the copy of *obj* where the
+   modification is applied.
+
+   .. note::
+
+      This function must be used carefully since it is supposed to set the
+      requested property to all the matched objects of the structure even if
+      they do not own such property. A common procedure is require to
+      set a specific property only for the objects that already own
+      such property. As an example::
+
+	 >>> tuple(querypath.items(table, "..x"))
+	 (('contacts.0.x', 100), ('contacts.1.x', 500))
+         >>> querypath.set_(table, "..*[?(@.x)].x",10)
+	 <test.Surface object at 0xa2732ac>
+	 >>> tuple(querypath.items(table, "..x"))
+	 (('contacts.0.x', 10), ('contacts.1.x', 10))
+
+   .. note::
+
+      The function :func:`set_` does not accepts the querypaths
+      ``"$"`` and ``""``.
 
 .. function:: paths(obj, path)
 
@@ -128,6 +154,10 @@ Usage examples
    (Contact(100,200),)
    >>> tuple(querypath.get(table, "contacts.*.x,y|props.*"))
    (600, 500, 800, 200, 100, 600, "mytable")
+   >>> querypath.set_(table, "contacts.*.x", 10)
+   <test.Surface object at 0x8b2606c>
+   >>> tuple(querypath.get(table, "contacts.*.x"))
+   (10, 10)
    >>> tuple(querypath.paths(table, "props.*"))
    ('props.height', 'props.width')
    >>> tuple(querypath.items(table, "contacts.*"))
@@ -160,6 +190,12 @@ does not have to be pre-processed for all the executions.
       Return an iterator over the *obj*'s attributes or items matched
       by this QPath.
 
+   .. method:: set(obj, value, tocopy=False)
+
+      Set the value of *obj* indexed by this QPath to *value*. Return
+      *obj* if *tocopy* is ``False``, otherwise the copy of *obj*
+      where the modification is applied.
+
    .. method:: paths(obj)
 
       Return an iterator over the paths that index the *obj*'s
@@ -181,10 +217,12 @@ does not have to be pre-processed for all the executions.
       >>> query = querypath.QPath("contacts.*.x")
       >>> tuple(query.get(table))
       (100, 500)
+      >>> query.set(table, 10)
+      <test.Surface object at 0xa2732ac>
       >>> tuple(query.paths(table))
       ('contacts.0.x', 'contacts.1.x')
       >>> tuple(query.items(table))
-      (('contacts.0.x', 100), ('contacts.1.x', 500))
+      (('contacts.0.x', 10), ('contacts.1.x', 10))
       >>> query.test(table)
       True
 

@@ -10,6 +10,7 @@
 # See the file LICENSE for information on usage and redistribution of
 # this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
+import copy
 import itertools
 import unittest
 
@@ -92,6 +93,7 @@ class Test_querypath(unittest.TestCase):
         self.assertFalse(lst)
 
     def setUp(self):
+        self.value = object()
         self.maxDiff = None
 
 # -------------------------------------------------------------------
@@ -103,6 +105,10 @@ class Test_querypath(unittest.TestCase):
     def test_None_test(self):
         path = None
         self.assertRaises(TypeError, querypath.get, self.obj, path)
+
+    def test_None_set_(self):
+        path = None
+        self.assertRaises(TypeError, querypath.set_, self.obj, path, self.value)
 
 # -------------------------------------------------------------------
 
@@ -128,6 +134,10 @@ class Test_querypath(unittest.TestCase):
         path = ""
         self.assertTrue(querypath.test(self.obj, path))
 
+    def test_empty_set_(self):
+        path = ""
+        self.assertRaises(ValueError, querypath.set_, self.obj, path, self.value)
+
 # -------------------------------------------------------------------
 
     def test_root_get(self):
@@ -152,6 +162,10 @@ class Test_querypath(unittest.TestCase):
         path = "$"
         self.assertTrue(querypath.test(self.obj, path))
 
+    def test_root_set_(self):
+        path = "$"
+        self.assertRaises(ValueError, querypath.set_, self.obj, path, self.value)
+
 # -------------------------------------------------------------------
 
     def test_empty_result_get(self):
@@ -165,7 +179,6 @@ class Test_querypath(unittest.TestCase):
             result = list(querypath.get(self.obj, path))
             expected = []
             self.assertItemsEqual(result, expected)
-
 
     def test_empty_result_paths(self):
         for path in (
@@ -203,6 +216,48 @@ class Test_querypath(unittest.TestCase):
             "store.books.7",
             ):
             self.assertFalse(querypath.test(self.obj, path))
+
+# -------------------------------------------------------------------
+
+    def test_valid_set_(self):
+        original = copy.deepcopy(self.obj)
+        for path in (
+            "store.bicycle.color",
+            "store.books.0.author",
+            "store.books.*.price",
+            "store.books[:].price",
+            "store.books[2:].price",
+            "store.books[:-1].price",
+            "store.books[::2].price",
+            "store.bicycle.color|store.book[0].title",
+            "store.books[(@.__len__()-1)].isbn",
+            ):
+            self.obj = copy.deepcopy(original)
+            result = querypath.set_(self.obj, path, self.value, False)
+            for value in querypath.get(result, path):
+                self.assertEqual(value, self.value)
+            self.assertIs(result, self.obj)
+
+
+    def test_valid_set_tocopy(self):
+        original = copy.deepcopy(self.obj)
+        for path in (
+            "store.bicycle.color",
+            "store.books.0.author",
+            "store.books.*.price",
+            "store.books[:].price",
+            "store.books[2:].price",
+            "store.books[:-1].price",
+            "store.books[::2].price",
+            "store.bicycle.color|store.book[0].title",
+            "store.books[(@.__len__()-1)].isbn",
+            ):
+            self.obj = copy.deepcopy(original)
+            result = querypath.set_(self.obj, path, self.value, True)
+            for value in querypath.get(result, path):
+                self.assertEqual(value, self.value)
+            self.assertEqual(original, self.obj)
+            self.assertIsNot(result, self.obj)
 
 # -------------------------------------------------------------------
 
@@ -529,10 +584,10 @@ class Test_querypath(unittest.TestCase):
 
     def test_pipe_union_get(self):
         for path in (
-            "..books.*.category|..bicycle.color",
-            "..books.*.category |..bicycle.color",
-            "..books.*.category| ..bicycle.color",
-            "..books.*.category | ..bicycle.color",
+            "store.books.*.category|..bicycle.color",
+            "store.books.*.category |..bicycle.color",
+            "store.books.*.category| ..bicycle.color",
+            "store.books.*.category | ..bicycle.color",
             "[store][books][:][category]|[store][bicycle][color]",
             "store.books.*.category|store.bicycle.color",
             ):
@@ -548,10 +603,10 @@ class Test_querypath(unittest.TestCase):
 
     def test_pipe_union_paths(self):
         for path in (
-            "..books.*.category|..bicycle.color",
-            "..books.*.category |..bicycle.color",
-            "..books.*.category| ..bicycle.color",
-            "..books.*.category | ..bicycle.color",
+            "store.books.*.category|..bicycle.color",
+            "store.books.*.category |..bicycle.color",
+            "store.books.*.category| ..bicycle.color",
+            "store.books.*.category | ..bicycle.color",
             "[store][books][:][category]|[store][bicycle][color]",
             "store.books.*.category|store.bicycle.color",
             ):
@@ -567,10 +622,10 @@ class Test_querypath(unittest.TestCase):
 
     def test_pipe_union_test(self):
         for path in (
-            "..books.*.category|..bicycle.color",
-            "..books.*.category |..bicycle.color",
-            "..books.*.category| ..bicycle.color",
-            "..books.*.category | ..bicycle.color",
+            "store.books.*.category|..bicycle.color",
+            "store.books.*.category |..bicycle.color",
+            "store.books.*.category| ..bicycle.color",
+            "store.books.*.category | ..bicycle.color",
             "[store][books][:][category]|[store][bicycle][color]",
             "store.books.*.category|store.bicycle.color",
             ):
@@ -605,7 +660,7 @@ class Test_querypath(unittest.TestCase):
 
     def test_script_index_get(self):
         for path in (
-            "..books[(@.__len__()-1)].isbn",
+            "store.books[(@.__len__()-1)].isbn",
             "..['books'][(@.__len__()-1)]['isbn']",
             ):
             result = list(querypath.get(self.obj, path))
@@ -614,7 +669,7 @@ class Test_querypath(unittest.TestCase):
 
     def test_script_index_paths(self):
         for path in (
-            "..books[(@.__len__()-1)].isbn",
+            "store.books[(@.__len__()-1)].isbn",
             "..['books'][(@.__len__()-1)]['isbn']",
             ):
             result = list(querypath.paths(self.obj, path))
@@ -623,7 +678,7 @@ class Test_querypath(unittest.TestCase):
 
     def test_script_index_test(self):
         for path in (
-            "..books[(@.__len__()-1)].isbn",
+            "store.books[(@.__len__()-1)].isbn",
             "..['books'][(@.__len__()-1)]['isbn']",
             ):
             self.assertTrue(querypath.get(self.obj, path))
@@ -712,23 +767,45 @@ class Test_querypath_containers(Test_querypath):
         self.assertFalse(querypath.test(obj, "d.container.unexistant", wildcard))
 
     def test_script_query_get(self):
-        result = querypath.get(self.obj, "..books.*[?(@['price']<10)].title")
+        result = querypath.get(self.obj, "store.books.*[?(@['price']<10)].title")
         expected = ['Sayings of the Century', 'Moby Dick']
         self.assertItemsEqual(result, expected)
 
     def test_script_query_paths(self):
-        result = querypath.paths(self.obj, "..books.*[?(@['price']<10)].title")
+        result = querypath.paths(self.obj, "store.books.*[?(@['price']<10)].title")
         expected = ['store.books.0.title', 'store.books.2.title']
         self.assertItemsEqual(result, expected)
 
     def test_script_query_test(self):
         self.assertTrue(
-            querypath.test(self.obj, "..books.*[?(@['price']<10)].title"))
+            querypath.test(self.obj, "store.books.*[?(@['price']<10)].title"))
+
+    def test_script_query_set_(self):
+        path = "store.books.*[?(@['price']<10)].title"
+        result = querypath.set_(self.obj, path, self.value, False)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        for value in querypath.get(result,
+                                   "store.books.*[?(@['price']>=10)].title"):
+            self.assertNotEqual(value, self.value)
+        self.assertIs(result, self.obj)
+
+    def test_script_query_set_tocopy(self):
+        path = "store.books.*[?(@['price']<10)].title"
+        original = copy.deepcopy(self.obj)
+        result = querypath.set_(self.obj, path, self.value, True)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        for value in querypath.get(result,
+                                   "store.books.*[?(@['price']>=10)].title"):
+            self.assertNotEqual(value, self.value)
+        self.assertEqual(original, self.obj)
+        self.assertIsNot(result, self.obj)
 
     def test_script_query2_get(self):
         for path in (
-            "..books.*[?('isbn' in @)].title",
-            "..books.*[?(@['isbn'])].title",
+            "store.books.*[?('isbn' in @)].title",
+            "store.books.*[?(@['isbn'])].title",
             ):
             result = list(querypath.get(self.obj, path))
             expected = [
@@ -739,8 +816,8 @@ class Test_querypath_containers(Test_querypath):
 
     def test_script_query2_paths(self):
         for path in (
-            "..books.*[?('isbn' in @)].title",
-            "..books.*[?(@['isbn'])].title",
+            "store.books.*[?('isbn' in @)].title",
+            "store.books.*[?(@['isbn'])].title",
             ):
             result = list(querypath.paths(self.obj, path))
             expected = [
@@ -751,10 +828,48 @@ class Test_querypath_containers(Test_querypath):
 
     def test_script_query2_test(self):
         for path in (
-            "..books.*[?('isbn' in @)].title",
-            "..books.*[?(@['isbn'])].title",
+            "store.books.*[?('isbn' in @)].title",
+            "store.books.*[?(@['isbn'])].title",
             ):
             self.assertTrue(querypath.get(self.obj, path))
+
+    def test_script_query2_set_(self):
+        path = "store.books.*[?('isbn' in @)].title"
+        result = querypath.set_(self.obj, path, self.value, False)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        for value in querypath.get(result,
+                                   "store.books.*[?('isbn' not in @)].title"):
+            self.assertNotEqual(value, self.value)
+        self.assertIs(result, self.obj)
+
+    def test_script_query2_set_tocopy(self):
+        path = "store.books.*[?('isbn' in @)].title"
+        original = copy.deepcopy(self.obj)
+        result = querypath.set_(self.obj, path, self.value, True)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        for value in querypath.get(result,
+                                   "store.books.*[?('isbn' not in @)].title"):
+            self.assertNotEqual(value, self.value)
+        self.assertEqual(original, self.obj)
+        self.assertIsNot(result, self.obj)
+
+    def test_recursive_descent_set_(self):
+        path = "store..[?('price' in @)].price"
+        result = querypath.set_(self.obj, path, self.value, False)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        self.assertIs(result, self.obj)
+
+    def test_recursive_descent_set_tocopy(self):
+        path = "store..[?('price' in @)].price"
+        original = copy.deepcopy(self.obj)
+        result = querypath.set_(self.obj, path, self.value, True)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        self.assertEqual(original, self.obj)
+        self.assertIsNot(result, self.obj)
 
 # -------------------------------------------------------------------
 
@@ -768,13 +883,26 @@ class Test_querypath_objects(Test_querypath):
                 self.author = author
                 self.title = title
                 self.price = price
+            def __eq__(self, other):
+                return isinstance(other, Book) \
+                    and self.category==other.category \
+                    and self.author==other.author \
+                    and self.title==other.title \
+                    and self.price==other.price
         class Bicycle:
             def __init__(self, color, price):
                 self.color = color
                 self.price = price
+            def __eq__(self, other):
+                return isinstance(other, Bicycle) \
+                    and self.color==other.color \
+                    and self.price==other.price
         class Container:
             def __init__(self, store):
                 self.store = store
+            def __eq__(self, other):
+                return isinstance(other, Container) \
+                    and self.store==other.store
         books = [
             Book("reference", "Nigel Rees", "Sayings of the Century", 8.95),
             Book("fiction", "Evelyn Waugh", "Sword of Honour", 12.99),
@@ -820,23 +948,45 @@ class Test_querypath_objects(Test_querypath):
         self.assertFalse(querypath.test(obj, "a.a.unexistant", wildcard))
 
     def test_script_query_get(self):
-        result = querypath.get(self.obj, "..books.*[?(@.price<10)].title")
+        result = querypath.get(self.obj, "store.books.*[?(@.price<10)].title")
         expected = ['Sayings of the Century', 'Moby Dick']
         self.assertItemsEqual(result, expected)
 
     def test_script_query_paths(self):
-        result = querypath.paths(self.obj, "..books.*[?(@.price<10)].title")
+        result = querypath.paths(self.obj, "store.books.*[?(@.price<10)].title")
         expected = ['store.books.0.title', 'store.books.2.title']
         self.assertItemsEqual(result, expected)
 
     def test_script_query_test(self):
         self.assertTrue(
-            querypath.test(self.obj, "..books.*[?(@.price<10)].title"))
+            querypath.test(self.obj, "store.books.*[?(@.price<10)].title"))
+
+    def test_script_query_set_(self):
+        path = "store.books.*[?(@.price<10)].title"
+        result = querypath.set_(self.obj, path, self.value, False)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        for value in querypath.get(result,
+                                   "store.books.*[?(@.price>=10)].title"):
+            self.assertNotEqual(value, self.value)
+        self.assertIs(result, self.obj)
+
+    def test_script_query_set_tocopy(self):
+        path = "store.books.*[?(@.price<10)].title"
+        original = copy.deepcopy(self.obj)
+        result = querypath.set_(self.obj, path, self.value, True)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        for value in querypath.get(result,
+                                   "store.books.*[?(@.price>=10)].title"):
+            self.assertNotEqual(value, self.value)
+        self.assertEqual(original, self.obj)
+        self.assertIsNot(result, self.obj)
 
     def test_script_query2_get(self):
         for path in (
-            "..books.*[?(@.isbn)].title",
-            "..books.*[?('isbn' in @.__dict__)].title",
+            "store.books.*[?(@.isbn)].title",
+            "store.books.*[?('isbn' in @.__dict__)].title",
             ):
             result = list(querypath.get(self.obj, path))
             expected = [
@@ -847,8 +997,8 @@ class Test_querypath_objects(Test_querypath):
 
     def test_script_query2_paths(self):
         for path in (
-            "..books.*[?(@.isbn)].title",
-            "..books.*[?('isbn' in @.__dict__)].title",
+            "store.books.*[?(@.isbn)].title",
+            "store.books.*[?('isbn' in @.__dict__)].title",
             ):
             result = list(querypath.paths(self.obj, path))
             expected = [
@@ -859,10 +1009,48 @@ class Test_querypath_objects(Test_querypath):
 
     def test_script_query2_test(self):
         for path in (
-            "..books.*[?(@.isbn)].title",
-            "..books.*[?('isbn' in @.__dict__)].title",
+            "store.books.*[?(@.isbn)].title",
+            "store.books.*[?('isbn' in @.__dict__)].title",
             ):
             self.assertTrue(querypath.get(self.obj, path))
+
+    def test_script_query2_set_(self):
+        path = "store.books.*[?('isbn' in @.__dict__)].title"
+        result = querypath.set_(self.obj, path, self.value, False)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        for value in querypath.get(result,
+                                   "store.books.*[?('isbn' not in @.__dict__)].title"):
+            self.assertNotEqual(value, self.value)
+        self.assertIs(result, self.obj)
+
+    def test_script_query2_set_tocopy(self):
+        path = "store.books.*[?('isbn' in @.__dict__)].title"
+        original = copy.deepcopy(self.obj)
+        result = querypath.set_(self.obj, path, self.value, True)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        for value in querypath.get(result,
+                                   "store.books.*[?('isbn' not in @.__dict__)].title"):
+            self.assertNotEqual(value, self.value)
+        self.assertEqual(original, self.obj)
+        self.assertIsNot(result, self.obj)
+
+    def test_recursive_descent_set_(self):
+        path = "store..[?('price' in @.__dict__)].price"
+        result = querypath.set_(self.obj, path, self.value, False)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        self.assertIs(result, self.obj)
+
+    def test_recursive_descent_set_tocopy(self):
+        path = "store..[?('price' in @.__dict__)].price"
+        original = copy.deepcopy(self.obj)
+        result = querypath.set_(self.obj, path, self.value, True)
+        for value in querypath.get(result, path):
+            self.assertEqual(value, self.value)
+        self.assertEqual(original, self.obj)
+        self.assertIsNot(result, self.obj)
 
 # -------------------------------------------------------------------
 

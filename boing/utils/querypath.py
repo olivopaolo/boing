@@ -122,6 +122,7 @@ Usage examples
 """
 
 import collections
+import copy
 import itertools
 import re
 
@@ -136,8 +137,11 @@ def get(obj, path):
     matched by *path*."""
     return QPath(path).get(obj)
 
-# def set(obj, path, value):
-#     return QPath(path).set(obj, value)
+def set_(obj, path, value, tocopy=False):
+    """Set the value of *obj* indexed by *path* to *value*. Return
+    *obj* if *tocopy* is ``False``, otherwise the copy of *obj* where
+    the modification is applied."""
+    return QPath(path).set(obj, value, tocopy)
 
 def paths(obj, path):
     """Return an iterator over the paths that index the *obj*'s
@@ -232,6 +236,17 @@ class QPath:
                 return True
         return False
 
+    def set(self, obj, value, tocopy=False):
+        """Set the value of *obj* indexed by this QPath to
+        *value*. Return *obj* if *tocopy* is ``False``, otherwise the
+        copy of *obj* where the modification is applied."""
+        rvalue = obj
+        for singlepath in self._norm:
+            if not singlepath: raise ValueError(
+                "method QPath.set: path cannot be empty.")
+            rvalue = QPath._settrace(rvalue, singlepath, value, tocopy)
+        return rvalue
+
     def __hash__(self):
         return hash(self.__str)
 
@@ -317,12 +332,11 @@ class QPath:
                         if op is QPath._TEST: break
             elif first.startswith("?(") and first.endswith(")"): # [?(expr)]
                 if QPath._eval(first[1:], obj):
-                    for v in QPath._trace(rest, obj,
-                                          path, op, wildcard):
+                    for v in QPath._trace(rest, obj, path, op, wildcard):
                         yield v
                         if op is QPath._TEST: break
             elif isinstance(obj, collections.Sequence) :
-                m = re.match("^(-?[0-9]*):(-?[0-9]*):?([0-9]*)$", first)
+                m = _slice.match(first)
                 if m:
                     l = len(obj)
                     start, end, step = m.groups()
@@ -333,9 +347,88 @@ class QPath:
                     step = int(step) if step else 1
                     for i in range(start, end, step):
                         for v in QPath._trace(rest, obj[i],
-                                             path+";"+str(i), op, wildcard):
+                                              path+";"+str(i), op, wildcard):
                             yield v
                             if op is QPath._TEST: break
+
+
+    @staticmethod
+    def _settrace(obj, expr, value, tocopy):
+        if not expr: rvalue = value
+        else:
+            rvalue = obj
+            first, sep, rest = expr.partition(";")
+            if QPath._hasprop(obj, first):
+                prop = QPath._getprop(obj, first)
+                result = QPath._settrace(prop, rest, value, tocopy)
+                if prop is not result:
+                    rvalue = obj if not tocopy else copy.copy(obj)
+                    QPath._setprop(rvalue, first, result)
+            elif first=="*" \
+                    or (first==":" and isinstance(obj, collections.Sequence)):
+                copied = False
+                for key, prop in QPath._iteritems(obj):
+                    result = QPath._settrace(prop, rest, value, tocopy)
+                    if prop is not result:
+                        if tocopy and not copied:
+                            rvalue = copy.copy(rvalue)
+                            copied = True
+                        QPath._setprop(rvalue, key, result)
+            elif "," in first: # [name1,name2,...]
+                copied = False
+                for key in first.split(","):
+                    if QPath._hasprop(obj, key):
+                        prop = QPath._getprop(obj, key)
+                        result = QPath._settrace(prop, rest, value, tocopy)
+                        if prop is not result:
+                            if tocopy and not copied:
+                                rvalue = copy.copy(rvalue)
+                                copied = True
+                            QPath._setprop(rvalue, key, result)
+            elif first=="..":
+                copied = False
+                rvalue = QPath._settrace(obj, rest, value, tocopy)
+                for key, prop in QPath._iteritems(rvalue):
+                    if not prop is obj:
+                        result = QPath._settrace(prop, expr, value, tocopy)
+                        if prop is not result:
+                            if tocopy and not copied:
+                                rvalue = copy.copy(rvalue)
+                                copied = True
+                            QPath._setprop(rvalue, key, result)
+            elif first.startswith("(") and first.endswith(")"): # [(expr)]
+                key = QPath._eval(first, obj)
+                if key is not None:
+                    rvalue = QPath._settrace(obj, str(key)+";"+rest,
+                                             value, tocopy)
+            elif first.startswith("?(") and first.endswith(")"): # [?(expr)]
+                if QPath._eval(first[1:], obj):
+                    rvalue = QPath._settrace(obj, rest, value, tocopy)
+            elif isinstance(obj, collections.Sequence):
+                m = _slice.match(first)
+                if m:
+                    l = len(obj)
+                    start, end, step = m.groups()
+                    start = int(start) if start else 0
+                    start = max(0, start+l) if start<0 else min(l, start)
+                    end = int(end) if end else l
+                    end = max(0, end+l) if end<0 else min(l, end)
+                    step = int(step) if step else 1
+                    copied = False
+                    for key in range(start, end, step):
+                        prop = QPath._getprop(obj, key)
+                        result = QPath._settrace(prop, rest, value, tocopy)
+                        if prop is not result:
+                            if tocopy and not copied:
+                                rvalue = copy.copy(rvalue)
+                                copied = True
+                            QPath._setprop(rvalue, key, result)
+            else:
+                # Create a new property
+                rvalue = obj if not tocopy else copy.copy(obj)
+                QPath._setprop(rvalue, first,
+                               QPath._settrace(dict(), rest, value, tocopy))
+        return rvalue
 
     @staticmethod
     def _hasprop(obj, key):
@@ -382,6 +475,16 @@ class QPath:
         return rvalue
 
     @staticmethod
+    def _setprop(obj, key, value):
+        """Set the value of *obj* associated to *key* to *value*."""
+        if isinstance(obj, collections.Mapping):
+            obj[key] = value
+        elif isinstance(obj, collections.Sequence):
+            obj[int(key)] = value
+        else:
+            setattr(obj, key, value)
+
+    @staticmethod
     def _eval(expr, obj):
         """Evaluate the *expr* where the characted ``@`` must be
         replaced with *obj*."""
@@ -405,6 +508,8 @@ _re4 = re.compile("#([0-9]+)")
 _re5 = re.compile("\$;|^;|[ ]+;")
 _re6 = re.compile("\|;")
 _re7 = re.compile("[ ]*\|[ ]*")
+
+_slice = re.compile("^(-?[0-9]*):(-?[0-9]*):?([0-9]*)$")
 
 def _normalize(path):
     assertIsInstance(path, str)

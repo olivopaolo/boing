@@ -14,20 +14,25 @@ the infrastructure of |boing| pipelines.
 
 """
 
+import collections as _collections
+import copy as _copy
+import itertools as _itertools
+
 # Facade pattern to make things easier.
 from boing.core.economy import \
     Offer, Request, _CompositeRequest, LambdaRequest, \
     Producer, Consumer, Worker, BaseWorker, NopWorker, WiseWorker, Functor, \
     Composite, CompositeProducer, CompositeConsumer, CompositeWorker
 
-from boing.utils.querypath import QPath as _QPath
+from boing.utils import querypath as _querypath
+from  boing.utils import quickdict as _quickdict
 
 class QRequest(Request):
     """The QRequest is a Request defined by a QPath.
 
     """
     def __init__(self, string):
-        self._query = _QPath(string)
+        self._query = _querypath.QPath(string)
 
     def query(self):
         """Return the :cls:`boing.utils.querypath.QPath` instance used
@@ -60,37 +65,16 @@ class QRequest(Request):
     def __repr__(self):
         return "QRequest('%s')"%self.query()
 
-# -------------------------------------------------------------------
-# FIXME: Develop QPath.set
-
-import collections as _collections
-import copy as _copy
-import itertools as _itertools
-
-from  boing.utils import quickdict as _quickdict
-
-def _merge(previous, items):
+def _merge(previous, items, tocopy):
     rvalue = previous
-    if items:
-        for path, value in items:
-            split = path.split(".")
-            if len(split)==1: rvalue[path] = value
-            else:
-                node = rvalue
-                for key in split[:-1]:
-                    if isinstance(node, _collections.Sequence):
-                        key = int(key)
-                    node = node[key]
-                key = split[-1]
-                if isinstance(node, _collections.Sequence):
-                    key = int(key)
-                node[key] = value
+    for path, value in items if items is not None else tuple():
+        rvalue = _querypath.set_(rvalue, path, value, tocopy)
     return rvalue
 
 class _ConcreteMerge(economy.Functor.MergeBlender):
     def blend(self, products, results):
         for product, items in _itertools.zip_longest(products, results):
-            yield _merge(product, items)
+            yield _merge(product, items, False)
 
 class _ConcreteMergeCopy(economy.Functor.MergeBlender):
     def __repr__(self): return "Blender.MERGECOPY"
@@ -98,12 +82,12 @@ class _ConcreteMergeCopy(economy.Functor.MergeBlender):
     def blend(self, products, results):
         for product, items in _itertools.zip_longest(products, results):
             yield  product if not items \
-                else _merge(_copy.deepcopy(product), items)
+                else _merge(product, items, True)
 
 class _ConcreteResultOnly(economy.Functor.ResultOnlyBlender):
     def blend(self, products, results):
         for product, items in _itertools.zip_longest(products, results):
-            yield _merge(_quickdict(), items)
+            yield _merge(_quickdict(), items, False)
 
 economy.Functor.MERGE = _ConcreteMerge()
 economy.Functor.MERGECOPY = _ConcreteMergeCopy()
