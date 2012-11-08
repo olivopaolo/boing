@@ -22,12 +22,15 @@ Toolkit todo
     iterator.
   - when :func:`boing.create` raises an exception, it shows the lower
     URI and not the original one. This may be misleading for users.
-  - The :code:`player:` 's playlist has some model trouble: when I
+  - The ``player:`` 's playlist has some model trouble: when I
     drag and drop some files from a folder to the root level before
     the folder an Exception is raised. Sometimes files desappears.
   - Handle when a source has been closed and when to start players
     (e.g. if TCP socked has been disconnected, TcpServer turned off).
   - Resolve the UDP socket reuse port issue on Windows.
+  - The structure ``<!...!>`` used in defining not standard
+    :class:`URL <boing.utils.url.URL>` query keys and values does not
+    work if characters ``#`` or ``%`` are used inside the structure.
 
 
 * *Pipeline architecture*:
@@ -58,7 +61,7 @@ Toolkit todo
     external source files, so that users can add custom nodes.
   - Develop the transformation node, which transforms the data
     hierarchy (JSON-schema validator).
-  - Develop :code:`evdev` and :code:`uinput` in&out bridges.
+  - Develop ``evdev`` and ``uinput`` in&out bridges.
   - Enable remote node.
   - Improve Contact Viz.
   - Consider adding the module :mod:`libfilter.filtering.signal` to

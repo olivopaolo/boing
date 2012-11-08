@@ -633,6 +633,44 @@ class TestURL(unittest.TestCase):
         # debug
         url.debug(self.out)
 
+    def test_replacement_tag(self):
+        string = "nop:?<!asd=asd?3esxc!>=1&k2=<!1^&$DF!CV?!>"
+        url = URL(string)
+        self.assertEqual(url,
+                         "nop:?asd%3dasd%3f3esxc=1&k2=1%5e%26%24DF%21CV%3f")
+        # kind
+        self.assertEqual(url.kind, URL.GENERIC)
+        self.assertTrue(url.kind&URL.ABSOLUTE)
+        self.assertFalse(url.kind&URL.RELATIVE)
+        # scheme
+        self.assertEqual(url.scheme, "nop")
+        # site
+        self.assertFalse(url.site)
+        self.assertEqual(url.site.user, "")
+        self.assertEqual(url.site.password, "")
+        self.assertEqual(url.site.host, "")
+        self.assertEqual(url.site.port, 0)
+        # path
+        self.assertEqual(url.path, "")
+        self.assertFalse(url.path)
+        self.assertEqual(url.path.data, tuple())
+        self.assertFalse(url.path.isAbsolute())
+        # query
+        self.assertTrue(url.query)
+        self.assertEqual(dict(url.query.items()),
+                         {"asd=asd?3esxc": "1",
+                          "k2": "1^&$DF!CV?"})
+        # fragment
+        self.assertEqual(url.fragment, "")
+        self.assertFalse(url.fragment)
+        # opaque
+        self.assertEqual(url.opaque, "")
+        self.assertFalse(url.opaque)
+        # str
+        str(url)
+        # debug
+        url.debug(self.out)
+
 # -------------------------------------------------------------------
 
 def suite():

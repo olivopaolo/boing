@@ -249,3 +249,19 @@ URL internal classes
       {'name': 'Jérémie', 'connect': ''}
       >>> URL("udp://:8888?name=Jérémie&connect")==URL("udp://:8888?name=J%e9r%e9mie&connect")
       True
+
+   It is possible to use the structure ``<!...!>`` in order to assign
+   to the query key or value a string that contains the characters
+   ``&`` or ``=``, which is normally not permitted since it would
+   break the URL syntax.
+
+   *Example*::
+
+      >>> url = URL("edit:?<!..contacts.*[?(@.id>=2)]!>=<!True&False!>&k2=v2")
+      >>> dict(url.query)
+      {'k2': 'v2', '..contacts.*[?(@.id>=2)]': 'True&False'}
+
+   .. warning::
+
+      The characters ``#`` and ``?`` cannot be used inside the
+      ``<!...!>`` structure.

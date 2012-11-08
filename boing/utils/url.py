@@ -322,31 +322,31 @@ class URL_query(collections.MutableMapping):
             res = res+chr(v)
             begin = end+3
         res = res+text[begin:]
-        return re.sub('\+',' ',res)
+        return res #re.sub('\+',' ',res)
 
     # ---------------------------------------------------------------
 
     def __init__(self, aString=''):
         self._data = collections.OrderedDict()
         if aString:
-
-            innerurl = re.compile("=['\"].*?['\"]")
-            innertag = re.compile("<\[!#([0-9]+)\]>")
+            replacetag = re.compile("<!.*?!>")
+            replacement = re.compile("<!([0-9]+)!>")
             sub = []
             def encode_inner(match):
                 m = match.group()
-                sub.append(match.group()[2:-1])
-                return "=<[!#%d]>"%(len(sub)-1)
+                sub.append(match.group()[2:-2])
+                return "<!%d!>"%(len(sub)-1)
             def decode_inner(match):
                 return sub.pop(0)
 
-            aString = innerurl.sub(encode_inner, aString)
+            aString = replacetag.sub(encode_inner, aString)
+
             lst = aString.split('&')
             for kv in lst:
                 tmp = kv.split('=', 1)
-                k = tmp[0]
-                value = innertag.sub(decode_inner, tmp[1]) if len(tmp)>1 \
-                    else ""
+                k = replacement.sub(decode_inner, tmp[0])
+                value = replacement.sub(decode_inner, tmp[1]) if len(tmp)>1 \
+                        else ""
                 try: v = self._decode(value)
                 except: v = ''
                 self._data[k] = v
