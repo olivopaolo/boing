@@ -24,7 +24,6 @@ txtfile = os.path.abspath(os.path.join(os.path.dirname(__file__),
 configtestfile = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                               "data", "config-filters.txt"))
 sysprefix = "/" if sys.platform=="win32" else ""
-timeoutsignal = signal.SIGINT if sys.platform=="linux2" else signal.SIGTERM
 
 cmds = (
     # Command line arguments
@@ -72,7 +71,7 @@ class Test_returncode_only(unittest.TestCase):
             else:
                 # Timeout: stop and wait
                 while returncode is None:
-                    self.proc.send_signal(timeoutsignal)
+                    self.proc.send_signal(signal.SIGTERM)
                     returncode = self.proc.poll()
                     if returncode is None : time.sleep(0.1)
             # Check stderr is empty
@@ -104,7 +103,7 @@ class Test_run_redirection(unittest.TestCase):
                 time.sleep(0.1)
             else:
                 # Timeout: stop and wait
-                self.proc.send_signal(timeoutsignal)
+                self.proc.send_signal(signal.SIGTERM)
                 returncode = self.proc.wait()
             # Compare output
             self.out.seek(0)
@@ -128,7 +127,7 @@ class Test_run_redirection(unittest.TestCase):
             time.sleep(0.1)
         else:
             # Timeout: stop and wait
-            self.proc.send_signal(timeoutsignal)
+            self.proc.send_signal(signal.SIGTERM)
             returncode = self.proc.wait()
         # Compare output
         self.out.seek(0)
@@ -155,7 +154,7 @@ class Test_run_redirection(unittest.TestCase):
                 time.sleep(0.1)
             else:
                 # Timeout: stop and wait
-                self.proc.send_signal(timeoutsignal)
+                self.proc.send_signal(signal.SIGTERM)
                 returncode = self.proc.wait()
             # Compare output
             tempout.seek(0)
