@@ -93,7 +93,7 @@ class IODevice(QtCore.QObject):
         the file is already closed. Once the file is closed, any
         operation on the file (e.g. reading or writing) will raise a
         :exc:`ValueError`."""
-        aboutToClose.emit()
+        self.aboutToClose.emit()
         self.__fd.close()
 
     def read(self, size=io.DEFAULT_BUFFER_SIZE):
